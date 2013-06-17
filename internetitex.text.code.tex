@@ -1,0 +1,1084 @@
+% iTex, prefix: itex
+
+\tl_new:N \l__itex_beginmaths_tl
+\tl_new:N \l__itex_endmaths_tl
+\tl_new:N \l__itex_begindisplay_tl
+\tl_new:N \l__itex_enddisplay_tl
+\tl_new:N \l__itex_begininline_tl
+\tl_new:N \l__itex_endinline_tl
+
+% Define the options for the markdown-extra module
+\keys_define:nn {itex options}
+{
+  at begin maths .tl_set:N = \l__itex_beginmaths_tl,
+  at end maths .tl_set:N = \l__itex_endmaths_tl,
+  at begin display .tl_set:N = \l__itex_begindisplay_tl,
+  at end display  .tl_set:N = \l__itex_enddisplay_tl,
+  at begin inline .tl_set:N = \l__itex_begininline_tl,
+  at end inline  .tl_set:N = \l__itex_endinline_tl,
+}
+% Get and set the options for the markdown-extra module
+\prop_get:NnNT  \l__txt_popts_prop {itex} \l_tmpa_tl
+{
+  \keys_set:nV {itex options} \l_tmpa_tl
+}
+
+\char_set_catcode_active:N \$%$
+
+\cs_new_nopar:Npn \itex_superscript:n #1
+{
+  \tl_use:N \l__txt_caret_tl \{#1\}
+}
+
+\cs_new_nopar:Npn \itex_subscript:n #1
+{
+  \tl_use:N \l__txt_underscore_tl \{#1\}
+}
+
+\cs_new_nopar:Npn \itex_percent:
+{
+  \@backslashchar \@percentchar
+}
+
+\group_begin:
+\char_set_catcode_other:N \&
+\cs_new_nopar:Npn \itex_amp: {&}
+\group_end:
+
+
+\bool_new:N \l__itex_display_bool
+\bool_new:N \l__itex_maths_bool
+\bool_new:N \l__itex_numbered_bool
+\bool_new:N \l__itex_text_bool
+
+\cs_new_nopar:Npn \itex_maths_start:
+{
+  \tl_use:N \l__itex_beginmaths_tl
+  \bool_if:NTF \l__itex_display_bool
+  {
+    \tl_use:N \l__itex_begindisplay_tl
+    \txt_newline:
+    \$\$
+    \txt_newline:
+  }
+  {
+    \tl_use:N \l__itex_begininline_tl
+    \$%$
+  }
+}
+
+\cs_new_nopar:Npn \itex_maths_end:
+{
+  \bool_if:NTF \l__itex_display_bool
+  {
+    \txt_newline:
+    \$\$
+    \txt_newline:
+    \tl_use:N \l__itex_enddisplay_tl
+  }
+  {
+    \$%$
+    \tl_use:N \l__itex_endinline_tl
+  }
+  \tl_use:N \l__itex_endmaths_tl
+  \group_end:
+}
+
+\cs_new_nopar:Npn \itex_set_catcodes:
+{
+  \char_set_catcode_active:N \^
+  \char_set_catcode_active:N \_
+  \char_set_catcode_active:N \>
+  \char_set_catcode_active:N \<
+  \char_set_catcode_active:N \&
+}
+
+\NewDocumentCommand \itexSetCatcodes {}
+{
+  \itex_set_catcodes:
+}
+
+\NewDocumentCommand \itexRestoreCatcodes {}
+{
+%  \itex_unset_catcodes:
+}
+
+\group_begin:
+\char_set_catcode_active:N \^
+\char_set_catcode_active:N \>
+\char_set_catcode_active:N \<
+\char_set_catcode_active:N \&
+\char_set_catcode_active:N \;
+\char_set_lccode:nn {`;}{`_}
+\tl_to_lowercase:n {
+\group_end:
+  \cs_new_nopar:Npn \itex_set_actives:
+  {
+    \cs_set_eq:NN ^ \itex_superscript:n
+    \cs_set_eq:NN ; \itex_subscript:n
+    \cs_set_eq:NN > \gt
+    \cs_set_eq:NN < \lt
+    \cs_set_eq:NN & \itex_amp:
+  }
+}
+
+\cs_new_nopar:Npn \itex_maths_init:
+{
+  \mathfont
+  \itex_set_catcodes:
+  \itex_set_actives:
+  \cs_set_eq:NN \% \itex_percent:
+  \cs_set_eq:NN \\ \itexnl
+  \cs_set_eq:NN \align \itex_align:
+  \bool_set_true:N \l__itex_maths_bool
+}
+
+\RenewDocumentCommand \( {} {${}}%$
+\RenewDocumentCommand \) {} {${}}%$
+\RenewDocumentCommand \[ {} {$$}%$
+\RenewDocumentCommand \] {} {$$}%$
+
+\cs_new_protected_nopar:Npn \itex_dollar:
+{
+  \bool_if:NTF \l__itex_maths_bool
+  {
+    \itex_maths_end:
+  }
+  {
+    \group_begin:
+    \itex_maths_init:
+  }
+  \peek_meaning:NTF $%$
+  {
+    \itex_double_dollar:w
+  }
+  {
+    \itex_single_dollar:
+  }
+}
+
+\cs_new:Npn \itex_double_dollar:w $%$
+{
+  \bool_if:NT \l__itex_maths_bool
+  {
+    \bool_set_true:N \l__itex_display_bool
+    \itex_maths_start:
+  }
+}
+
+\cs_new:Npn \itex_single_dollar:
+{
+  \bool_if:NT \l__itex_maths_bool
+  {
+    \itex_maths_start:
+  }
+}
+
+\cs_set_eq:NN $ \itex_dollar: %$
+
+\NewDocumentCommand \itexmathscommand {m o o}
+{
+  \cs_if_exist:NT #1
+  {
+    \cs_set_eq:cN {itex_text_\cs_to_str:N #1:} #1
+  }
+  \IfNoValueTF {#2}
+  {
+    \newtextcommand #1
+  }
+  {
+    \IfNoValueTF {#3}
+    {
+      \newtextcommand #1 [#2]
+    }
+    {
+      \newtextcommand #1 [#2] [{#3}]
+    }
+  }
+  \cs_set_eq:cN {itex_maths_\cs_to_str:N #1:} #1
+  \cs_set_nopar:Npn #1
+  {
+    \bool_if:NTF \itex_maths_bool
+    {
+      \use:c {itex_maths_\cs_to_str:N #1:}
+    }
+    {
+      \use:c {itex_text_\cs_to_str:N #1:}
+    }
+  }
+}
+
+\cs_new_nopar:Npn \itex_label:n #1
+{
+  \txt_only_chars:nn {alpha} {#1}
+  \string\label \{\tl_use:N \l__txt_chars_tl \}
+}
+
+\group_begin:
+\cs_set_eq:NN \itex_orig_begin: \begin
+\cs_set_eq:NN \itex_orig_end: \end
+\newtextcommand \begin [1]
+\newtextcommand \end
+\cs_gset_eq:NN \itex_begin:n \begin
+\cs_gset_eq:NN \itex_end:n \end
+\cs_gset_eq:NN \begin \itex_orig_begin:
+\cs_gset_eq:NN \end \itex_orig_end:
+\group_end:
+
+\NewDocumentEnvironment {itex equation} {}
+{
+  \txt_newline:
+  \itex_begin:n {equation}
+  \txt_newline:
+  \bool_set_true:N \l__itex_display_bool
+  \itex_maths_init:
+  \cs_set_eq:NN \label \itex_label:n
+}
+{
+  \txt_newline:
+  \itex_end:n {equation}
+  \txt_newline:
+}
+
+\cs_new_nopar:Npn \itex_restore_equation:
+{
+  \cs_set_eq:Nc \equation {itex equation}
+  \cs_set_eq:Nc \endequation {end itex equation}
+}
+
+% hyperref redefines equation
+\AtBeginDocument{
+  \itex_restore_equation:
+}
+
+\DeclareDocumentCommand \ensuremath {}
+{
+  \itex_ensuremaths:
+}
+
+\cs_new_nopar:Npn \itex_ensuremaths:
+{
+  \bool_if:NTF \l__itex_maths_bool
+  {
+    \use:n
+  }
+  {
+    $ \itex_ensuremaths_end:n %$
+  }
+}
+
+\cs_new_nopar:Npn \itex_ensuremaths_end:n #1
+{
+  #1$%$
+}
+
+\NewDocumentEnvironment {align*} {}
+{
+  \bool_set_false:N \l__itex_numbered_bool
+  $$
+  \begin{aligned}
+  \txt_newline:
+}
+{
+  \txt_newline:
+  \end{aligned}
+  $$
+}
+
+\NewDocumentEnvironment {align} {}
+{
+  \bool_set_true:N \l__itex_numbered_bool
+  \[
+  \begin{aligned}
+  \txt_newline:
+}
+{
+  \txt_newline:
+  \end{aligned}
+  \]
+}
+
+\NewDocumentEnvironment {gather*} {}
+{
+  \bool_set_false:N \l__itex_numbered_bool
+  $$
+  \begin{gathered}
+  \txt_newline:
+}
+{
+  \txt_newline:
+  \end{gathered}
+  $$
+}
+
+\NewDocumentEnvironment {gather} {}
+{
+  \bool_set_true:N \l__itex_numbered_bool
+  $$
+  \begin{gathered}
+  \txt_newline:
+}
+{
+  \txt_newline:
+  \end{gathered}
+  $$
+}
+
+\NewDocumentEnvironment {multline*} {}
+{
+  \bool_set_false:N \l__itex_numbered_bool
+  $$
+  \begin{aligned}
+  \txt_newline:
+}
+{
+  \txt_newline:
+  \end{aligned}
+  $$
+}
+
+\NewDocumentEnvironment {multline} {}
+{
+  \bool_set_true:N \l__itex_numbered_bool
+  \[
+  \begin{aligned}
+  \txt_newline:
+}
+{
+  \txt_newline:
+  \end{aligned}
+  \]
+}
+
+\NewDocumentEnvironment {equation*} {}
+{
+  \bool_set_false:N \l__itex_numbered_bool
+  $$
+}
+{
+  $$
+}
+
+\RenewDocumentCommand \textrm {m}
+{
+  \text{#1}
+}
+
+\NewDocumentCommand \DeclareMathOperator {m m}
+{
+  \NewDocumentCommand #1 {} {\@backslashchar #2}
+}
+
+\NewDocumentCommand \DeclareiTeXOperator {m}
+{
+  \newtextcommand #1
+}
+
+\RenewDocumentCommand \not {}
+{
+  \peek_after:Nw \itex_if_not:
+}
+
+\cs_new:Npn \itex_if_not:
+{
+  \token_if_macro:NTF \l_peek_token
+  {
+    \itex_test_not:n
+  }
+  {
+    \itex_orig_not:
+  }
+}
+
+\cs_new:Npn \itex_test_not:n #1
+{
+  \cs_if_exist_use:cF {not \cs_to_str:N #1}
+  {
+    \cs_if_exist_use:cF {n \cs_to_str:N #1}
+    {
+      \itex_orig_not: #1
+    }
+  }
+}
+
+% Here followeth the list of itex commands,
+% modulo a few clashes
+\itexmathscommand{\{}
+\itexmathscommand{\}}
+\itexmathscommand{\quad}
+\itexmathscommand{\qquad}
+\itexmathscommand{\thinspace}
+\itexmathscommand{\dots}
+\itexmathscommand{\phantom}[1]
+
+\newtextcommand{\left}
+\newtextcommand{\right}
+\newtextcommand{\big}
+\newtextcommand{\bigr}
+\newtextcommand{\Big}
+\newtextcommand{\Bigr}
+\newtextcommand{\bigg}
+\newtextcommand{\biggr}
+\newtextcommand{\Bigg}
+\newtextcommand{\Biggr}
+\newtextcommand{\bigl}
+\newtextcommand{\Bigl}
+\newtextcommand{\biggl}
+\newtextcommand{\Biggl}
+\newtextcommand{\mathrlap}[1]
+\newtextcommand{\mathllap}[1]
+\newtextcommand{\mathclap}[1]
+\newtextcommand{\rlap}
+\newtextcommand{\llap}
+\newtextcommand{\ulap}
+\newtextcommand{\dlap}
+\newtextcommand{\infty}
+\newtextcommand{\infinity}
+\newtextcommand{\lbrace}
+\newtextcommand{\rbrace}
+\newtextcommand{\vert}
+\newtextcommand{\Vert}
+\newtextcommand{\setminus}
+\newtextcommand{\backslash}
+\newtextcommand{\smallsetminus}
+\newtextcommand{\sslash}
+\newtextcommand{\lfloor}
+\newtextcommand{\lceil}
+\newtextcommand{\lang}
+\newtextcommand{\langle}
+\newtextcommand{\rfloor}
+\newtextcommand{\rceil}
+\newtextcommand{\rang}
+\newtextcommand{\rangle}
+\newtextcommand{\uparrow}
+\newtextcommand{\downarrow}
+\newtextcommand{\updownarrow}
+\newtextcommand{\prime}
+\newtextcommand{\alpha}
+\newtextcommand{\beta}
+\newtextcommand{\gamma}
+\newtextcommand{\delta}
+\newtextcommand{\zeta}
+\newtextcommand{\eta}
+\newtextcommand{\theta}
+\newtextcommand{\iota}
+\newtextcommand{\kappa}
+\newtextcommand{\lambda}
+\newtextcommand{\mu}
+\newtextcommand{\nu}
+\newtextcommand{\xi}
+\newtextcommand{\pi}
+\newtextcommand{\rho}
+\newtextcommand{\sigma}
+\newtextcommand{\tau}
+\newtextcommand{\upsilon}
+\newtextcommand{\chi}
+\newtextcommand{\psi}
+\newtextcommand{\omega}
+\newtextcommand{\backepsilon}
+\newtextcommand{\varkappa}
+\newtextcommand{\varpi}
+\newtextcommand{\varrho}
+\newtextcommand{\varsigma}
+\newtextcommand{\vartheta}
+\newtextcommand{\varepsilon}
+\newtextcommand{\phi}
+\newtextcommand{\varphi}
+\newtextcommand{\arccos}
+\newtextcommand{\arcsin}
+\newtextcommand{\arctan}
+\newtextcommand{\arg}
+\newtextcommand{\cos}
+\newtextcommand{\cosh}
+\newtextcommand{\cot}
+\newtextcommand{\coth}
+\newtextcommand{\csc}
+\newtextcommand{\deg}
+\newtextcommand{\dim}
+\newtextcommand{\exp}
+\newtextcommand{\hom}
+\newtextcommand{\ker}
+\newtextcommand{\lg}
+\newtextcommand{\ln}
+\newtextcommand{\log}
+\newtextcommand{\sec}
+\newtextcommand{\sin}
+\newtextcommand{\sinh}
+\newtextcommand{\tan}
+\newtextcommand{\tanh}
+\newtextcommand{\det}
+\newtextcommand{\gcd}
+\newtextcommand{\inf}
+\newtextcommand{\lim}
+\newtextcommand{\liminf}
+\newtextcommand{\limsup}
+\newtextcommand{\max}
+\newtextcommand{\min}
+\newtextcommand{\Pr}
+\newtextcommand{\sup}
+\newtextcommand{\omicron}
+\newtextcommand{\epsilon}
+\newtextcommand{\cdot}
+\newtextcommand{\Alpha}
+\newtextcommand{\Beta}
+\newtextcommand{\Delta}
+\newtextcommand{\Gamma}
+\newtextcommand{\digamma}
+\newtextcommand{\Lambda}
+\newtextcommand{\Pi}
+\newtextcommand{\Phi}
+\newtextcommand{\Psi}
+\newtextcommand{\Sigma}
+\newtextcommand{\Theta}
+\newtextcommand{\Xi}
+\newtextcommand{\Zeta}
+\newtextcommand{\Eta}
+\newtextcommand{\Iota}
+\newtextcommand{\Kappa}
+\newtextcommand{\Mu}
+\newtextcommand{\Nu}
+\newtextcommand{\Rho}
+\newtextcommand{\Tau}
+\newtextcommand{\mho}
+\newtextcommand{\Omega}
+\newtextcommand{\Upsilon}
+\newtextcommand{\Upsi}
+\newtextcommand{\iff}
+\newtextcommand{\Longleftrightarrow}
+\newtextcommand{\Leftrightarrow}
+\newtextcommand{\impliedby}
+\newtextcommand{\Leftarrow}
+\newtextcommand{\implies}
+\newtextcommand{\Rightarrow}
+\newtextcommand{\hookleftarrow}
+\newtextcommand{\embedsin}
+\newtextcommand{\hookrightarrow}
+\newtextcommand{\longleftarrow}
+\newtextcommand{\longrightarrow}
+\newtextcommand{\leftarrow}
+\newtextcommand{\to}
+\newtextcommand{\rightarrow}
+\newtextcommand{\leftrightarrow}
+\newtextcommand{\mapsto}
+\newtextcommand{\map}
+\newtextcommand{\nearrow}
+\newtextcommand{\nearr}
+\newtextcommand{\nwarrow}
+\newtextcommand{\nwarr}
+\newtextcommand{\searrow}
+\newtextcommand{\searr}
+\newtextcommand{\swarrow}
+\newtextcommand{\swarr}
+\newtextcommand{\neArrow}
+\newtextcommand{\neArr}
+\newtextcommand{\nwArrow}
+\newtextcommand{\nwArr}
+\newtextcommand{\seArrow}
+\newtextcommand{\seArr}
+\newtextcommand{\swArrow}
+\newtextcommand{\swArr}
+\newtextcommand{\darr}
+\newtextcommand{\Downarrow}
+\newtextcommand{\uparr}
+\newtextcommand{\Uparrow}
+\newtextcommand{\downuparrow}
+\newtextcommand{\duparr}
+\newtextcommand{\updarr}
+\newtextcommand{\Updownarrow}
+\newtextcommand{\leftsquigarrow}
+\newtextcommand{\rightsquigarrow}
+\newtextcommand{\dashleftarrow}
+\newtextcommand{\dashrightarrow}
+\newtextcommand{\curvearrowbotright}
+\newtextcommand{\righttoleftarrow}
+\newtextcommand{\lefttorightarrow}
+\newtextcommand{\leftrightsquigarrow}
+\newtextcommand{\upuparrows}
+\newtextcommand{\rightleftarrows}
+\newtextcommand{\rightrightarrows}
+\newtextcommand{\curvearrowleft}
+\newtextcommand{\curvearrowright}
+\newtextcommand{\downdownarrows}
+\newtextcommand{\leftarrowtail}
+\newtextcommand{\rightarrowtail}
+\newtextcommand{\leftleftarrows}
+\newtextcommand{\leftrightarrows}
+\newtextcommand{\Lleftarrow}
+\newtextcommand{\Rrightarrow}
+\newtextcommand{\looparrowleft}
+\newtextcommand{\looparrowright}
+\newtextcommand{\Lsh}
+\newtextcommand{\Rsh}
+\newtextcommand{\circlearrowleft}
+\newtextcommand{\circlearrowright}
+\newtextcommand{\twoheadleftarrow}
+\newtextcommand{\twoheadrightarrow}
+\newtextcommand{\nLeftarrow}
+\newtextcommand{\nleftarrow}
+\newtextcommand{\nLeftrightarrow}
+\newtextcommand{\nleftrightarrow}
+\newtextcommand{\nRightarrow}
+\newtextcommand{\nrightarrow}
+\newtextcommand{\downharpoonleft}
+\newtextcommand{\downharpoonright}
+\newtextcommand{\leftrightharpoons}
+\newtextcommand{\rightleftharpoons}
+\newtextcommand{\upharpoonleft}
+\newtextcommand{\upharpoonright}
+\newtextcommand{\xrightarrow}[2][]
+\newtextcommand{\xleftarrow}[2][]
+\newtextcommand{\xleftrightarrow}[2][]
+\newtextcommand{\xLeftarrow}[2][]
+\newtextcommand{\xRightarrow}[2][]
+\newtextcommand{\xLeftrightarrow}[2][]
+\newtextcommand{\xleftrightharpoons}[2][]
+\newtextcommand{\xrightleftharpoons}[2][]
+\newtextcommand{\xhookleftarrow}[2][]
+\newtextcommand{\xhookrightarrow}[2][]
+\newtextcommand{\xmapsto}[2][]
+\newtextcommand{\ldots}
+\newtextcommand{\cdots}
+\newtextcommand{\ddots}
+\newtextcommand{\udots}
+\newtextcommand{\vdots}
+\newtextcommand{\colon}
+\newtextcommand{\cup}
+\newtextcommand{\union}
+\newtextcommand{\bigcup}
+\newtextcommand{\Union}
+\newtextcommand{\cap}
+\newtextcommand{\intersection}
+\newtextcommand{\bigcap}
+\newtextcommand{\Intersection}
+\newtextcommand{\in}
+\newtextcommand{\coloneqq}
+\newtextcommand{\Coloneqq}
+\newtextcommand{\coloneq}
+\newtextcommand{\Coloneq}
+\newtextcommand{\eqqcolon}
+\newtextcommand{\Eqqcolon}
+\newtextcommand{\eqcolon}
+\newtextcommand{\Eqcolon}
+\newtextcommand{\colonapprox}
+\newtextcommand{\Colonapprox}
+\newtextcommand{\colonsim}
+\newtextcommand{\Colonsim}
+\newtextcommand{\dblcolon}
+\newtextcommand{\ast}
+\newtextcommand{\Cap}
+\newtextcommand{\Cup}
+\newtextcommand{\circledast}
+\newtextcommand{\circledcirc}
+\newtextcommand{\curlyvee}
+\newtextcommand{\curlywedge}
+\newtextcommand{\divideontimes}
+\newtextcommand{\dotplus}
+\newtextcommand{\leftthreetimes}
+\newtextcommand{\rightthreetimes}
+\newtextcommand{\veebar}
+\newtextcommand{\gt}
+\newtextcommand{\lt}
+\newtextcommand{\approxeq}
+\newtextcommand{\backsim}
+\newtextcommand{\backsimeq}
+\newtextcommand{\barwedge}
+\newtextcommand{\doublebarwedge}
+\newtextcommand{\subset}
+\newtextcommand{\subseteq}
+\newtextcommand{\subseteqq}
+\newtextcommand{\subsetneq}
+\newtextcommand{\subsetneqq}
+\newtextcommand{\varsubsetneq}
+\newtextcommand{\varsubsetneqq}
+\newtextcommand{\prec}
+\newtextcommand{\parallel}
+\newtextcommand{\nparallel}
+\newtextcommand{\shortparallel}
+\newtextcommand{\nshortparallel}
+\newtextcommand{\perp}
+\newtextcommand{\eqslantgtr}
+\newtextcommand{\eqslantless}
+\newtextcommand{\gg}
+\newtextcommand{\ggg}
+\newtextcommand{\geq}
+\newtextcommand{\geqq}
+\newtextcommand{\geqslant}
+\newtextcommand{\gneq}
+\newtextcommand{\gneqq}
+\newtextcommand{\gnapprox}
+\newtextcommand{\gnsim}
+\newtextcommand{\gtrapprox}
+\newtextcommand{\ge}
+\newtextcommand{\le}
+\newtextcommand{\leq}
+\newtextcommand{\leqq}
+\newtextcommand{\leqslant}
+\newtextcommand{\lessapprox}
+\newtextcommand{\lessdot}
+\newtextcommand{\lesseqgtr}
+\newtextcommand{\lesseqqgtr}
+\newtextcommand{\lessgtr}
+\newtextcommand{\lneq}
+\newtextcommand{\lneqq}
+\newtextcommand{\lnsim}
+\newtextcommand{\lvertneqq}
+\newtextcommand{\gtrsim}
+\newtextcommand{\gtrdot}
+\newtextcommand{\gtreqless}
+\newtextcommand{\gtreqqless}
+\newtextcommand{\gtrless}
+\newtextcommand{\gvertneqq}
+\newtextcommand{\lesssim}
+\newtextcommand{\lnapprox}
+\newtextcommand{\nsubset}
+\newtextcommand{\nsubseteq}
+\newtextcommand{\nsubseteqq}
+\newtextcommand{\notin}
+\newtextcommand{\ni}
+\newtextcommand{\notni}
+\newtextcommand{\nmid}
+\newtextcommand{\nshortmid}
+\newtextcommand{\preceq}
+\newtextcommand{\npreceq}
+\newtextcommand{\ll}
+\newtextcommand{\ngeq}
+\newtextcommand{\ngeqq}
+\newtextcommand{\ngeqslant}
+\newtextcommand{\nleq}
+\newtextcommand{\nleqq}
+\newtextcommand{\nleqslant}
+\newtextcommand{\nless}
+\newtextcommand{\supset}
+\newtextcommand{\supseteq}
+\newtextcommand{\supseteqq}
+\newtextcommand{\supsetneq}
+\newtextcommand{\supsetneqq}
+\newtextcommand{\varsupsetneq}
+\newtextcommand{\varsupsetneqq}
+\newtextcommand{\approx}
+\newtextcommand{\asymp}
+\newtextcommand{\bowtie}
+\newtextcommand{\dashv}
+\newtextcommand{\Vdash}
+\newtextcommand{\vDash}
+\newtextcommand{\VDash}
+\newtextcommand{\vdash}
+\newtextcommand{\Vvdash}
+\newtextcommand{\models}
+\newtextcommand{\sim}
+\newtextcommand{\simeq}
+\newtextcommand{\nsim}
+\newtextcommand{\smile}
+\newtextcommand{\triangle}
+\newtextcommand{\triangledown}
+\newtextcommand{\triangleleft}
+\newtextcommand{\cong}
+\newtextcommand{\succ}
+\newtextcommand{\nsucc}
+\newtextcommand{\ngtr}
+\newtextcommand{\nsupset}
+\newtextcommand{\nsupseteq}
+\newtextcommand{\propto}
+\newtextcommand{\equiv}
+\newtextcommand{\nequiv}
+\newtextcommand{\frown}
+\newtextcommand{\triangleright}
+\newtextcommand{\ncong}
+\newtextcommand{\succeq}
+\newtextcommand{\succapprox}
+\newtextcommand{\succnapprox}
+\newtextcommand{\succcurlyeq}
+\newtextcommand{\succsim}
+\newtextcommand{\succnsim}
+\newtextcommand{\nsucceq}
+\newtextcommand{\nvDash}
+\newtextcommand{\nvdash}
+\newtextcommand{\nVDash}
+\newtextcommand{\amalg}
+\newtextcommand{\pm}
+\newtextcommand{\mp}
+\newtextcommand{\bigcirc}
+\newtextcommand{\wr}
+\newtextcommand{\odot}
+\newtextcommand{\uplus}
+\newtextcommand{\clubsuit}
+\newtextcommand{\spadesuit}
+\newtextcommand{\Diamond}
+\newtextcommand{\diamond}
+\newtextcommand{\sqcup}
+\newtextcommand{\sqcap}
+\newtextcommand{\sqsubset}
+\newtextcommand{\sqsubseteq}
+\newtextcommand{\sqsupset}
+\newtextcommand{\sqsupseteq}
+\newtextcommand{\Subset}
+\newtextcommand{\Supset}
+\newtextcommand{\ltimes}
+\newtextcommand{\div}
+\newtextcommand{\rtimes}
+\newtextcommand{\bot}
+\newtextcommand{\therefore}
+\newtextcommand{\thickapprox}
+\newtextcommand{\thicksim}
+\newtextcommand{\varpropto}
+\newtextcommand{\varnothing}
+\newtextcommand{\flat}
+\newtextcommand{\vee}
+\newtextcommand{\because}
+\newtextcommand{\between}
+\newtextcommand{\Bumpeq}
+\newtextcommand{\bumpeq}
+\newtextcommand{\circeq}
+\newtextcommand{\curlyeqprec}
+\newtextcommand{\curlyeqsucc}
+\newtextcommand{\doteq}
+\newtextcommand{\doteqdot}
+\newtextcommand{\eqcirc}
+\newtextcommand{\fallingdotseq}
+\newtextcommand{\multimap}
+\newtextcommand{\pitchfork}
+\newtextcommand{\precapprox}
+\newtextcommand{\precnapprox}
+\newtextcommand{\preccurlyeq}
+\newtextcommand{\precsim}
+\newtextcommand{\precnsim}
+\newtextcommand{\risingdotseq}
+\newtextcommand{\sharp}
+\newtextcommand{\bullet}
+\newtextcommand{\nexists}
+\newtextcommand{\dagger}
+\newtextcommand{\ddagger}
+\newtextcommand[\not]{\itex_orig_not:}
+\newtextcommand{\top}
+\newtextcommand{\natural}
+\newtextcommand{\angle}
+\newtextcommand{\measuredangle}
+\newtextcommand{\backprime}
+\newtextcommand{\bigstar}
+\newtextcommand{\blacklozenge}
+\newtextcommand{\lozenge}
+\newtextcommand{\blacksquare}
+\newtextcommand{\blacktriangle}
+\newtextcommand{\blacktriangleleft}
+\newtextcommand{\blacktriangleright}
+\newtextcommand{\blacktriangledown}
+\newtextcommand{\ntriangleleft}
+\newtextcommand{\ntriangleright}
+\newtextcommand{\ntrianglelefteq}
+\newtextcommand{\ntrianglerighteq}
+\newtextcommand{\trianglelefteq}
+\newtextcommand{\trianglerighteq}
+\newtextcommand{\triangleq}
+\newtextcommand{\vartriangleleft}
+\newtextcommand{\vartriangleright}
+\newtextcommand{\forall}
+\newtextcommand{\bigtriangleup}
+\newtextcommand{\bigtriangledown}
+\newtextcommand{\nprec}
+\newtextcommand{\aleph}
+\newtextcommand{\beth}
+\newtextcommand{\eth}
+\newtextcommand{\ell}
+\newtextcommand{\hbar}
+\newtextcommand{\Im}
+\newtextcommand{\imath}
+\newtextcommand{\jmath}
+\newtextcommand{\wp}
+\newtextcommand{\Re}
+\newtextcommand{\Perp}
+\newtextcommand{\Vbar}
+\newtextcommand{\boxdot}
+\newtextcommand{\Box}
+\newtextcommand{\square}
+\newtextcommand{\emptyset}
+%\newtextcommand{\empty} %%% conflicts with kvoptions.sty
+\newtextcommand{\exists}
+\newtextcommand{\circ}
+\newtextcommand{\rhd}
+\newtextcommand{\lhd}
+\newtextcommand{\lll}
+\newtextcommand{\unrhd}
+\newtextcommand{\unlhd}
+\newtextcommand{\Del}
+\newtextcommand{\nabla}
+\newtextcommand{\sphericalangle}
+\newtextcommand{\heartsuit}
+\newtextcommand{\diamondsuit}
+\newtextcommand{\partial}
+\newtextcommand{\qed}
+\newtextcommand{\mod}
+\newtextcommand{\pmod}
+\newtextcommand{\bottom}
+\newtextcommand{\neg}
+\newtextcommand{\neq}
+\newtextcommand{\ne}
+\newtextcommand{\shortmid}
+\newtextcommand{\mid}
+\newtextcommand{\int}
+\newtextcommand{\integral}
+\newtextcommand{\iint}
+\newtextcommand{\doubleintegral}
+\newtextcommand{\iiint}
+\newtextcommand{\tripleintegral}
+\newtextcommand{\iiiint}
+\newtextcommand{\quadrupleintegral}
+\newtextcommand{\oint}
+\newtextcommand{\conint}
+\newtextcommand{\contourintegral}
+\newtextcommand{\times}
+\newtextcommand{\star}
+\newtextcommand{\circleddash}
+\newtextcommand{\odash}
+\newtextcommand{\intercal}
+\newtextcommand{\smallfrown}
+\newtextcommand{\smallsmile}
+\newtextcommand{\boxminus}
+\newtextcommand{\minusb}
+\newtextcommand{\boxplus}
+\newtextcommand{\plusb}
+\newtextcommand{\boxtimes}
+\newtextcommand{\timesb}
+\newtextcommand{\sum}
+\newtextcommand{\prod}
+\newtextcommand{\product}
+\newtextcommand{\coprod}
+\newtextcommand{\coproduct}
+\newtextcommand{\otimes}
+\newtextcommand{\Otimes}
+\newtextcommand{\bigotimes}
+\newtextcommand{\ominus}
+\newtextcommand{\oslash}
+\newtextcommand{\oplus}
+\newtextcommand{\Oplus}
+\newtextcommand{\bigoplus}
+\newtextcommand{\bigodot}
+\newtextcommand{\bigsqcup}
+\newtextcommand{\biguplus}
+\newtextcommand{\wedge}
+\newtextcommand{\Wedge}
+\newtextcommand{\bigwedge}
+\newtextcommand{\Vee}
+\newtextcommand{\bigvee}
+\newtextcommand{\invamp}
+\newtextcommand{\parr}
+\newtextcommand{\frac}[2]
+\newtextcommand{\tfrac}[2]
+\newtextcommand{\binom}[2]
+\newtextcommand{\tbinom}[2]
+\newtextcommand{\tensor}
+\newtextcommand{\multiscripts}
+\newtextcommand{\overbrace}[1]
+\newtextcommand{\underbrace}[1]
+\newtextcommand{\underline}[1]
+\newtextcommand{\bar}[1]
+\newtextcommand{\overline}[1]
+\newtextcommand{\closure}[1]
+\newtextcommand{\widebar}[1]
+\newtextcommand{\vec}[1]
+\newtextcommand{\widevec}[1]
+\newtextcommand{\dot}[1]
+\newtextcommand{\ddot}[1]
+\newtextcommand{\dddot}[1]
+\newtextcommand{\ddddot}[1]
+\newtextcommand{\tilde}[1]
+\newtextcommand{\widetilde}[1]
+\newtextcommand{\check}[1]
+\newtextcommand{\widecheck}[1]
+\newtextcommand{\hat}[1]
+\newtextcommand{\widehat}[1]
+\newtextcommand{\underset}[2]
+\newtextcommand{\stackrel}[2]
+\newtextcommand{\overset}[2]
+\newtextcommand{\over}
+\newtextcommand{\atop}
+\newtextcommand{\underoverset}[3]
+\newtextcommand{\sqrt}[1]
+\newtextcommand{\root}
+%\newtextcommand{\space}
+\newtextcommand{\statusline}
+\newtextcommand{\tooltip}
+\newtextcommand{\toggle}
+\newtextcommand{\fghilight}
+\newtextcommand{\fghighlight}
+\newtextcommand{\bghilight}
+\newtextcommand{\bghighlight}
+\newtextcommand{\color}
+\newtextcommand{\bgcolor}
+\newtextcommand{\displaystyle}
+\newtextcommand{\textstyle}
+\newtextcommand{\textsize}
+\newtextcommand{\scriptsize}
+\let\scriptstyle=\scriptsize
+\newtextcommand{\scriptscriptsize}
+\let\scriptscriptstyle=\scriptscriptsize
+\newtextcommand{\mathit}[1]
+\newtextcommand{\boldsymbol}
+\newtextcommand{\mathbf}[1]
+\newtextcommand{\mathrm}[1]
+\newtextcommand{\mathbb}[1]
+\newtextcommand{\mathfrak}[1]
+\newtextcommand{\mathfr}[1]
+\newtextcommand{\slash}[1]
+\newtextcommand{\boxed}[1]
+\newtextcommand{\mathcal}[1]
+\newtextcommand{\substack}[1]
+\newtextcommand{\arrayopts}[1]
+\newtextcommand{\colalign}
+\newtextcommand{\collayout}
+\newtextcommand{\rowalign}
+\newtextcommand{\equalrows}
+\newtextcommand{\equalcols}
+\newtextcommand{\rowlines}
+\newtextcommand{\collines}
+\newtextcommand{\frame}
+\newtextcommand{\padding}
+\newtextcommand{\rowopts}
+\newtextcommand{\cellopts}
+\newtextcommand{\rowspan}
+\newtextcommand{\colspan}
+\newtextcommand{\medspace}
+\newtextcommand{\thickspace}
+\newtextcommand{\negspace}
+%\newtextcommand{\href}
+\newtextcommand{\operatorname}
+\newtextcommand{\mathop}
+\newtextcommand{\mathbin}
+\newtextcommand{\mathrel}
+\newtextcommand{\includegraphics}
+\newtextcommand{\text}
+\newtextcommand[\array]{\itexarray}
+\newtextcommand[\align]{\itexalign}
+\newtextcommand[\space]{\itexspace}[3]
+\newtextcommand[]{\itexgroup}[1]
+\newtextcommand[\text]{\textrm}[1]
+\newtextcommand[\\]{\itexnl}
+
+\newtextenvironment{array}[1]
+\newtextenvironment{cases}
+\newtextenvironment{aligned}
+\newtextenvironment{gathered}
+\newtextenvironment{matrix}
+\newtextenvironment{pmatrix}
+\newtextenvironment{bmatrix}
+\newtextenvironment{Bmatrix}
+\newtextenvironment{vmatrix}
+\newtextenvironment{Vmatrix}
+\newtextenvironment{smallmatrix}
+\newtextenvironment{svg}
+
+\newtextcommand*{\!}
+\newtextcommand*{\|}
+\newtextcommand*{\:}
+\newtextcommand*{\;}
+\itexmathscommand{\,}
+
+\cs_set_eq:NN \dotsc \dots
+\cs_set_eq:NN \dotsb \dots
+\cs_set_eq:NN \land \wedge
+\cs_set_eq:NN \lor \vee
+
+\endinput
+
+% Local Variables:
+% mode: latex3
+% End:

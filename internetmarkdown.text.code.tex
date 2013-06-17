@@ -1,0 +1,402 @@
+% Markdown, prefix: mkdn
+
+% We do a lot of redefining
+
+\msg_redirect_module:nnn { LaTeX / xparse } { info }    { none }
+\msg_redirect_module:nnn { LaTeX / xparse } { warning } { none }
+
+% Sets the top level for sections (and other headings) 
+\int_new:N \l__mkdn_sec_int
+\int_set:Nn \l__mkdn_sec_int {1}
+
+% Define the options for the markdown module
+\keys_define:nn {markdown options}
+{
+  section~ level .int_set:N = \l__mkdn_sec_int
+}
+
+% Get and set the options for the markdown module
+\prop_get:NnNT  \l__txt_popts_prop {markdown} \l_tmpa_tl
+{
+  \keys_set:nV {markdown options} \l_tmpa_tl
+}
+
+\RenewDocumentCommand \emph {m} {*#1*}
+\RenewDocumentCommand \textit {m} {*#1*}
+\RenewDocumentCommand \textbf {m} {**#1**}
+
+
+% If the class defines a `\chapter` command, we need to do so also
+% Otherwise, all the section commands step up one on the level
+\tl_if_eq:VnTF \l__txt_class_tl {report}
+{
+  \NewDocumentCommand \chapter {s m}
+  {
+    \IfBooleanTF {#1}
+    {
+      \mkdn_section:nn {0}{#2}
+    }
+    {
+      \mkdn_num_section:nn {0}{#2}
+    }
+  }
+}
+{
+  \int_decr:N \l__mkdn_sec_int
+}
+
+\NewDocumentCommand \section {s m}
+{
+  \IfBooleanTF {#1}
+  {
+    \mkdn_section:nn {1}{#2}
+  }
+  {
+    \mkdn_num_section:nn {1}{#2}
+  }
+}
+
+\NewDocumentCommand \subsection {s m}
+{
+  \IfBooleanTF {#1}
+  {
+    \mkdn_section:nn {2}{#2}
+  }
+  {
+    \mkdn_num_section:nn {2}{#2}
+  }
+}
+
+\NewDocumentCommand \subsubsection {s m}
+{
+  \IfBooleanTF {#1}
+  {
+    \mkdn_section:nn {3}{#2}
+  }
+  {
+    \mkdn_num_section:nn {3}{#2}
+  }
+}
+
+\NewDocumentCommand \paragraph {s m}
+{
+  \IfBooleanTF {#1}
+  {
+    \mkdn_section:nn {4}{#2}
+  }
+  {
+    \mkdn_num_section:nn {4}{#2}
+  }
+}
+
+\NewDocumentCommand \subparagraph {s m}
+{
+  \IfBooleanTF {#1}
+  {
+    \mkdn_section:nn {5}{#2}
+  }
+  {
+    \mkdn_num_section:nn {5}{#2}
+  }
+}
+
+\cs_new_nopar:Npn \mkdn_section:nn #1#2
+{
+  \par
+  \mkdn_section_header:nn {#1}{#2}
+  \par
+}
+
+\cs_new_nopar:Npn \mkdn_section_header:nn #1#2
+{
+  \prg_replicate:nn {#1 + \l__mkdn_sec_int} {\#}
+  \c_space_token #2 \c_space_token
+  \prg_replicate:nn {#1 + \l__mkdn_sec_int} {\#}
+}
+
+\cs_set_eq:NN  \mkdn_num_section:nn \mkdn_section:nn
+
+
+% Indentation handling, we use a prefix to ensure that we get
+% the right indentation
+\tl_new:N \l__mkdn_indentpre_tl
+\tl_new:N \l__mkdn_indentsep_tl
+\tl_set:Nn \l__mkdn_indentpre_tl {X}
+\tl_set:Nn \l__mkdn_indentsep_tl {Y}
+
+\tl_new:N \l__mkdn_indent_tl
+
+\cs_new:Npn \mkdn_add_indent:n #1
+{
+  \tl_put_right:Nn \l__mkdn_indent_tl {#1}
+}
+
+\cs_generate_variant:Nn \mkdn_add_indent:n {V}
+
+\int_new:N \l__mkdn_indents_int
+\int_set:Nn \l__mkdn_indents_int {0}
+
+\cs_new:Npn \mkdn_push_indent:
+{
+  \tl_set_eq:cN {mkdn_indent_stack_ \int_use:N \l__mkdn_indents_int} \l__mkdn_indent_tl
+  \int_gincr:N \l__mkdn_indents_int
+}
+
+\cs_new:Npn \mkdn_pop_indent:
+{
+  \int_gdecr:N \l__mkdn_indents_int
+  \tl_set_eq:Nc \l__mkdn_indent_tl {mkdn_indent_stack_ \int_use:N \l__mkdn_indents_int}
+}
+
+\cs_new:Npn \mkdn_last_indent:
+{
+  \tl_set_eq:Nc \l__mkdn_indent_tl {mkdn_indent_stack_ \int_eval:n {\l__mkdn_indents_int - 1}}
+}
+
+\cs_new:Npn \mkdn_set_everypar:
+{
+  \everypar{
+    \tl_use:N \l__mkdn_indent_tl\tl_use:N \l__mkdn_indentsep_tl
+  }
+}
+
+\cs_new:Npn \mkdn_indent_by:n #1
+{
+  \tl_clear:N \l_tmpa_tl
+  \prg_replicate:nn {#1} {\tl_put_right:NV \l_tmpa_tl  \l__mkdn_indentpre_tl}
+  \mkdn_add_indent:V \l_tmpa_tl
+}
+
+\AtBeginDocument{\mkdn_set_everypar:}
+
+
+% Not sure these are right
+\NewDocumentEnvironment{quote}{}
+{
+  \par
+  \mkdn_add_indent:n{>X}
+}
+{
+  \par
+}
+
+\NewDocumentEnvironment{quotation}{}
+{
+  \par
+  \mkdn_add_indent:n{>X}
+}
+{
+  \par
+}
+
+
+% List environments
+\cs_new_nopar:Npn \mkdn_save_lengths:
+{
+  \tl_set:Nx \l__mkdn_lengths_tl
+  {
+    \exp_not:N \parindent \parindent\relax
+  }
+}
+
+\tl_new:N \l__mkdn_prelist_tl
+\tl_new:N \l__mkdn_preitem_tl
+\tl_new:N \l__mkdn_postitem_tl
+\tl_new:N \l__mkdn_itempar_tl
+\tl_set:Nn \l__mkdn_itempar_tl {\par\mbox{}}
+\cs_new_nopar:Npn \mkdn_item_setlabel:n #1 {#1}
+
+\NewDocumentEnvironment{markdown list}{m m}
+{
+  \tl_set:Nn \@itemlabel {#1}
+  \tl_set:Nn \l__mkdn_itemprefix_tl {*~}
+  \mkdn_push_indent:
+  \mkdn_save_lengths:
+  \tl_use:N \l__mkdn_prelist_tl
+  #2\relax
+  \tl_use:N \l__mkdn_lengths_tl
+  \cs_set_eq:NN \@item \mkdn_item:w
+}
+{
+  \mkdn_pop_indent:
+  \par
+}
+
+\cs_new_nopar:Npn \mkdn_item:w [#1]
+{
+  \par
+  \tl_use:N \l__mkdn_preitem_tl
+  \tl_set_eq:NN \l_tmpa_tl \l__mkdn_indent_tl
+  \mkdn_last_indent:
+  \tl_use:N \l__mkdn_itempar_tl
+  \tl_use:N \l__mkdn_itemprefix_tl
+  \mkdn_item_setlabel:n {#1}
+  \tl_set_eq:NN \l__mkdn_indent_tl \l_tmpa_tl
+  \tl_use:N \l__mkdn_postitem_tl
+}
+
+\cs_set_eq:NN \mkdn_orig_list: \list
+\cs_set_eq:NN \mkdn_orig_endlist: \endlist
+
+\cs_set_eq:Nc \list {markdown list}
+\cs_set_eq:Nc \endlist {end markdown list}
+
+\RenewDocumentEnvironment{itemize} {}
+{
+  \use:c {markdown list}{}{\mkdn_indent_by:n {2}}
+}
+{
+  \use:c {end markdown list}
+}
+
+\RenewDocumentEnvironment{enumerate} {}
+{
+  \use:c {markdown list}{}{
+    \tl_set:Nn \l__mkdn_itemprefix_tl {1.~} \mkdn_indent_by:n {3}}
+}
+{
+  \use:c {end markdown list}
+}
+
+\NewDocumentEnvironment{description} {}
+{
+  \cs_set:Npn \mkdn_item_setlabel:n ##1
+  {
+    \textbf{##1}
+  }
+  \use:c {markdown list}{}{\mkdn_indent_by:n {2}}
+}
+{
+  \use:c {end markdown list}
+}
+
+% Entity handling
+\NewDocumentCommand \entity {m}
+{
+  \&#1;
+}
+
+\NewDocumentCommand \hexentity {m}
+{
+  \entity{\#x#1}
+}
+
+% Are we using unicode?  Can we test for this?
+\RenewDocumentCommand \" {m} {\entity{#1uml}}
+\RenewDocumentCommand \` {m} {\entity{#1grave}}
+\RenewDocumentCommand \' {m} {\entity{#1acute}}
+\RenewDocumentCommand \^ {m} {\entity{#1circ}}
+\RenewDocumentCommand \~ {m} {\entity{#1tilde}}
+\RenewDocumentCommand \c {m} {\entity{#1cedil}}
+\RenewDocumentCommand \v {m} {\entity{#1caron}}
+\RenewDocumentCommand \. {m} {\entity{#1dot}}
+\RenewDocumentCommand \ae {} {\entity{aelig}}
+\RenewDocumentCommand \AE {} {\entity{AElig}}
+\RenewDocumentCommand \oe {} {\entity{oelig}}
+\RenewDocumentCommand \OE {} {\entity{OElig}}
+\RenewDocumentCommand \aa {} {\entity{aring}}
+\RenewDocumentCommand \AA {} {\entity{Aring}}
+\RenewDocumentCommand \o {} {\entity{oslash}}
+\RenewDocumentCommand \O {} {\entity{Oslash}}
+\RenewDocumentCommand \ss {} {\entity{szlig}}
+\RenewDocumentCommand \P {} {\entity{\#182}}
+
+\RenewDocumentCommand \TeX {} {TeX}
+\RenewDocumentCommand \LaTeX {} {La\TeX}
+
+% Should we set `\nobreakspace` directly?
+\group_begin:
+\char_set_catcode_active:n {126}
+\AtBeginDocument{\cs_set:Npn ~ {\entity{nbsp}}}
+\group_end:
+
+
+% Hyperref options
+\PassOptionsToPackage{customdriver=hmkdwn}{hyperref}
+\PassOptionsToPackage{pageanchor=false}{hyperref}
+\PassOptionsToPackage{raiselinks=false}{hyperref}
+
+% Verbatim handling ...
+
+\RenewDocumentCommand \verb {v}
+{
+  `#1`
+}
+
+\cs_set_eq:NN \mkdn_orig_verbatim: \verbatim
+\cs_set_eq:NN \mkdn_orig_endverbatim: \endverbatim
+
+\cs_set:Npn \mkdn_verbatim:
+{
+  \parskip\z@skip
+  \@@par
+  \@tempswafalse
+  \def\par{
+    \if@tempswa
+      \leavevmode \null \@@par\penalty\interlinepenalty
+    \else
+      \@tempswatrue
+      \ifhmode\@@par\penalty\interlinepenalty\fi
+    \fi
+  }
+  \let\do\@makeother \dospecials
+  \obeylines \verbatim@font \@noligs
+  \hyphenchar\font\m@ne
+  \everypar \expandafter{\the\everypar \unpenalty}
+}
+
+
+
+\tl_new:N \l__mkdn_verbpre_tl
+\tl_new:N \l__mkdn_verbpost_tl
+
+\tl_set:Nn \l__mkdn_verbpre_tl {\mkdn_indent_by:n {4}}
+
+\cs_set:Npn \verbatim
+{
+  \vskip\parskip
+  \group_begin:
+  \tl_use:N \l__mkdn_verbpre_tl
+  \cs_set_eq:NN \@verbatim \mkdn_verbatim:
+  \mkdn_orig_verbatim:
+}
+
+\cs_set:Npn \endverbatim
+{
+  \mkdn_orig_endverbatim:
+  \tl_use:N \l__mkdn_verbpost_tl
+  \group_end:
+  \par
+}
+
+
+% Graphics handling (crude for now)
+
+\NewDocumentCommand \mkdn_includegraphics {o m}
+{
+  ![](#2.png)
+}
+
+\AtBeginDocument{
+  \cs_if_exist:NT \includegraphics
+  {
+    \cs_set_eq:NN \includegraphics \mkdn_includegraphics
+  }
+}
+
+% disable centering
+
+\RenewDocumentEnvironment {center} {}
+{
+  \par
+}
+{
+  \par
+}
+
+
+\endinput
+
+% Local Variables:
+% mode: latex3
+% End:

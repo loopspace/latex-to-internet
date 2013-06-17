@@ -1,0 +1,219 @@
+% Maruku, prefix: maru
+
+% Built on top of markdown extra
+\txt_load_file:n {markdownextra}
+
+% Define the options for the markdown-extra module
+\keys_define:nn {maruku options}
+{
+  unknown .code:n =
+  {
+    \txt_try_options:nnn {markdown} {\l_keys_key_tl} {#1}
+  }
+}
+
+% Get and set the options for the markdown-extra module
+\prop_get:NnNT  \l__txt_popts_prop {maruku} \l_tmpa_tl
+{
+  \keys_set:nV {maruku options} \l_tmpa_tl
+}
+
+\NewDocumentCommand \tableofcontents {}
+{
+  \par
+  * tic\txt_newline: \{: toc\}
+  \par
+}
+
+\newtextcommand \ref [1]
+
+\RenewDocumentCommand \parbox {m m}
+{
+  \txt_newline:
+  \maru_div:n {}
+  \txt_newline:
+  \group_begin:
+  #2
+  \group_end:
+  \txt_newline:
+  \maru_enddiv:
+  \txt_newline:
+}
+
+\cs_set:Npn \@iiiminipage #1#2[#3]#4
+{
+  \txt_newline:
+  \maru_div:n {}
+  \txt_newline:
+}
+
+\cs_set:Npn \endminipage
+{
+  \txt_newline:
+  \maru_enddiv:
+  \txt_newline:
+}
+
+\cs_new:Npn \maru_div:n #1
+{
+  +-{}-
+  \tl_if_empty:nF {#1}
+  {
+    \{: #1 \}
+  }
+}
+
+\cs_new:Npn \maru_enddiv:
+{
+  =-{}-
+}
+
+\NewDocumentEnvironment {marudiv} {o}
+{
+  \maru_div:n {#1}
+}
+{
+  \maru_enddiv:
+}
+
+\seq_new:N \l__maru_section_seq
+\seq_set_split:Nnn \l__maru_section_seq {,}
+{section,subsection,subsubsection,paragraph,subparagraph}
+
+\newcounter{section}
+\newcounter{subsection}
+\newcounter{subsubsection}
+\newcounter{paragraph}
+\newcounter{subparagraph}
+
+\cs_set:Npn \mkdn_num_section:nn #1#2
+{
+  \tl_set:Nx \l_tmpa_tl {\seq_item:Nn \l__maru_section_seq {#1}}
+  \refstepcounter{\l_tmpa_tl}
+  \int_set:Nn \l_tmpa_int {\value{\l_tmpa_tl}}
+  \tl_if_exist:cTF {t@\l_tmpa_tl @\int_use:N \l_tmpa_int}
+  {
+    \tl_set:Nx \l__maru_label_tl {\tl_use:c {t@\l_tmpa_tl @\int_use:N \l_tmpa_int}}
+  }
+  {
+    \tl_set:Nx \l__maru_label_tl {section \int_to_alph:n {\l_tmpa_int}}
+  }
+  \Hy@MakeCurrentHref{\l__maru_label_tl}
+  \par
+  \maru_div:n {
+    .num \tl_use:N \l__txt_underscore_tl \tl_use:N \l_tmpa_tl \c_space_token \#\tl_use:N \l__maru_label_tl}
+  \txt_newline:
+  \maru_enddiv:
+  \txt_newline:
+  \mkdn_section_header:nn {#1} {#2} \{: .num \tl_use:N \l__txt_underscore_tl \tl_use:N \l_tmpa_tl \}\par
+}
+
+\AtBeginDocument{
+  \cs_if_exist:NF \Hy@MakeCurrentHref
+  {
+    \cs_set_eq:NN \Hy@MakeCurrentHref \use_none:n
+  }
+}
+
+\RenewDocumentCommand \textup {m}
+{
+  \tl_use:N \l__txt_underscore_tl #1 \l__txt_underscore_tl \{:~style="font-style:~ normal"\}
+}
+
+\cs_new_nopar:Npn \maru_block_header:n #1
+{
+  \#\#\#\#\#\#~#1~\#\#\#\#\#\# \txt_newline:
+}
+
+\RenewDocumentEnvironment {center} {}
+{
+  \par
+  \maru_div:n{style="text-align:~ center"}
+  \txt_newline:
+}
+{
+  \txt_newline:
+  \maru_enddiv:
+  \par
+}
+
+\tl_set_eq:NN \l__maru_title_tl \@title
+\tl_new:N \l__maru_css_tl
+
+\NewDocumentCommand \css {m}
+{
+  \tl_gput_right:Nn \l__maru_css_tl {#1}
+}
+
+\NewDocumentCommand \maketitle {}
+{
+  \par
+  \tl_if_eq:NNF \l__maru_title_tl \@title
+  {
+    Title: \@title \txt_newline:
+  }
+  \tl_if_empty:NF \l__maru_css_tl
+  {
+    CSS: \tl_use:N \l__maru_css_tl
+  }
+  \par
+}
+
+\NewDocumentCommand \defmarukuenv {s o m m m}
+{
+  \IfBooleanTF{#1}
+  {
+    \maru_num_env:nnnn {#2}{#3}{#4}{#5}
+  }
+  {
+    \maru_un_env:nnnn {#2}{#3}{#4}{#5}
+  }
+}
+
+\cs_new_nopar:Npn \maru_num_env:nnnn #1#2#3#4
+{
+  \tl_if_exist:cF {c@num\tl_use:N \l__txt_underscore_tl #3}
+  {
+    \newcounter{num\tl_use:N \l__txt_underscore_tl #3}
+  }
+  \tl_set:Nn \@currentlabelname {#4}
+  \DeclareDocumentEnvironment {#2} {}
+  {
+    \refstepcounter{num \tl_use:N \l__txt_underscore_tl #3}
+    \Hy@MakeCurrentHref{#3 \int_to_alph:n {\value{num \tl_use:N \l__txt_underscore_tl #3}}}
+    \par
+    \maru_div:n {.num \tl_use:N \l__txt_underscore_tl #3 ~ \##3 \int_to_alph:n {\value{num \tl_use:N \l__txt_underscore_tl #3}}~#1}
+    \txt_newline:
+    \maru_block_header:n {#4}
+    \tl_put_right:Nn \l__mkdn_prelist_tl {~\par}
+  }
+  {
+    \txt_newline:
+    \maru_enddiv:
+    \par
+  }
+}
+
+\cs_new_nopar:Npn \maru_un_env:nnnn #1#2#3#4
+{
+  \tl_set:Nn \@currentlabelname {#4}
+  \DeclareDocumentEnvironment {#2} {}
+  {
+    \par
+    \maru_div:n {.un \tl_use:N \l__txt_underscore_tl #3 ~ #1}
+    \txt_newline:
+    \maru_block_header:n {#4}
+    \tl_put_right:Nn \l__mkdn_prelist_tl {~\par}
+  }
+  {
+    \txt_newline:
+    \maru_enddiv:
+    \par
+  }
+}
+
+\endinput
+
+% Local Variables:
+% mode: latex3
+% End:

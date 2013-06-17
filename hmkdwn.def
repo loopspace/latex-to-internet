@@ -1,0 +1,54 @@
+% Hyperref driver for Markdown-style links
+
+\ProvidesFile{hmkwn.def}
+[2012/11/06 v6.83m %
+  Hyperref driver for Markdown]
+
+\makeatletter
+
+\Hy@VersionCheck{hmkwn.def}
+
+% Anchor syntax might vary considerably
+\Hy@WrapperDef\hyper@anchor#1{%
+\html[\##1]{a}\endhtml}%
+\Hy@WrapperDef\hyper@anchorstart#1{%
+}
+\Hy@WrapperDef\hyper@anchorend{%
+}
+\Hy@WrapperDef\hyper@linkfile#1#2#3{#1}%
+
+\Hy@WrapperDef\hyper@link#1#2#3{%
+[\##2](#3)}
+\Hy@WrapperDef\hyper@linkurl#1#2{%
+[#1](#2)}
+\Hy@WrapperDef\hyper@linkstart#1#2{%
+}
+\Hy@WrapperDef\hyper@linkend{}
+
+% Hyperref loads pd1enc which overwrites the accent macros,
+% so we restore them here (if not using unicode)
+\ifint@unicode
+\else
+\renewcommand{\"}[1]{\entity{#1uml}}
+\renewcommand{\`}[1]{\entity{#1grave}}
+\renewcommand{\'}[1]{\entity{#1acute}}
+\renewcommand{\^}[1]{\entity{#1circ}}
+\renewcommand{\~}[1]{\entity{#1tilde}}
+\renewcommand{\c}[1]{\entity{#1cedil}}
+\renewcommand{\v}[1]{\entity{#1caron}}
+\renewcommand{\.}[1]{\entity{#1dot}}
+\renewcommand{\ae}{\entity{aelig}}
+\renewcommand{\AE}{\entity{AElig}}
+\renewcommand{\oe}{\entity{oelig}}
+\renewcommand{\OE}{\entity{OElig}}
+\renewcommand{\aa}{\entity{aring}}
+\renewcommand{\AA}{\entity{Aring}}
+\renewcommand{\o}{\entity{oslash}}
+\renewcommand{\O}{\entity{Oslash}}
+\renewcommand{\ss}{\entity{szlig}}
+\renewcommand{\P}{\entity{\#182}}
+\fi
+
+\makeatother
+
+\endinput

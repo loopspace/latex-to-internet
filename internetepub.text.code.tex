@@ -1,0 +1,390 @@
+% ePub 3.0, prefix: epub
+
+% Built on top of XHTML
+\txt_load_file:n {xhtml}
+
+% Define the options for the ePub module
+\keys_define:nn {epub options}
+{
+  split at .code:n = {
+    \tl_put_right:Nn \l__xhtm_presection_tl {\epub_split_section:n {#1}}
+  },
+  split~ at .meta:n = {
+    split at={#1}
+  },
+  unknown .code:n =
+  {
+    \txt_try_options:nnn {xhtml} {\l_keys_key_tl} {#1}
+  }
+}
+
+% Get and set the options for the epub module
+\prop_get:NnNT  \l__txt_popts_prop {epub} \l_tmpa_tl
+{
+  \keys_set:nV {epub options} \l_tmpa_tl
+}
+
+\newcounter{epub segments}
+\setcounter{epub segments}{0}
+\cs_set_eq:Nc \thepage {the epub segments}
+
+\tl_clear:N \l__xhtm_begindoc_tl
+
+\tl_new:N \l__epub_declaration_tl
+\tl_set:Nn \l__epub_declaration_tl
+{
+  <?xml~ version="1.0"~ encoding="UTF-8"?>
+  \xhtm_open_tag:nn {html}{xmlns="http://www.w3.org/1999/xhtml"~ xmlns:epub="http://www.idpf.org/2007/ops"}
+}
+
+\tl_new:N \l__epub_uuid_tl
+\tl_new:N \l__epub_lang_tl
+\tl_set:Nn \l__epub_uuid_tl {urn:uuid:577f82c9-a78c-493d-a162-9086930d4451}
+\tl_set:Nn \l__epub_lang_tl {en}
+
+\tl_new:N \l__epub_date_tl
+\tl_new:N \l__epub_today_tl
+\tl_set:Nx \l__epub_date_tl {
+  \the\year-
+  \two@digits{\the\month}-
+  \two@digits{\the\day}T
+  \two@digits{\int_eval:n {\time/60}}:
+  \two@digits{\int_eval:n {\time - 60*(\int_div_truncate:nn {\time}{60})}}:
+  00Z
+}
+
+\tl_set:Nx \l__epub_today_tl {
+  \the\year-
+  \two@digits{\the\month}-
+  \two@digits{\the\day}
+}
+
+\cs_set_eq:NN \epub_orig_tableofcontents: \tableofcontents
+\cs_set:Npn \tableofcontents {}
+
+\tl_new:N \l__epub_files_tl
+\tl_new:N \l__epub_filelist_tl
+\tl_set:Nn \l__epub_filelist_tl
+{
+  \xhtm_comment:n {start~ of~ file~ list}
+}
+
+\cs_new_nopar:Npn \epub_math_in_toc:
+{
+  \tl_put_right:Nn \l__epub_tocprop_tl {\c_space_token mathml}
+}
+\tl_new:N \l__epub_tocprop_tl
+\tl_set:Nn \l__epub_tocprop_tl {nav}
+\box_new:N \l__epub_toc_box
+
+\xhtm_at_begindocument:n
+{
+  \epub_next_segment:
+  \xhtm_open_par:
+  \tl_put_right:Nn \l__epub_files_tl
+  {
+    \xhtm_linebreak:
+    \xhtm_empty_tag:nn {item} {id="toc"~ properties="\tl_use:N \l__epub_tocprop_tl"~ href="toc.xhtml"~ media-type="application/xhtml+xml"}
+  }
+  \tl_put_right:Nn \l__epub_filelist_tl
+  {
+    \xhtm_linebreak:
+    \xhtm_comment:n {toc.xhtml}
+  }
+  \vbox_set:Nn \l__epub_toc_box
+  {
+    \cs_set_eq:NN \xhtm_open_par: \xhtm_linebreak:
+    \cs_set:Npn \xhtm_close_par: {}
+    \everypar{}
+    \xhtm_comment:n {start~ of~ toc.xhtml}
+    \xhtm_open_tag:nn {html} {xmlns="http://www.w3.org/1999/xhtml"~ xmlns:epub="http://www.idpf.org/2007/ops"}
+    \xhtm_open_tag:nn {head} {}
+    \tl_if_eq:NNF \@title \l__xhtm_title_tl
+    {
+      \xhtm_linebreak:
+      \xhtm_open_tag:nn {title}{}
+      \@title
+      \xhtm_close_tag:n {title}
+    }
+    \xhtm_close_tag:n {head}
+    \xhtm_open_tag:nn {body} {}
+    \xhtm_open_tag:nn {section} {epub:type="frontmatter~ toc"}
+    \xhtm_open_tag:nn {header} {}
+    \xhtm_open_tag:nn {h1} {}
+    \contentsname
+    \xhtm_close_tag:n {h1}
+    \xhtm_close_tag:n {header}
+    \xhtm_open_tag:nn {nav} {epub:type="toc"~ id="toc"}
+    \begin{enumerate}
+    \item 
+    \tl_if_eq:NNF \@title \l__xhtm_title_tl
+    {
+      \href{\jobname \use:c {the epub segments}.xhtml}{\@title}
+    }
+    \int_gzero_new:N \l__xhtm_toclvl_int
+    \@starttoc{toc}
+    \int_compare:nT {\l__xhtm_toclvl_int > 0}
+    {
+      \prg_replicate:nn {\l__xhtm_toclvl_int} {\endenumerate}
+    }
+    \end{enumerate}
+    \xhtm_close_tag:n {nav}
+    \xhtm_close_tag:n {section}
+    \xhtm_close_tag:n {body}
+    \xhtm_close_tag:n {html}
+    \xhtm_comment:n {end~ of~ toc.xhtml}
+  }
+  \xhtm_at_enddocument:n {\vbox_unpack_clear:N \l__epub_toc_box}
+  \tl_clear:N \Hy@tocdestname
+}
+
+\xhtm_at_enddocument:n
+{
+  \xhtm_comment:n {end~ of~ \jobname \use:c{the epub segments}.xhtml}
+  \tl_use:N \l__epub_filelist_tl
+  \xhtm_comment:n {end~ of~ file~ list}
+
+  \tl_if_empty:NF \l__xhtm_css_tl
+  {
+    \write\@auxout{\string\loadcss{\jobname}}
+    \tl_put_right:Nn \l__epub_files_tl
+    {
+      \xhtm_linebreak:
+      \xhtm_empty_tag:nn {item} {id="css"~ href="\jobname.css"~ media-type="text/css"}
+    }
+    \tl_put_right:Nn \l__epub_filelist_tl {
+      \xhtm_linebreak:
+      \xhtm_comment:n {\jobname.css}
+    }
+    \xhtm_linebreak:
+    \xhtm_comment:n {start~ of~ \jobname.css}
+    \tl_use:N \l__xhtm_css_tl
+    \xhtm_comment:n {end~ of~ \jobname.css}
+    \xhtm_linebreak:
+  }
+
+  \tl_if_empty:NF \l__xhtm_js_tl
+  {
+    \write\@auxout{\string\loadjs{\jobname}}
+    \tl_put_right:Nn \l__epub_files_tl
+    {
+      \xhtm_linebreak:
+      \xhtm_empty_tag:nn {item} {id="js"~ href="\jobname.js"~ media-type="text/javascript"}
+    }
+    \tl_put_right:Nn \l__epub_filelist_tl {
+      \xhtm_linebreak:
+      \xhtm_comment:n {\jobname.js}
+    }
+    \xhtm_linebreak:
+    \xhtm_comment:n {start~ of~ \jobname.js}
+    \tl_use:N \l__xhtm_js_tl
+    \xhtm_comment:n {end~ of~ \jobname.js}
+    \xhtm_linebreak:
+  }
+
+  \group_begin:
+  \cs_set_eq:NN \xhtm_open_par: \xhtm_linebreak:
+  \cs_set:Npn \xhtm_close_par: {}
+  \everypar{}
+  \xhtm_comment:n {start~ of~ content.opf}
+  <?xml~ version='1.0'~ encoding='utf-8'?>
+  \xhtm_open_tag:nn {package} {xmlns="http://www.idpf.org/2007/opf"~
+         version="3.0"~ 
+         xml:lang="en"~ 
+         unique-identifier="pub-id"}
+  \xhtm_open_tag:nn {metadata} {
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+  }
+  \tl_if_eq:NNF \@title \l__xhtm_title_tl
+  {
+    \xhtm_linebreak:
+    \xhtm_open_tag:nn {dc:title} {id="title"}
+    \@title
+    \xhtm_close_tag:n {dc:title}
+    \xhtm_open_tag:nn {meta} {refines="\#title"~ property="title-type"}
+    main
+    \xhtm_close_tag:n {meta}
+  }
+  \tl_if_eq:NNF \@author \l__xhtm_author_tl
+  {
+    \xhtm_linebreak:
+    \xhtm_open_tag:nn {dc:creator} {id="title"}
+    \@author
+    \xhtm_close_tag:n {dc:creator}
+    \xhtm_open_tag:nn {meta} {refines="\#creator"~ property="file-as"}
+    \@author
+    \xhtm_close_tag:n {meta}
+    \xhtm_open_tag:nn {meta} {refines="\#creator"~ property="role"~ scheme="marc:relators"}
+    aut
+    \xhtm_close_tag:n {meta}
+  }
+  \xhtm_open_tag:nn {dc:identifier} {id="pub-id"}
+  \tl_use:N \l__epub_uuid_tl
+  \xhtm_close_tag:n {dc:identifier}
+  \xhtm_open_tag:nn {meta} {refines="\#pub-id"~ property="identifier-type"~ scheme="xsd:string"}
+  15
+  \xhtm_close_tag:n {meta}
+  \xhtm_open_tag:nn {dc:language} {}
+  \tl_use:N \l__epub_lang_tl
+  \xhtm_close_tag:n {dc:language}
+  \xhtm_open_tag:nn {meta} {property="dcterms:modified"}
+  \tl_use:N \l__epub_date_tl
+  \xhtm_close_tag:n {meta}
+  \xhtm_open_tag:nn {dc:date} {}
+  \tl_use:N \l__epub_today_tl
+  \xhtm_close_tag:n {dc:date}
+  \xhtm_close_tag:n {metadata}
+  \xhtm_linebreak:
+  \xhtm_open_tag:nn {manifest} {}
+  \tl_use:N \l__epub_files_tl
+  \xhtm_close_tag:n {manifest}
+  \xhtm_linebreak:
+  \xhtm_open_tag:nn {spine} {}
+  \int_step_inline:nnnn {1} {1} {\l__epub_pages_int}
+  {
+    \xhtm_empty_tag:nn {itemref} {idref="page #1"}
+  }
+  \xhtm_close_tag:n {spine}
+  \xhtm_close_tag:n {package}
+  \xhtm_comment:n {end~ of~ content.opf}
+  \group_end:
+}
+
+\cs_new_nopar:Npn \epub_next_segment:
+{
+  \addtocounter{epub segments}{1}
+  \tl_put_right:Nx \l__epub_files_tl
+  {
+    \exp_not:N \xhtm_linebreak:
+    \exp_not:N \xhtm_empty_tag:nn {item} {href="\jobname \use:c{the epub segments} .xhtml"~ properties="mathml \tl_if_empty:NF \l__xhtm_js_tl {~ scripted}"~ id="page \use:c{the epub segments}"~ media-type="application/xhtml+xml"}
+  }
+  \tl_put_right:Nx \l__epub_filelist_tl
+  {
+    \exp_not:N \xhtm_linebreak:
+    \exp_not:N \xhtm_comment:n {\jobname \use:c{the epub segments}.xhtml}
+  }
+  \xhtm_comment:n {start~ of~ \jobname\use:c{the epub segments}.xhtml}
+  \tl_use:N \l__epub_declaration_tl
+  \xhtm_open_tag:nn {head} {}
+  \tl_if_eq:NNF \@title \l__xhtm_title_tl
+  {
+    \xhtm_linebreak:
+    \xhtm_open_tag:nn {title} {}
+    \@title
+    \xhtm_close_tag:n {title}
+  }
+  \tl_if_eq:NNF \@author \l__xhtm_author_tl
+  {
+    \xhtm_linebreak:
+    \xhtm_empty_tag:nn {meta} {name="Author"~ content="\@author"}
+  }
+  \tl_use:N \l__xhtm_cssfiles_tl
+  \tl_use:N \l__xhtm_jsfiles_tl
+  \xhtm_close_tag:n {head}
+  \xhtm_open_tag:nn {body} {}
+  \xhtm_open_par:
+  \xhtm_open_tag:nn {math}
+  {xmlns='http://www.w3.org/1998/Math/MathML'~ display='inline'~ class='dummy'}
+  \xhtm_open_tag:nn {mi} {}
+  \xhtm_close_tag:n {mi}
+  \xhtm_close_tag:n {math}
+  \xhtm_close_par:
+  \everypar{\xhtm_reopen_par:}
+}
+
+
+\tl_new:N \l__epub_section_level_tl
+\tl_new:N \l__epub_subsection_level_tl
+\tl_new:N \l__epub_subsubsection_level_tl
+\tl_new:N \l__epub_paragraph_level_tl
+\tl_new:N \l__epub_subparagraph_level_tl
+\tl_set:Nn \l__epub_section_level_tl {1}
+\tl_set:Nn \l__epub_subsection_level_tl {2}
+\tl_set:Nn \l__epub_subsubsection_level_tl {3}
+\tl_set:Nn \l__epub_paragraph_level_tl {4}
+\tl_set:Nn \l__epub_subparagraph_level_tl {5}
+
+\cs_new_nopar:Npn \epub_split_section:n #1
+{
+  \int_compare:nT {\seq_item:Nn \l__xhtm_args_seq {1} < \tl_use:c {l__epub_#1_level_tl}}
+  {
+    \xhtm_close_par:
+    \xhtm_close_tag:n {body}
+    \xhtm_close_tag:n {html}
+    \xhtm_comment:n {end~ of~ \jobname \use:c{the epub segments} .xhtml}
+    \txt_newpage:
+    \epub_next_segment:
+  }
+}
+
+\tl_put_right:Nn \l__xhtm_preabstract_tl
+{
+  \cs_set_eq:NN \epub_split_section:n \use:n
+}
+
+\cs_new:Npn \use_ii:nnnnn #1#2#3#4#5{#2}
+
+\AtBeginDocument{
+  \cs_set:Npn \@setref #1#2#3
+  {
+    \cs_if_eq:NNTF #1 \relax
+    {
+      \protect\G@refundefinedtrue
+      \nfss@text{\reset@font\bfseries ??}
+      \@latex@warning{
+        Reference~ `#3'~ on~ page~ \thepage~ undefined
+      }
+    }
+    {
+      \tl_set:Nn \l__xhtm_baseurl_tl {\jobname \exp_args:No \use_ii:nnnnn #1 .xhtml}
+      \exp_args:No \Hy@setref@link #1 \@empty \@empty \@nil {#2}
+    }
+  }
+}
+
+\xhtm_at_enddocument:n {
+  \write\@auxout{\string\epubsetpages {\use:c {the epub segments}}}
+}
+
+\cs_new_nopar:Npn \epubsetpages #1
+{
+  \int_set:Nn\l__epub_pages_int {#1}
+}
+
+\int_new:N \l__epub_pages_int
+\int_set:Nn \l__epub_pages_int {1}
+\tl_set:Nn \l__xhtm_hrefcite_tl
+{
+  \tl_set:Nn \l__xhtm_baseurl_tl {\jobname \int_use:N     \l__epub_pages_int .xhtml}
+}
+
+\cs_set_eq:NN \epub_tocline:nnn \xhtm_tocline:nnn
+
+\cs_set_nopar:Npn \xhtm_tocline:nnn #1#2#3
+{
+  \tl_set:Nn \l__xhtm_baseurl {\jobname #3.xhtml}
+  \epub_tocline:nnn {#1}{#2}{#3}
+}
+
+\newcounter{epub graphics files}
+
+\cs_set_nopar:Npn \xhtm_pre_graphics:n #1
+{
+  \stepcounter{epub graphics files}
+  \tl_put_right:Nn \l__epub_files_tl
+  {
+    \exp_not:N \xhtm_linebreak:
+    \exp_not:N \xhtm_empty_tag:nn {item} {id="img\use:c{the graphics files}"~ href="#1.png"~ media-type="image/png"}
+  }
+  \tl_put_right:Nn \l__epub_filelist_tl
+  {
+    \exp_not:N \xhtm_linebreak:
+    \exp_not:N \xhtm_comment:n {#1.png}
+  }
+}
+
+\endinput
+
+% Local Variables:
+% mode: latex3
+% End:

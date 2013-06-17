@@ -1,0 +1,104 @@
+\documentclass[
+  text,
+  xhtml,
+  itex
+]{internet}
+
+\usepackage{hyperref}
+
+\ExplSyntaxOn
+\int_show:n {\time - 60*(\time/60)}
+\ExplSyntaxOff
+
+
+\newtheorem{theorem}{Theorem}
+
+\renewcommand\footnote[1]{}
+
+\begin{document}
+
+\section{XHTML Test}
+
+\subsection{Text}
+
+A paragraph with \emph{emphasised} and \textbf{bold} text.
+Some \verb+inline code+.
+We can also handle footnotes\footnote{with aplomb}.
+As we can use styles, we can handle \emph{upright \textup{text} inside emphasised text}.
+\begin{center}
+Thanks to attribute lists, we can handle centred text.
+\end{center}
+
+\subsection{Lists}
+
+\subsubsection{Itemize}
+
+\begin{itemize}
+\item First item.
+
+With a following paragraph\footnote{that has a footnote}.
+
+\item Second item.
+
+With another following paragraph.
+\end{itemize}
+
+\subsubsection{Enumerate}
+
+\begin{enumerate}
+\item First item.
+
+With a following paragraph.
+
+\item Second item.
+
+With another following paragraph.
+\end{enumerate}
+
+
+\subsection{Verbatim}
+
+\begin{verbatim}
+A verbatim paragraph.
+With @(#&$u&)!#<> symbols
+\end{verbatim}
+
+\begin{itemize}
+\item Inside a list:
+
+\begin{verbatim}
+Some verbatim text.
+\end{verbatim}
+
+\end{itemize}
+
+\subsection{Theorems}
+
+\begin{theorem}
+There are an infinitude of primes.
+\end{theorem}
+
+\begin{proof}
+Ask Euclid.
+\end{proof}
+
+\subsection{Mathematics}
+
+Some inline maths: \(\sin^2(x) + \cos^2(x) = 1\)
+
+Some display maths:
+
+\[
+  \sin^2(x) + \cos^2(x) = 1
+\]
+
+and so on with more inline: \(\sum_1^\infty n\)
+
+\begin{align*}
+x &= y + z \\
+a &= b + c
+\end{align*}
+
+Testing not: \(a \not\cong b\) \(a \not\in b\) \(a \not\le b\)
+
+\end{document}

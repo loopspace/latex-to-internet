@@ -1,0 +1,74 @@
+% Markdown-Extra, prefix: mkex
+
+% Built on top of markdown
+\txt_load_file:n {markdown}
+
+% Define the options for the markdown-extra module
+\keys_define:nn {markdown extra options}
+{
+  unknown .code:n =
+  {
+    \txt_try_options:nnn {markdown} {\l_keys_key_tl} {#1}
+  }
+}
+
+% Get and set the options for the markdown-extra module
+\prop_get:NnNT  \l__txt_popts_prop {markdownextra} \l_tmpa_tl
+{
+  \keys_set:nV {markdown extra options} \l_tmpa_tl
+}
+
+% Better verbatim handling
+
+\group_begin:
+\char_set_lccode:nn {`;}{126}
+\tl_to_lowercase:n {
+\group_end:
+\tl_set:Nn \l__mkex_ttilde_tl {;;;}
+}
+
+\tl_set:Nn \l__mkdn_verbpre_tl {\tl_use:N \l__mkex_ttilde_tl}
+\tl_set:Nn \l__mkdn_verbpost_tl {\tl_use:N \l__mkex_ttilde_tl}
+
+% Native description lists
+
+\RenewDocumentEnvironment{description} {}
+{
+  \cs_set:Npn \mkdn_item_setlabel:n ##1
+  {
+    ##1\txt_newline:
+    :~~~
+  }
+  \use:c {markdown list}{}{
+    \tl_set:Nn \l__mkdn_itemprefix_tl {} \mkdn_indent_by:n {4}}
+}
+{
+  \use:c {end markdown list}
+}
+
+\int_new:N \l__mkex_footnotes_int
+\tl_new:N \l__mkex_footnotes_tl
+
+\tl_put_left:Nn \@enddocumenthook {\tl_use:N \l__mkex_footnotes_tl}
+
+\RenewDocumentCommand \footnote {m}
+{
+  \int_gincr:N \l__mkex_footnotes_int
+  [\l__txt_caret_tl \int_use:N \l__mkex_footnotes_int]
+  \tl_gput_right:Nn \l__mkex_footnotes_tl
+  {
+    \par
+    [\l__txt_caret_tl
+    }
+    \tl_gput_right:NV \l__mkex_footnotes_tl \l__mkex_footnotes_int
+    \tl_gput_right:Nn \l__mkex_footnotes_tl {
+    ]:~ #1
+  }
+}
+
+
+\endinput
+
+% Local Variables:
+% mode: latex3
+% End:

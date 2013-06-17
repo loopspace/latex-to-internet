@@ -1,0 +1,1229 @@
+% XHTML, prefix: xhtm
+
+\parskip0pt
+
+
+% We do a lot of redefining
+
+\msg_redirect_module:nnn { LaTeX / xparse } { info }    { none }
+\msg_redirect_module:nnn { LaTeX / xparse } { warning } { none }
+
+% Sets the top level for sections (and other headings) 
+\int_new:N \l__xhtm_sec_int
+\int_set:Nn \l__xhtm_sec_int {1}
+
+% Define the options for the xhtml module
+\keys_define:nn {xhtml options}
+{
+  section~ level .int_set:N = \l__xhtm_sec_int
+}
+
+% Get and set the options for the xhtml module
+\prop_get:NnNT  \l__txt_popts_prop {xhtml} \l_tmpa_tl
+{
+  \keys_set:nV {xhtml options} \l_tmpa_tl
+}
+
+\seq_new:N \l__xhtm_tag_seq
+
+\cs_new:Npn \xhtm_push_tag:n #1
+{
+  \seq_gpush:Nn \l__xhtm_tag_seq {#1}
+}
+\cs_generate_variant:Nn \xhtm_push_tag:n {V}
+
+% Hooks
+
+\cs_new:Npn \xhtm_set_hook:nn #1#2
+{
+  \tl_set:cn {xhtm_hook_#1_tl} {#2}
+}
+
+\cs_new:Npn \xhtm_use_hook:n #1
+{
+  \tl_if_exist:cT {xhtm_hook_#1_tl}
+  {
+    \tl_use:c {xhtm_hook_#1_tl}
+  }
+}
+
+\DeclareDocumentCommand \xhtmSetHook {m m}
+{
+  
+  \xhtm_set_hook:nn {#1} {#2}
+}
+
+% Hyperref options
+\PassOptionsToPackage{customdriver=hxhtml}{hyperref}
+\PassOptionsToPackage{pageanchor=false}{hyperref}
+\PassOptionsToPackage{raiselinks=false}{hyperref}
+
+\tl_new:N \l__xhtm_anchor_tl
+\tl_new:N \l__xhtm_nextid_tl
+\tl_new:N \l__xhtm_baseurl_tl
+
+\msg_new:nnnn {XHTML} {no~ tag} {No~ tag~ available~ to~ close~ '#1'~ at~ line~ \msg_line_context:} {}
+\msg_new:nnnn {XHTML} {wrong~ tag} {Tried~ to~ close~ tag~ '#1'~ with~  '#2'~ at~ line~ \msg_line_context:} {}
+\cs_generate_variant:Nn \msg_warning:nnnn {nnVn}
+\cs_new:Npn \xhtm_pop_tag:n #1
+{
+  \seq_get:NNTF \l__xhtm_tag_seq \l_tmpa_tl
+  {
+    \tl_if_eq:VnTF \l_tmpa_tl {#1}
+    {
+      \seq_gpop:NN \l__xhtm_tag_seq \l_tmpa_tl
+    }
+    {
+      \msg_warning:nnVn {XHTML} {wrong~ tag} \l_tmpa_tl {#1}
+    }
+  }
+  {
+    \msg_warning:nnn {XHTML} {no~ tag} {#1}
+  }
+}
+
+\cs_new_protected_nopar:Npn \xhtm_open_tag:nn #1#2
+{
+  \mbox{}
+  \xhtm_push_tag:n {#1}
+  <#1
+  \tl_if_empty:nF{#2}
+  {
+    \c_space_token
+    #2
+  }
+  >
+}
+\cs_generate_variant:Nn \xhtm_open_tag:nn {x}
+
+\cs_new_protected_nopar:Npn \xhtm_close_tag:n #1
+{
+  \xhtm_pop_tag:n {#1}
+  </#1>
+}
+\cs_generate_variant:Nn \xhtm_close_tag:n {x}
+
+\cs_new_protected_nopar:Npn \xhtm_empty_tag:nn #1#2
+{
+  \mbox{}
+  <#1
+  \tl_if_empty:nF{#2}
+  {
+    \c_space_token
+    #2
+  }
+  />
+}
+
+\prg_new_protected_conditional:Npnn \xhtm_if_current_tag_is:n #1 {T,F,TF}
+{
+  \seq_get:NNTF \l__xhtm_tag_seq \l_tmpa_tl
+  {
+    \tl_if_eq:VnTF \l_tmpa_tl {#1}
+    {
+      \prg_return_true:
+    }
+    {
+      \prg_return_false:
+    }
+  }
+  {
+    \prg_return_false:
+  }
+}
+
+\prg_new_protected_conditional:Npnn \xhtm_if_current_tag_is_par: {T,F,TF}
+{
+  \seq_get:NNTF \l__xhtm_tag_seq \l_tmpa_tl
+  {
+    \tl_if_eq:VnTF \l_tmpa_tl {p}
+    {
+      \prg_return_true:
+    }
+    {
+      \prg_return_false:
+    }
+  }
+  {
+    \prg_return_false:
+  }
+}
+
+\RenewDocumentCommand \emph {m}
+{
+  \xhtm_open_tag:nn {em} {}
+  #1
+  \xhtm_close_tag:n {em}
+}
+
+\RenewDocumentCommand \em {}
+{
+  \xhtm_open_tag:nn {em} {}
+  \group_insert_after:N \xhtm_close_em:
+}
+
+\cs_new_nopar:Npn \xhtm_close_em:
+{
+  \xhtm_close_tag:n {em}
+}
+
+\RenewDocumentCommand \textit {m}
+{
+  \xhtm_open_tag:nn {em} {}
+  #1
+  \xhtm_close_tag:n {em}
+}
+
+\RenewDocumentCommand \textbf {m}
+{
+  \xhtm_open_tag:nn {strong} {}
+  #1
+  \xhtm_close_tag:n {strong}
+}
+
+% Section commands
+
+% If the class defines a `\chapter` command, we need to do so also
+% Otherwise, all the section commands step up one on the level
+
+\tl_if_eq:VnTF \l__txt_class_tl {report}
+{
+  \newcounter{chapter}
+  \renewcommand\thechapter{\@arabic\c@chapter}
+  \newcounter{section}[chapter]
+  \renewcommand\thesection{\thechapter.\@arabic\c@section}
+  \NewDocumentCommand \chapter {s m}
+  {
+    \IfBooleanTF {#1}
+    {
+      \xhtm_section:nn {0}{#2}
+    }
+    {
+      \xhtm_num_section:nnn {chapter} {0}{#2}
+    }
+  }
+}
+{
+  \int_decr:N \l__xhtm_sec_int
+  \newcounter{section}
+  \renewcommand\thesection{\@arabic\c@section}
+}
+
+\newcounter{subsection}[section]
+\newcounter{subsubsection}[subsection]
+\newcounter{paragraph}[subsubsection]
+\newcounter{subparagraph}[paragraph]
+\renewcommand\thesubsection{\thesection.\@arabic\c@subsection}
+
+\NewDocumentCommand \section {s m}
+{
+  \IfBooleanTF {#1}
+  {
+    \xhtm_section:nn {1}{#2}
+  }
+  {
+    \xhtm_num_section:nnn {section} {1}{#2}
+  }
+}
+
+\NewDocumentCommand \subsection {s m}
+{
+  \IfBooleanTF {#1}
+  {
+    \xhtm_section:nn {2}{#2}
+  }
+  {
+    \xhtm_num_section:nnn {subsection} {2}{#2}
+  }
+}
+
+\NewDocumentCommand \subsubsection {s m}
+{
+  \IfBooleanTF {#1}
+  {
+    \xhtm_section:nn {3}{#2}
+  }
+  {
+    \xhtm_num_section:nnn {subsubsection} {3}{#2}
+  }
+}
+
+\NewDocumentCommand \paragraph {s m}
+{
+  \IfBooleanTF {#1}
+  {
+    \xhtm_section:nn {4}{#2}
+  }
+  {
+    \xhtm_num_section:nnn {paragraph} {4}{#2}
+  }
+}
+
+\NewDocumentCommand \subparagraph {s m}
+{
+  \IfBooleanTF {#1}
+  {
+    \xhtm_section:nn {5}{#2}
+  }
+  {
+    \xhtm_num_section:nnn {subparagraph} {5}{#2}
+  }
+}
+
+\cs_new_nopar:Npn \xhtm_section:nn #1#2
+{
+  \xhtm_close_par:
+  \txt_newline:
+  \xhtm_section_header:nnn {#1}{#2}{}
+  \txt_newline:
+  \xhtm_open_par:
+}
+
+\tl_new:N \l__xhtm_presection_tl
+\tl_new:N \l__xhtm_postsection_tl
+\seq_new:N \l__xhtm_args_seq
+
+\cs_new_nopar:Npn \xhtm_section_header:nnn #1#2#3
+{
+  \seq_set_split:Nnn \l__xhtm_args_seq {,} {{#1},{#2},{#3}}
+  \tl_use:N \l__xhtm_presection_tl
+  \xhtm_open_tag:xn {h \int_eval:n {\l__xhtm_sec_int + #1}}{#3}
+  #2
+  \xhtm_close_tag:x {h \int_eval:n {\l__xhtm_sec_int + #1}}
+  \tl_use:N \l__xhtm_postsection_tl
+}
+
+\cs_new_nopar:Npn \xhtm_num_section:nnn #1#2#3
+{
+  \xhtm_close_par:
+  \txt_newline:
+  \tl_set:Nn \l__xhtm_anchor_tl {on next}
+  \refstepcounter{#1}
+  \tl_set:Nn \l__xhtm_anchor_tl {plain}
+  \xhtm_section_header:nnn {#2} {\use:c {the#1} \c_space_token #3} {id="\tl_use:N \l__xhtm_nextid_tl"}
+  \addcontentsline{toc}{#1}{\protect\numberline{\use:c{the#1}#3}}
+  \txt_newline:
+  \xhtm_open_par:
+}
+
+\cs_new_nopar:Npn \xhtm_linebreak:
+{
+  {
+    \everypar{}
+    \par
+    \mbox{}
+  }
+}
+
+\cs_new_nopar:Npn \xhtm_close_par:
+{
+  \xhtm_if_current_tag_is_par:T
+  {
+    \xhtm_close_tag:n {p}
+    \xhtm_linebreak:
+  }
+}
+
+\cs_new_nopar:Npn \xhtm_open_par:
+{
+  \xhtm_if_current_tag_is_par:F
+  {
+    \xhtm_linebreak:
+    \xhtm_open_tag:nn {p}{}
+  }
+}
+
+\cs_new_nopar:Npn \xhtm_reopen_par:
+{
+  \xhtm_if_current_tag_is_par:T
+  {
+    \xhtm_close_tag:n {p}
+    \xhtm_linebreak:
+    \xhtm_open_tag:nn {p}{}
+  }
+}
+
+\tl_new:N \l__xhtm_preabstract_tl
+\tl_new:N \l__xhtm_postabstract_tl
+\DeclareDocumentEnvironment {abstract} {}
+{
+  \xhtm_close_par:
+  \tl_use:N \l__xhtm_preabstract_tl
+  \xhtm_open_tag:nn {div} {class="abstract"}
+  \section*{Abstract}
+  \xhtm_open_par:
+}
+{
+  \xhtm_close_par:
+  \xhtm_close_tag:n {div}
+  \tl_use:N \l__xhtm_postabstract_tl
+  \xhtm_open_par:
+}
+
+\cs_new_nopar:Npn \xhtm_endquote_nop:
+{
+  \xhtm_close_tag:n {quote}
+}
+
+\bool_new:N \l__xhtm_reopen_par_bool
+
+\cs_new_nopar:Npn \xhtm_open_par:nn #1#2
+{
+  \xhtm_if_current_tag_is_par:TF
+  {
+    \bool_set_true:N \l__xhtm_reopen_par_bool
+  }
+  {
+    \bool_set_false:N \l__xhtm_reopen_par_bool
+  }
+  \xhtm_open_tag:nn {#1}{#2}
+  \group_begin:
+}
+
+\cs_new_nopar:Npn \xhtm_close_par:n #1
+{
+  \group_end:
+  \xhtm_close_tag:n {#1}
+  \bool_if:NT \l__xhtm_reopen_par_bool
+  {
+    \xhtm_open_par:
+  }
+}
+
+\NewDocumentEnvironment {quote} {}
+{
+  \xhtm_open_par:nn {quote}{}
+}
+{
+  \xhtm_close_par:n {quote}
+}
+
+\NewDocumentEnvironment {quotation} {}
+{
+  \xhtm_open_par:nn {blockquote}{}
+  \xhtm_open_par:
+}
+{
+  \xhtm_close_par:
+  \xhtm_close_par:n {blockquote}
+}
+
+\cs_set_eq:NN \xhtm_orig_item:w \@item
+\NewDocumentEnvironment {xhtm itemize} {m}
+{
+  \xhtm_close_par:
+  \xhtm_open_tag:nn {ul} {#1}
+  \cs_set_eq:NN \@item \xhtm_first_item:w
+}
+{
+  \xhtm_close_par:
+  \xhtm_close_tag:n {li}
+  \xhtm_close_tag:n {ul}
+  \xhtm_open_par:
+}
+
+\RenewDocumentEnvironment {itemize} {}
+{
+  \use:c {xhtm itemize}{}
+}
+{
+  \use:c {end xhtm itemize}
+}
+
+\int_new:N \l__xhtm_enum_int
+\NewDocumentEnvironment {xhtm enumerate} {m}
+{
+  \xhtm_close_par:
+  \int_compare:nF {\l__xhtm_enum_int > 3}
+  {
+    \int_incr:N \l__xhtm_enum_int
+    \exp_args:Nx \usecounter {enum \int_to_roman:n {\l__xhtm_enum_int}     }
+  }
+  \xhtm_open_tag:nn {ol} {#1}
+  \cs_set_eq:NN \@item \xhtm_first_item:w
+}
+{
+  \xhtm_close_par:
+  \xhtm_close_tag:n {li}
+  \xhtm_close_tag:n {ol}
+  \xhtm_open_par:
+}
+
+\RenewDocumentEnvironment {enumerate} {}
+{
+  \use:c {xhtm enumerate}{}
+}
+{
+  \use:c {end xhtm enumerate}
+}
+
+
+\cs_new_nopar:Npn \xhtm_first_item:w [#1]
+{
+  \if@noitemarg
+  \@noitemargfalse
+  \if@nmbrlist
+  \tl_set:Nn \l__xhtm_anchor_tl {on next}
+  \refstepcounter\@listctr
+  \xhtm_open_tag:nn {li} {id="\tl_use:N \l__xhtm_nextid_tl"}
+  \xhtm_open_par:
+  \tl_set:Nn \l__xhtm_anchor_tl {plain}
+  \else
+  \xhtm_open_tag:nn {li} {}
+  \xhtm_open_par:
+  \fi
+  \else
+  \xhtm_open_tag:nn {li} {class="listlabel"}
+  \xhtm_open_par:
+  \xhtm_open_tag:nn {span} {class="listlabel"}
+  #1
+  \xhtm_close_tag:n {span}
+  \fi
+  \cs_set_eq:NN \@item \xhtm_main_item:w
+}
+
+\cs_new_nopar:Npn \xhtm_main_item:w [#1]
+{
+  \xhtm_close_par:
+  \xhtm_close_tag:n {li}
+  \if@noitemarg
+  \@noitemargfalse
+  \if@nmbrlist
+  \tl_set:Nn \l__xhtm_anchor_tl {on next}
+  \refstepcounter\@listctr
+  \xhtm_open_tag:nn {li} {id="\tl_use:N \l__xhtm_nextid_tl"}
+  \xhtm_open_par:
+  \tl_gclear:N \l__xhtm_nextid_tl
+  \else
+  \xhtm_open_tag:nn {li} {}
+  \xhtm_open_par:
+  \fi
+  \else
+  \xhtm_open_tag:nn {li} {class="listlabel"}
+  \xhtm_open_par:
+  \xhtm_open_tag:nn {span}{class="listlabel"}
+  #1
+  \xhtm_close_tag:n {span}
+  \fi
+}
+
+% Entity handling
+\NewDocumentCommand \entity {m}
+{
+  \&#1;
+}
+
+\NewDocumentCommand \hexentity {m}
+{
+  \entity{\#x#1}
+}
+
+% Are we using unicode?  Can we test for this?
+\RenewDocumentCommand \" {m} {\entity{#1uml}}
+\RenewDocumentCommand \` {m} {\entity{#1grave}}
+\RenewDocumentCommand \' {m} {\entity{#1acute}}
+\RenewDocumentCommand \^ {m} {\entity{#1circ}}
+\RenewDocumentCommand \~ {m} {\entity{#1tilde}}
+\RenewDocumentCommand \c {m} {\entity{#1cedil}}
+\RenewDocumentCommand \v {m} {\entity{#1caron}}
+\RenewDocumentCommand \. {m} {\entity{#1dot}}
+\RenewDocumentCommand \ae {} {\entity{aelig}}
+\RenewDocumentCommand \AE {} {\entity{AElig}}
+\RenewDocumentCommand \oe {} {\entity{oelig}}
+\RenewDocumentCommand \OE {} {\entity{OElig}}
+\RenewDocumentCommand \aa {} {\entity{aring}}
+\RenewDocumentCommand \AA {} {\entity{Aring}}
+\RenewDocumentCommand \o {} {\entity{oslash}}
+\RenewDocumentCommand \O {} {\entity{Oslash}}
+\RenewDocumentCommand \ss {} {\entity{szlig}}
+\RenewDocumentCommand \P {} {\entity{\#182}}
+
+\RenewDocumentCommand \TeX {} {TeX}
+\RenewDocumentCommand \LaTeX {} {La\TeX}
+
+% Should we set `\nobreakspace` directly?
+\group_begin:
+\char_set_catcode_active:n {126}
+\AtBeginDocument{\cs_set:Npn ~ {\entity{nbsp}}}
+\group_end:
+
+% Verbatim handling ...
+
+\RenewDocumentCommand \verb {v}
+{
+  \xhtm_open_tag:nn {code}{}
+  #1
+  \xhtm_close_tag:n {code}
+}
+
+\cs_new:Npn \xhtm_lt:
+{
+  \hexentity {3C}
+}
+
+\cs_new:Npn \xhtm_gt:
+{
+  \hexentity {3E}
+}
+
+\cs_new:Npn \xhtm_amp:
+{
+  \hexentity {26}
+}
+
+\cs_new:Npn \xhtm_dollar:
+{
+  \hexentity {24}
+}
+
+\group_begin:
+\char_set_catcode_active:N <
+\char_set_catcode_active:N >
+\char_set_catcode_active:N &
+\char_set_catcode_active:N $%$
+\cs_new:Npn \xhtm_verb_entities:
+{
+  \char_set_catcode_active:N <
+  \char_set_catcode_active:N >
+  \char_set_catcode_active:N &
+  \char_set_catcode_active:N $%$ should just check for itex
+  \cs_set_eq:NN < \xhtm_lt:
+  \cs_set_eq:NN > \xhtm_gt:
+  \cs_set_eq:NN & \xhtm_amp:
+  \cs_set_eq:NN $ \xhtm_dollar:%$
+}
+\cs_new:Npn \xhtm_set_lt:
+{
+  \cs_set_eq:NN < \xhtm_lt:
+}
+
+\cs_new:Npn \xhtm_set_gt:
+{
+  \cs_set_eq:NN > \xhtm_gt:
+}
+\cs_new:Npn \xhtm_set_amp:
+{
+  \cs_set_eq:NN & \xhtm_amp:
+}
+
+\cs_gset_eq:NN > \xhtm_gt:
+\cs_gset_eq:NN < \xhtm_lt:
+\cs_gset_eq:NN & \xhtm_amp:
+
+\group_end:
+
+\cs_set_eq:NN \xhtm_orig_endverbatim: \endverbatim
+
+\cs_set:Npn \verbatim
+{
+  \xhtm_close_par:
+  \xhtm_open_tag:nn {pre} {}
+  \xhtm_open_tag:nn {code} {}
+  \group_begin:
+  \cs_set_eq:NN \@item \xhtm_orig_item:w
+  \@verbatim
+  \frenchspacing
+  \@vobeyspaces
+  \xhtm_verb_entities:
+  \@xverbatim
+}
+
+\cs_set:Npn \endverbatim
+{
+  \xhtm_orig_endverbatim:
+  \group_end:
+  \xhtm_close_tag:n {code}
+  \xhtm_close_tag:n {pre}
+  \par
+}
+
+% Floats
+\DeclareDocumentEnvironment {float} {m}
+{
+  \xhtm_open_tag:nn {div} {style="float: #1; display: inline; position: relative; width=50\@percentchar;"}
+}
+{
+  \xhtm_close_tag:n {div}
+}
+
+% Graphics handling
+\DeclareDocumentCommand \xhtm_includegraphics {o m}
+{
+  \xhtm_pre_graphics:n {#2}
+  \xhtm_empty_tag:nn {img} {src="#2.png" style="max-width: 80\@percentchar; margin-left: 5\@percentchar;"}
+  \xhtm_post_graphics:n {#2}
+}
+
+\cs_new_nopar:Npn \xhtm_pre_graphics:n #1 {}
+\cs_new_nopar:Npn \xhtm_post_graphics:n #1 {}
+
+\AtBeginDocument{
+  \cs_if_exist:NT \includegraphics
+  {
+    \cs_set_eq:NN \includegraphics \xhtm_includegraphics
+  }
+}
+
+% Table of contents
+\NewDocumentCommand \tableofcontents {}
+{
+  \group_begin:
+  \everypar{}
+  \section*{\contentsname}
+  \int_gzero_new:N \l__xhtm_toclvl_int
+  \@starttoc{toc}
+  \int_compare:nT {\l__xhtm_toclvl_int > 0}
+  {
+    \prg_replicate:nn {\l__xhtm_toclvl_int} {\endenumerate}
+  }
+  \group_end:
+}
+
+\tl_set:Nn \contentsname {Contents}
+
+\DeclareDocumentCommand \numberline {m}
+{
+  #1. \c_space_token
+}
+
+\NewDocumentCommand \l@section {m m}
+{
+  \xhtm_tocline:nnn {1} {#1} {#2}
+}
+
+\NewDocumentCommand \l@subsection {m m}
+{
+  \xhtm_tocline:nnn {2} {#1} {#2}
+}
+
+\NewDocumentCommand \l@subsubsection {m m}
+{
+  \xhtm_tocline:nnn {3} {#1} {#2}
+}
+
+\NewDocumentCommand \l@paragraph {m m m} {}
+\NewDocumentCommand \l@subparagraph {m m m} {}
+
+\cs_new_nopar:Npn \xhtm_tocline:nnn #1#2#3
+{
+  \cs_gset_eq:NN \Hy@tocdestname \Hy@tocdestname
+  \int_compare:nT {\l__xhtm_toclvl_int > #1}
+  {
+    \prg_replicate:nn {\l__xhtm_toclvl_int - #1} {\endenumerate}
+  }
+  \int_compare:nT {\l__xhtm_toclvl_int < #1}
+  {
+    \prg_replicate:nn {#1 - \l__xhtm_toclvl_int} {\enumerate}
+  }
+  \item #2
+  \int_set:Nn \l__xhtm_toclvl_int {#1}
+}
+
+% Minipage and parbox need thinking about
+
+\cs_set:Npn \thepage {}
+\cs_set:Npn \indexname {}
+\cs_set:Npn \hfill {}
+
+\RenewDocumentCommand \hspace {m} {}
+\RenewDocumentCommand \\ {o} {}
+
+\tl_new:N \l__xhtm_css_tl
+\tl_new:N \l__xhtm_js_tl
+\tl_new:N \l__xhtm_cssfiles_tl
+\tl_new:N \l__xhtm_jsfiles_tl
+
+\NewDocumentCommand \addcss {+m}
+{
+  \tl_put_right:Nn \l__xhtm_css_tl {#1}
+}
+
+\NewDocumentCommand \addjavascript {+m}
+{
+  \tl_put_right:Nn \l__xhtm_js_tl {#1}
+}
+
+\NewDocumentCommand \loadcss {m}
+{
+  \tl_put_right:Nn \l__xhtm_cssfiles_tl
+  {
+    \xhtm_empty_tag:nn {link} {href="#1.css" media="all" rel="stylesheet" type="text/css"}
+  }
+}
+
+\NewDocumentCommand \loadjs {m}
+{
+  \tl_put_right:Nn \l__xhtm_jsfiles_tl
+  {
+    \xhtm_empty_tag:nn {script} {src="#1.js" type="text/javascript"}
+  }
+}
+
+\tl_new:N \l__xhtm_declaration_tl
+\tl_set:Nn \l__xhtm_declaration_tl
+{
+  <?xml~ version="1.0"~ encoding="UTF-8"?><!DOCTYPE~ html~ PUBLIC~ "-//W3C//DTD~ XHTML~ 1.1~ plus~ MathML~ 2.0~ plus~ SVG~ 1.1//EN"~ "http://www.w3.org/2002/04/xhtml-math-svg/xhtml-math-svg.dtd"~ >
+  \xhtm_open_tag:nn {html} {xmlns="http://www.w3.org/1999/xhtml"}
+}
+
+\tl_new:N \l__xhtm_begindoc_tl
+
+\AtBeginDocument{
+  \tl_use:N \l__xhtm_begindoc_tl
+}
+
+\cs_new_nopar:Npn \xhtm_at_begindocument:n #1
+{
+  \tl_put_right:Nn \l__xhtm_begindoc_tl {#1}
+}
+
+\tl_new:N \l__xhtm_title_tl
+\tl_set_eq:NN \l__xhtm_title_tl \@title
+\tl_new:N \l__xhtm_author_tl
+\tl_set_eq:NN \l__xhtm_author_tl \@author
+
+\xhtm_at_begindocument:n
+{
+  \tl_use:N \l__xhtm_declaration_tl
+  \xhtm_open_tag:nn {head}{}
+  \tl_if_eq:NNF \@title \l__xhtm_title_tl
+  {
+    \xhtm_linebreak:
+    \xhtm_open_tag:nn {title}{}
+    \@title
+    \xhtm_close_tag:n {title}
+  }
+  \tl_if_eq:NNF \@author \l__xhtm_author_tl
+  {
+    \xhtm_linebreak:
+    \xhtm_empty_tag:nn {meta} {name="Author" content="\@author"}
+  }
+  \tl_use:N \l__xhtm_cssfiles_tl
+  \tl_if_empty:NF \l__xhtm_css_tl
+  {
+    \xhtm_linebreak:
+    \xhtm_open_tag:nn {style} {type="text/css"}
+    \xhtm_linebreak:
+    \tl_use:N \l__xhtm_css_tl
+    \xhtm_linebreak:
+    \xhtm_close_tag:n {style}
+    \xhtm_linebreak:
+  }
+  \tl_use:N \l__xhtm_jsfiles_tl
+  \tl_if_empty:NF \l__xhtm_js_tl
+  {
+    \xhtm_linebreak:
+    \xhtm_open_tag:nn {script} {type="text/javascript"}
+    \xhtm_linebreak:
+    //<![CDATA[
+        \xhtm_linebreak:
+    \tl_use:N \l__xhtm_js_tl
+    \xhtm_linebreak:
+        //]]>
+    \xhtm_close_tag:n {script}
+    \xhtm_linebreak:
+  }
+  \xhtm_close_tag:n {head}
+  \xhtm_open_tag:nn {body} {}
+  \xhtm_open_par:
+  \everypar{\xhtm_reopen_par:}
+}
+
+\cs_set:Npn \@doendpe
+{
+  \@endpetrue
+  \cs_set:Npn \par
+  {
+    \@restorepar
+    \everypar{\xhtm_reopen_par:}
+    \par
+    \@endpefalse
+  }
+  \everypar{{\setbox\z@\lastbox}\everypar{}\@endpefalse}
+}
+
+\tl_new:N \l__xhtm_enddoc_tl
+
+\tl_put_left:Nn \@enddocumenthook
+{
+  \tl_use:N \l__xhtm_enddoc_tl
+}
+
+\cs_new_nopar:Npn \xhtm_at_enddocument:n #1
+{
+  \tl_put_right:Nn \l__xhtm_enddoc_tl {#1}
+}
+
+\xhtm_at_enddocument:n
+{
+  \xhtm_close_par:
+  \xhtm_close_tag:n {body}
+  \xhtm_close_tag:n {html}
+}
+
+% Tables ...
+
+% Theorems ...
+
+\RenewDocumentCommand \newtheorem {s m o m o}
+{
+  \IfBooleanTF {#1}
+  {
+    % Starred form, so no numbers
+    \xhtm_define_theorem:nnn {#2} {#4} {}
+  }
+  {
+    % Non-starred form, so numbered
+    % Was there a third argument?
+    \IfValueTF {#3}
+    {
+      % Yes, so we reuse this counter
+      \xhtm_define_theorem:nnn {#2} {#4} {#3}
+    }
+    {
+      % No, so define a new counter
+      % Did we get a fifth argument?
+      \IfValueTF {#5}
+      {
+        % Yes, so the new counter steps with the fifth
+        \newcounter{#2}[#5]
+        \cs_set:cpx {the #2} {\exp_not:c {the #5} \@thmcountersep \@thmcounter{#2}}
+      }
+      {
+        % No, just a new counter
+        \newcounter{#2}
+      }
+      \xhtm_define_theorem:nnn {#2} {#4} {#2}
+    }
+  }
+}
+
+\tl_new:N \l__xhtm_theoremstyle_tl
+\tl_new:N \l__xhtm_ctheoremstyle_tl
+\tl_set:Nn \l__xhtm_theoremstyle_tl {plain}
+\bool_new:N \l__xhtm_swaphead_bool
+
+\cs_generate_variant:Nn \cs_set_nopar:Nn {NV}
+% Theorem definer
+\cs_new_nopar:Npn \xhtm_define_theorem:nnn #1#2#3
+{
+  \tl_clear:N \l_tmpa_tl
+  \tl_put_right:Nx \l_tmpa_tl
+  {
+    \exp_not:c {xhtm theorem}
+    { \exp_not:N \tl_set:Nn \exp_not:N \l__xhtm_ctheoremstyle_tl
+      {\l__xhtm_theoremstyle_tl}
+      \bool_if:NTF \l__xhtm_swaphead_bool
+      {
+        \exp_not:N \bool_set_true:N
+      }
+      {
+        \exp_not:N \bool_set_false:N
+      }
+      \exp_not:N \l__xhtm_swaphead_bool
+    }
+  }
+  \tl_put_right:Nn \l_tmpa_tl {{#2}{#3}}
+  \cs_set_nopar:NV \xhtm_tmp_thm: \l_tmpa_tl
+  \cs_set_eq:cN {#1} \xhtm_tmp_thm:
+  \cs_set_eq:cc {end #1} {end xhtm theorem}
+  \message{defining #1}
+}
+
+\DeclareDocumentEnvironment {xhtm theorem} {m m m O{}}
+{
+  #1
+  \tl_gclear:N \l__xhtm_anchor_tl
+  \tl_if_empty:nF {#3}
+  {
+    \tl_set:Nn \l__xhtm_anchor_tl {on next}
+    \refstepcounter{#3}
+    \tl_set:Nn \l__xhtm_anchor_tl {plain}
+  }
+  \xhtm_close_par:
+  \tl_if_empty:NTF \l__xhtm_nextid_tl
+  {
+    \xhtm_open_tag:nn {div} {class="gentheorem~ \tl_use:N \l__xhtm_ctheoremstyle_tl"}
+  }
+  {
+    \xhtm_open_tag:nn {div} {class="gentheorem~ \tl_use:N \l__xhtm_ctheoremstyle_tl"~ id="\tl_use:N \l__xhtm_nextid_tl"}
+  }
+  \xhtm_open_tag:nn {span} {class="title"}
+  \bool_if:NTF \l__xhtm_swaphead_bool
+  {
+    \xhtm_theorem_swaphead:nnn {#2} {\use:c{the #3}} {#4}
+  }
+  {
+    \xhtm_theorem_plainhead:nnn {#2} {\use:c{the #3}} {#4}
+  }
+  \xhtm_close_tag:n {span}
+  \xhtm_open_par:
+}
+{
+  \xhtm_close_par:
+  \xhtm_close_tag:n {div}
+  \xhtm_open_par:
+}
+
+\cs_new_nopar:Npn \xhtm_theorem_plainhead:nnn #1#2#3
+{
+  \tl_if_empty:nF {#1}
+  {
+    \xhtm_open_tag:nn {span} {class="name"}
+    #1
+    \xhtm_close_tag:n {span}
+  }
+  \tl_if_empty:nF {#2}
+  {
+    \tl_if_empty:nF {#1} {\c_space_token}
+    \xhtm_open_tag:nn {span} {class="number"}
+    #2
+    \xhtm_close_tag:n {span}
+  }
+  \tl_if_empty:nF {#3}
+  {
+    \c_space_token
+    \xhtm_open_tag:nn {span} {class="note"}
+    #3
+    \xhtm_close_tag:n {span}
+  }
+}
+
+\cs_new_nopar:Npn \xhtm_theorem_swaphead:nnn #1#2#3
+{
+  \tl_if_empty:nF {#2}
+  {
+    \xhtm_open_tag:nn {span} {class="number"}
+    #2
+    \xhtm_close_tag:n {span}
+  }
+  \tl_if_empty:nF {#1}
+  {
+    \tl_if_empty:nF {#2} {\c_space_token}
+    \xhtm_open_tag:nn {span} {class="name"}
+    #1
+    \xhtm_close_tag:n {span}
+  }
+  \tl_if_empty:nF {#3}
+  {
+    \c_space_token
+    \xhtm_open_tag:nn {span} {class="note"}
+    #3
+    \xhtm_close_tag:n {span}
+  }
+}
+
+\DeclareDocumentCommand \theoremstyle {m}
+{
+  \tl_set:Nx \l__xhtm_theoremstyle_tl {#1}
+}
+
+\DeclareDocumentCommand \newtheoremstyle {mmmmmmmmm}
+{
+  \tl_clear:N \l_tmpa_tl
+  \tl_if_empty:nF {#2}
+  {
+    \tl_put_right:Nn \l_tmpa_tl {margin-top:~ #2;~}
+  }
+  \tl_if_empty:nF {#3}
+  {
+    \tl_put_right:Nn \l_tmpa_tl {margin-bottom:~ #3;~}
+  }
+  \tl_if_empty:nF {#5}
+  {
+    \tl_put_right:Nn \l_tmpa_tl {margin-left:~ #5;~}
+  }
+  \tl_if_empty:NF \l_tmpa_tl
+  {
+    \tl_put_right:Nx \l__xhtm_css_tl
+    {
+      div.gentheorem.#1~ \{ \tl_use:N \l_tmpa_tl \}
+    }
+  }
+  \tl_clear:N \l_tmpa_tl
+  \tl_if_empty:nF {#4}
+  {
+    \tl_set:Nx \l_tmpb_tl {\tl_head:n {#4}}
+    \tl_if_eq:VnT \l_tmpb_tl {\itshape}
+    {
+      \tl_put_right:Nn \l_tmpa_tl {font-style:~ italic;~}
+      \tl_put_right:Nx \l__xhtm_css_tl
+      {
+        div.gentheorem.#1~ em \{ font-style:~ normal; \}
+      }
+    }
+    \tl_if_eq:VnT \l_tmpb_tl {\bfseries}
+    {
+      \tl_put_right:Nn \l_tmpa_tl {font-weight:~ bold;~}
+    }
+  }
+  \tl_if_empty:NF \l_tmpa_tl
+  {
+    \tl_put_right:Nx \l__xhtm_css_tl
+    {
+      .gentheorem.#1~ \{ \tl_use:N \l_tmpa_tl \}
+    }
+  }
+  \tl_clear:N \l_tmpa_tl
+  \tl_if_empty:nF {#6}
+  {
+    \tl_set:Nx \l_tmpb_tl {\tl_head:n {#6}}
+    \tl_if_eq:VnT \l_tmpb_tl {\itshape}
+    {
+      \tl_put_right:Nn \l_tmpa_tl {font-style:~ italic;~}
+    }
+    \tl_if_eq:VnT \l_tmpb_tl {\bfseries}
+    {
+      \tl_put_right:Nn \l_tmpa_tl {font-weight:~ bold;~}
+    }
+  }
+  \tl_if_empty:nF {#8}
+  {
+    \tl_put_right:Nn \l_tmpa_tl {margin-right:~ #8;~}
+  }
+  \tl_if_empty:NF \l_tmpa_tl
+  {
+    \tl_put_right:Nx \l__xhtm_css_tl
+    {
+      .gentheorem.#1~ .title~ \{ \tl_use:N \l_tmpa_tl \}
+    }
+  }
+  \tl_if_empty:nF {#7}
+  {
+    \tl_put_right:Nx \l__xhtm_css_tl
+    {
+      .gentheorem.#1~ .title:after~ \{ content:~ #7; \}
+    }
+  }
+}
+
+\DeclareDocumentCommand \swapnumbers {}
+{
+  \bool_set:Nn  \l__xhtm_swaphead_bool { !\l__xhtm_swaphead_bool }
+}
+
+\NewDocumentCommand \numberwithin {O{\arabic} m m}
+{
+  \cs_if_exist:cTF {c@#2}
+  {
+    \cs_if_exist:cTF {c@#3}
+    {
+      \@addtoreset{#2}{#3}
+      \cs_set:cpx {the #2} {\exp_not:c {the #3} . \exp_not:N #1 {#2}}
+    }
+    {
+      \@nocountererr{#3}
+    }
+  }
+  {
+    \@nocountererr{#2}
+  }
+}
+
+\tl_new:N \l__xhtm_proof_attr_tl
+\NewDocumentEnvironment {proof} {O{Proof}}
+{
+  \xhtm_close_par:
+  \xhtm_open_tag:nn {div} {class="proof" \tl_use:N \l__xhtm_proof_attr_tl}
+  \xhtm_open_tag:nn {span} {class="title"}
+  #1
+  \xhtm_close_tag:n {span}
+  \xhtm_use_hook:n {after~ proof~ title}
+  \xhtm_open_tag:nn {div} {class="body"}
+  \xhtm_open_par:
+}
+{
+  \xhtm_close_par:
+  \xhtm_close_tag:n {div}
+  \xhtm_close_tag:n {div}
+  \xhtm_open_par:
+}
+
+% Maths
+
+\tl_new:N \l__xhtm_begindisplay_tl
+\tl_set:Nn \l__xhtm_begindisplay_tl
+{
+  \xhtm_close_par:
+  \xhtm_linebreak:
+  \xhtm_open_tag:nn {div} {class="displaymaths"}
+  \bool_if:NT \l__itex_numbered_bool
+  {
+    \refstepcounter{equation}
+    \xhtm_open_tag:nn {span} {class="eqnnumber"}
+    \theequation
+    \xhtm_close_tag:n {span}
+  }
+}
+
+\tl_new:N \l__xhtm_enddisplay_tl
+\tl_set:Nn \l__xhtm_enddisplay_tl
+{
+  \xhtm_close_tag:n {div}
+  \xhtm_linebreak:
+  \xhtm_open_par:
+}
+
+\keys_set:nn {internet options}
+{
+  options = {itex}
+  {
+    at begin display={\tl_use:N \l__xhtm_begindisplay_tl},
+    at end display={\tl_use:N \l__xhtm_enddisplay_tl},
+  }
+}
+
+% Bibliography ...
+
+% Some general user commands
+
+\NewDocumentCommand \addattribute {m m}
+{
+  \tl_if_exist:cTF {l__xhtm_#1_attr_tl}
+  {
+    \tl_put_right:cn {l__xhtm_#1_attr_tl} {\c_space_token #2}
+  }
+  {
+    \tl_new:c {l__xhtm_#1_attr_tl}
+    \tl_set:cn {l__xhtm_#1_attr_tl} {#2}
+  }
+}
+
+\NewDocumentCommand \xhtmtag {m m m}
+{
+  \xhtm_open_tag:nn {#1}{#2}
+  #3
+  \xhtm_close_tag:n {#1}
+}
+
+\cs_new_nopar:Npn \xhtm_comment:n #1
+{
+  \xhtm_linebreak:
+  <!-{}-~ #1~ -{}->
+  \xhtm_linebreak:
+}
+
+\NewDocumentCommand \xhtmcomment {m}
+{
+  \xhtm_comment:n {#1}
+}
+
+\NewDocumentEnvironment {xhtmdiv} {m}
+{
+  \xhtm_close_par:
+  \xhtm_open_rag:nn {div} {class="#1"}
+  \xhtm_open_par:
+}
+{
+  \xhtm_close_par:
+  \xhtm_close_tag:n {div}
+  \xhtm_open_par:
+}
+
+\cs_set:Npn \maketitle {}
+
+\endinput
+
+% Local Variables:
+% mode: latex3
+% End:

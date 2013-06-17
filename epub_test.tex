@@ -1,0 +1,34 @@
+\documentclass[text,itex,epub]{internet}
+%\documentclass[doc]{internet}
+
+\usepackage{hyperref}
+
+\title{An ePub}
+
+\begin{document}
+
+\tableofcontents
+
+My aim here is to derive the bandwidth $\Delta\lambda$ of a Rugate notch filter on-axis and further show that the expressions for reflectance and bandwidth are identical to those of single mode Fiber Bragg Gratings. 
+
+We start with the work of Southwell (1987).  Following him we define a Rugate filter as a  sinusoidal refractive index variation along coordinate $z$:
+\[ n(z) = n_a + \frac{n_p}{2} \sin(K_1 z + \phi)  \] 
+where $n_a$ is the average refractive index and $n_p$ is the peak to peak variation.
+Southwell then does a  detailed coupled-wave analysis and derives 
+the following expression for the reflectance profile of a Rugate filter:
+\[
+R= {  \kappa^2 \sinh^2(sL) \over
+s^2 \cosh^2(sL) + (\alpha/2)^2 \sinh^2(sL)
+}
+\]
+where for normal incidence ($\theta=0$) the coupling constant $\kappa$ is:
+\[\kappa= \pm \frac{\pi}{2} \frac{n_p}{\lambda}  \]
+(the $\pm$ corresponding to $s-$ and $p-$polarizations). The following expressions let us relate $s$ (which can be real or imaginary) and $\alpha$ 
+to the wavelength of the light and the Rugate filter properties:
+\[ s=\sqrt{\kappa^2 - (\alpha/2)^2} \]
+\[ \alpha = 2 k_z - K_1 \]
+\[k_z = \frac{2 \pi}{\lambda} n_a \]
+\[ K_1  =  \frac{4 \pi}{\lambda_1} n_a = \frac{2 \pi}{\Lambda}\]
+
+
+\end{document}

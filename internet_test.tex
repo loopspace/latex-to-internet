@@ -1,0 +1,60 @@
+\documentclass[%
+  text,
+  use filename,
+  12pt,
+  a4paper,
+  markdownextra={section level=2}%
+]{internet}
+
+\begin{document}
+
+\section{Hello World}
+
+\emph{hello world}
+
+hello~world
+
+\subsection{List Environments}
+
+\begin{itemize}
+\item first
+
+with some more text\footnote{and a footnote}
+
+\item second
+\end{itemize}
+
+\begin{enumerate}
+\item first
+
+with some more text\footnote{and another footnote}
+
+\item second
+\end{enumerate}
+
+\begin{description}
+\item[walrus] Something large
+
+Extremely large, that is
+\end{description}
+
+\subsection{Verbatim}
+
+First, some \verb+verbatim+ stuff.
+
+And now,
+\begin{verbatim}
+A verbatim environment
+with lots of \@#!)%* in it
+\end{verbatim}
+and not a lot else
+
+Another paragraph
+
+\subsection{Ligatures}
+
+How do ligatures look?
+Dashes: -- and ---
+Quotes: ``hello'' and `goodbye'.
+
+\end{document}

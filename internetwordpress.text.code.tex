@@ -1,0 +1,47 @@
+% Wordpress, prefix: wp
+
+% Built on top of markdown extra
+\txt_load_file:n {markdownextra}
+
+% Define the options for the markdown-extra module
+\keys_define:nn {wordpress options}
+{
+  unknown .code:n =
+  {
+    \txt_try_options:nnn {markdown extra,markdown} {\l_keys_key_tl} {#1}
+  }
+}
+% Get and set the options for the markdown-extra module
+\prop_get:NnNT  \l__txt_popts_prop {wordpress} \l_tmpa_tl
+{
+  \keys_set:nV {wordpress options} \l_tmpa_tl
+}
+
+\cs_set_eq:NN \maketitle \relax
+
+\NewDocumentCommand \more {} {\html_comment:n {more}}
+\NewDocumentCommand \nextpage {} {\html_comment:n {nextpage}}
+
+\RenewDocumentEnvironment {quote} {}
+{
+  \par
+  \html:n {blockquote}
+  \txt_newline:
+  \cs_set_eq:NN \verb \code
+}
+{
+  \txt_newline:
+  \endhtml:
+  \par
+}
+
+\NewDocumentCommand \code {v}
+{
+  \html:n {code} #1 \endhtml:
+}
+
+\endinput
+
+% Local Variables:
+% mode: latex3
+% End:

@@ -1,0 +1,46 @@
+% Instiki, prefix: inst
+
+% Built on top of maruku
+\txt_load_file:n {maruku}
+
+% Define the options for the markdown-extra module
+\keys_define:nn {instiki options}
+{
+  unknown .code:n =
+  {
+    \txt_try_options:nnn {maruku,markdown extra,markdown} {\l_keys_key_tl} {#1}
+  }
+}
+% Get and set the options for the markdown-extra module
+\prop_get:NnNT  \l__txt_popts_prop {instiki} \l_tmpa_tl
+{
+  \keys_set:nV {instiki options} \l_tmpa_tl
+}
+
+\usepackage{instikiheader}
+
+\tl_new:N \l__inst_baseurl_tl
+
+\NewDocumentCommand \setbase {m}
+{
+  \tl_set:Nx \l__inst_baseurl_tl {#1}
+}
+
+\NewDocumentCommand \wikilink {o m}
+{
+  \IfNoValue{#1}
+  {
+    \href{\tl_use:N \l__inst_baseurl_tl #2}{#2}
+  }
+  {
+    \href{\tl_use:N \l__inst_baseurl_tl #2}{#1}
+  }
+}
+
+\NewDoccumentCommand \css {m} {}
+
+\endinput
+
+% Local Variables:
+% mode: latex3
+% End:

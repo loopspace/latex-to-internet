@@ -1,0 +1,119 @@
+% Hyperref driver for XHTML-style links
+
+\ProvidesFile{hxhtml.def}
+  [2012/11/06 v6.83m %
+  Hyperref driver for XHTML]
+
+\makeatletter
+\ExplSyntaxOn
+
+\Hy@VersionCheck{hxhtml.def}
+
+% Anchor syntax might vary considerably
+% It depends on *where* we are in the document
+\tl_set:Nn \l__xhtm_anchor_tl {plain}
+
+\Hy@WrapperDef\hyper@anchor#1{%
+  \cs_if_exist:cTF {xhtm_anchor_\tl_use:N \l__xhtm_anchor_tl :n}
+    {
+      \use:c {xhtm_anchor_\tl_use:N \l__xhtm_anchor_tl :n}{#1}
+    }
+    {
+      \txt_only_chars:nn {name} {#1}
+      \xhtm_open_tag:nn {a} {id="\tl_use:N \l__txt_chars_tl"}
+      \xhtm_close_tag:n {a}
+    }
+}
+
+\Hy@WrapperDef\hyper@anchorstart#1{%
+  \cs_if_exist:cTF {xhtm_anchorstart_\tl_use:N \l__xhtm_anchor_tl :n}
+    {
+      \use:c {xhtm_anchorstart_\tl_use:N \l__xhtm_anchor_tl :n}{#1}
+    }
+    {
+      \txt_only_chars:nn {name} {#1}
+      \xhtm_open_tag:nn {a} {id="\tl_use:N \l__txt_chars_tl"}
+    }
+}
+
+\def\hyper@anchorend{%
+    \cs_if_exist:cTF {xhtm_anchorend_\tl_use:N \l__xhtm_anchor_tl :}
+    {
+      \use:c {xhtm_anchorend_\tl_use:N \l__xhtm_anchor_tl :}
+    }
+    {
+      \xhtm_close_tag:n {a}
+    }
+}
+
+
+\cs_new:Npn \xhtm_anchor_onnext:n #1
+{
+  \txt_only_chars:nn {name} {#1}
+  \tl_gset_eq:NN \l__xhtm_nextid_tl \l__txt_chars_tl
+}
+
+\cs_new:Npn \xhtm_anchorstart_onnext:n #1
+{
+  \txt_only_chars:nn {name} {#1}
+  \tl_gset_eq:NN \l__xhtm_nextid_tl \l__txt_chars_tl
+}
+
+\cs_new:Npn \xhtm_anchorend_onnext: {}
+
+
+\Hy@WrapperDef\hyper@linkfile#1#2#3{#1}%
+
+\Hy@WrapperDef\hyper@link#1#2#3{%
+  \use:c {xhtm_href_#1_hool}
+  \txt_only_chars:nn {name} {#2}
+  \xhtm_open_tag:nn {a} {href="\tl_use:N \l__xhtm_baseurl_tl\#\tl_use:N \l__txt_chars_tl"}
+  #3
+  \xhtm_close_tag:n {a}
+}
+%\Hy@WrapperDef
+\cs_new_nopar:Npn \hyper@linkurl #1#2
+{
+  \xhtm_open_tag:nn {a}{href="#2"}
+  #1
+  \xhtm_close_tag:n {a}
+}
+
+\Hy@WrapperDef\hyper@linkstart #1#2
+{
+  \use:c {xhtm_href_#1_hook}
+  \txt_only_chars:nn {name} {#2}
+  \xhtm_open_tag:nn {a} {href="\tl_use:N \l__xhtm_baseurl_tl\#\tl_use:N \l__txt_chars_tl"}
+}
+
+\cs_new_nopar:Npn \hyper@linkend {\xhtm_close_tag:n {a}}
+
+% Hyperref loads pd1enc which overwrites the accent macros,
+% so we restore them here (if not using unicode)
+\renewcommand{\"}[1]{\entity{#1uml}}
+\renewcommand{\`}[1]{\entity{#1grave}}
+\renewcommand{\'}[1]{\entity{#1acute}}
+\renewcommand{\^}[1]{\entity{#1circ}}
+\renewcommand{\~}[1]{\entity{#1tilde}}
+\renewcommand{\c}[1]{\entity{#1cedil}}
+\renewcommand{\v}[1]{\entity{#1caron}}
+\renewcommand{\.}[1]{\entity{#1dot}}
+\renewcommand{\ae}{\entity{aelig}}
+\renewcommand{\AE}{\entity{AElig}}
+\renewcommand{\oe}{\entity{oelig}}
+\renewcommand{\OE}{\entity{OElig}}
+\renewcommand{\aa}{\entity{aring}}
+\renewcommand{\AA}{\entity{Aring}}
+\renewcommand{\o}{\entity{oslash}}
+\renewcommand{\O}{\entity{Oslash}}
+\renewcommand{\ss}{\entity{szlig}}
+\renewcommand{\P}{\entity{\#182}}
+
+\ExplSyntaxOff
+\makeatother
+
+\endinput
+
+% Local Variables:
+% mode: latex3
+% End:

@@ -1,0 +1,95 @@
+% Hyperref driver for ePub-style links
+
+\ProvidesFile{hepub.def}
+  [2012/10/15 v6.83k %
+  Hyperref driver for ePub3]
+
+\makeatletter
+
+\Hy@VersionCheck{hepub.def}
+
+% Anchor syntax might vary considerably
+% It depends on *where* we are in the document
+\def\epub@anchortype{plain}
+
+\Hy@WrapperDef\hyper@anchor#1{%
+  \@ifundefined{epub@anchor\epub@anchortype}{%
+    \epub@onlychars{name}{#1}%
+    \epub@opentag{a}{id="\epub@letters"}\epub@closetag{a}%
+  }{%
+    \csname epub@anchor\epub@anchortype\endcsname{#1}%
+  }%
+}
+
+\Hy@WrapperDef\hyper@anchorstart#1{%
+  \@ifundefined{epub@anchorstart\epub@anchortype}{%
+    \epub@onlychars{name}{#1}%
+    \epub@opentag{a}{id="\epub@letters"}%
+  }{%
+    \csname epub@anchorstart\epub@anchortype\endcsname{#1}%
+  }%
+}
+
+\def\hyper@anchorend{%
+  \@ifundefined{epub@anchorend\epub@anchortype}{%
+  \epub@closetag{a}%
+  }{%
+    \csname epub@anchorend\epub@anchortype\endcsname
+  }%
+}
+
+\let\epub@nextid=\relax
+\def\epub@baseurl{}
+
+\def\epub@anchoronnext#1{%
+    \epub@onlychars{name}{#1}%
+    \xdef\epub@nextid{\epub@letters}%
+}
+\def\epub@anchorstartonnext#1{%
+    \epub@onlychars{name}{#1}%
+    \xdef\epub@nextid{\epub@letters}%
+}
+\def\epub@anchorendonnext{%
+}
+
+\Hy@WrapperDef\hyper@linkfile#1#2#3{#1}%
+
+\Hy@WrapperDef\hyper@link#1#2#3{%
+  \epub@onlychars{name}{#2}%
+\epub@opentag{a}{href="\epub@baseurl\#\epub@letters"}#3\epub@closetag{a}}
+%\Hy@WrapperDef
+\def\hyper@linkurl#1#2{%
+\epub@opentag{a}{href="#2"}#1\epub@closetag{a}}
+\Hy@WrapperDef\hyper@linkstart#1#2{%
+  \epub@onlychars{name}{#2}%
+\epub@opentag{a}{href="\epub@baseurl\#\epub@letters"}}
+
+\def\hyper@linkend{\epub@closetag{a}}
+
+% Hyperref loads pd1enc which overwrites the accent macros,
+% so we restore them here (if not using unicode)
+\ifint@unicode
+\else
+\renewcommand{\"}[1]{\entity{#1uml}}
+\renewcommand{\`}[1]{\entity{#1grave}}
+\renewcommand{\'}[1]{\entity{#1acute}}
+\renewcommand{\^}[1]{\entity{#1circ}}
+\renewcommand{\~}[1]{\entity{#1tilde}}
+\renewcommand{\c}[1]{\entity{#1cedil}}
+\renewcommand{\v}[1]{\entity{#1caron}}
+\renewcommand{\.}[1]{\entity{#1dot}}
+\renewcommand{\ae}{\entity{aelig}}
+\renewcommand{\AE}{\entity{AElig}}
+\renewcommand{\oe}{\entity{oelig}}
+\renewcommand{\OE}{\entity{OElig}}
+\renewcommand{\aa}{\entity{aring}}
+\renewcommand{\AA}{\entity{Aring}}
+\renewcommand{\o}{\entity{oslash}}
+\renewcommand{\O}{\entity{Oslash}}
+\renewcommand{\ss}{\entity{szlig}}
+\renewcommand{\P}{\entity{\#182}}
+\fi
+
+\makeatother
+
+\endinput

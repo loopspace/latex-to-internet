@@ -1,0 +1,140 @@
+% Hyperref driver for Instiki-style links
+
+\ProvidesFile{hinst.def}
+  [2012/11/06 v6.83m %
+  Hyperref driver for Instiki]
+
+\makeatletter
+\ExplSyntaxOn
+
+\Hy@VersionCheck{hinst.def}
+
+% Anchor syntax might vary considerably
+% It depends on *where* we are in the document
+\tl_new:N \l__inst_anchor_tl
+\tl_set:Nn \l__inst_anchor_tl {plain}
+
+  \Hy@WrapperDef\hyper@anchor#1{
+    \cs_if_exist:cTF {inst_anchor_\tl_use:N \l__inst_anchor_tl :n}
+    {
+      \use:c {inst_anchor_\tl_use:N \l__inst_anchor_tl :n}{#1}
+    }
+    {
+      \txt_only_chars:nn {alphanum} {#1}
+      <a~ id="\tl_use:N \l__txt_chars_tl"></a>
+    }
+  }
+
+
+\Hy@WrapperDef\inst_anchor_list:n #1
+{
+  \txt_only_chars:nn {alphanum} {#1}
+  \{:~ \#\tl_use:N \l__txt_chars_tl \}
+}
+
+\Hy@WrapperDef\inst_anchor_enum:n #1
+{
+  \txt_only_chars:nn {alpha} {#1}
+  <p></p>\txt_newline:
+  \maru_div:n {.num \tl_use:N \l__txt_underscore_tl enum \int_to_alph:n {\value{enumerations}}~ \##1}
+  \txt_newline:
+  \maru_enddiv:
+  \txt_newline:
+}
+
+\Hy@WrapperDef\hyper@anchorstart #1 {
+  \cs_if_exist:cTF {inst_anchorstart_\tl_use:N \l__inst_anchor_tl :n}
+  {
+    \use:c {inst_anchorstart_\tl_use:N \l__inst_anchor_tl :n} {#1}
+  }
+  {
+    \txt_only_chars:nn {alphanum} {#1}
+    <a~ id="\tl_use:N \l__txt_chars_tl">
+  }
+}
+
+\def\hyper@anchorend {
+  \cs_if_exist:cTF {inst_anchorend_\tl_use:N \l__inst_anchor_tl :}
+  {
+    \use:c {inst_anchorend_\tl_use:N \l__inst_anchor_tl :}
+  }
+  {
+    </a>
+  }
+}
+
+\Hy@WrapperDef\inst_anchorstart_list:n #1 {}
+\cs_new_nopar:Npn \inst_anchorend_list: {}
+
+\Hy@WrapperDef\inst_anchorstart_plain:n #1 {}
+\cs_new_nopar:Npn \inst_anchorend_plain: {}
+
+\Hy@WrapperDef\inst_anchorstart_labellist:n #1{
+  \txt_only_chars:nn {alphanum} {#1}
+  \tl_set_eq:NN \l_tmpa_tl \l__mkdn_indent_tl
+  \mkdn_last_indent:
+  \par\mbox{}% Forces the `\par` to have an effect
+  \tl_set_eq:NN \l__mkdn_indent_tl \l_tmpa_tl
+* \{: \#\tl_use:N \l__txt_chars_tl \c_space_token
+}
+\cs_new_nopar:Npn \inst_anchorend_labellist: {\}}
+
+\Hy@WrapperDef\inst_anchorstart_enum:n #1 {
+  \txt_only_chars:nn {alpha} {#1}
+  \tl_set_eq:NN \l_tmpa_tl \l__mkdn_indent_tl
+  \mkdn_last_indent:
+  \par\mbox{}% Forces the `\par` to have an effect
+  \tl_set_eq:NN \l__mkdn_indent_tl \l_tmpa_tl
+1. <p></p>
+\txt_newline:
+\maru_div:n {.num \tl_use:N \l__txt_underscore_tl enum \int_to_alph:n {\value{enumerations}}~ \#\tl_use:N \l__txt_chars_tl}
+\txt_newline:
+}
+
+\cs_new_nopar:Npn \inst_anchorend_enum: {\maru_enddiv: \txt_newline:}
+
+\Hy@WrapperDef\hyper@linkfile#1#2#3{#1}%
+
+\Hy@WrapperDef\hyper@link #1#2#3
+{
+  \txt_only_chars:nn {alphanum} {#2}
+  [#3](\# \tl_use:N \l__txt_chars_tl)
+}
+
+\cs_new_nopar:Npn \hyper@linkurl #1#2
+{
+  [#1](#2)
+}
+
+\Hy@WrapperDef\hyper@linkstart#1#2{%
+  \txt_only_chars:nn {alphanum} {#2}
+
+[\cs_set:Npx \hyper@linkend {](\#\tl_use:N \l__txt_chars_tl)}%
+}
+\cs_new_nopar:Npn \hyper@linkend {}
+
+% Hyperref loads pd1enc which overwrites the accent macros,
+% so we restore them here (if not using unicode)
+\renewcommand{\"}[1]{\entity{#1uml}}
+\renewcommand{\`}[1]{\entity{#1grave}}
+\renewcommand{\'}[1]{\entity{#1acute}}
+\renewcommand{\^}[1]{\entity{#1circ}}
+\renewcommand{\~}[1]{\entity{#1tilde}}
+\renewcommand{\c}[1]{\entity{#1cedil}}
+\renewcommand{\v}[1]{\entity{#1caron}}
+\renewcommand{\.}[1]{\entity{#1dot}}
+\renewcommand{\ae}{\entity{aelig}}
+\renewcommand{\AE}{\entity{AElig}}
+\renewcommand{\oe}{\entity{oelig}}
+\renewcommand{\OE}{\entity{OElig}}
+\renewcommand{\aa}{\entity{aring}}
+\renewcommand{\AA}{\entity{Aring}}
+\renewcommand{\o}{\entity{oslash}}
+\renewcommand{\O}{\entity{Oslash}}
+\renewcommand{\ss}{\entity{szlig}}
+\renewcommand{\P}{\entity{\#182}}
+
+\ExplSyntaxOff
+\makeatother
+
+\endinput

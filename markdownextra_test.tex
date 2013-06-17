@@ -1,0 +1,70 @@
+\documentclass[
+  text,
+  markdownextra
+]{internet}
+
+\begin{document}
+
+\section{Markdown Extra Test}
+
+\subsection{Text}
+
+A paragraph with \emph{emphasised} and \textbf{bold} text.
+Some \verb+inline code+.
+We can also handle footnotes\footnote{with aplomb}.
+
+\subsection{Lists}
+
+\subsubsection{Itemize}
+
+\begin{itemize}
+\item First item.
+
+With a following paragraph\footnote{that has a footnote}.
+
+\item Second item.
+
+With another following paragraph.
+\end{itemize}
+
+\subsubsection{Enumerate}
+
+\begin{enumerate}
+\item First item.
+
+With a following paragraph.
+
+\item Second item.
+
+With another following paragraph.
+\end{enumerate}
+
+\subsubsection{Description}
+
+\begin{description}
+\item[First] First item.
+
+With a following paragraph.
+
+\item[Second] Second item.
+
+With another following paragraph.
+\end{description}
+
+\subsection{Verbatim}
+
+\begin{verbatim}
+A verbatim paragraph.
+With @(#&$u&)!# symbols
+\end{verbatim}
+
+\begin{itemize}
+\item Inside a list:
+
+\begin{verbatim}
+Some verbatim text.
+\end{verbatim}
+
+\end{itemize}
+
+\end{document}

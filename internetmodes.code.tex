@@ -1,0 +1,135 @@
+%% Mode handling (heavily based on beamer)
+
+
+\DeclareDocumentCommand \imode {}
+{
+  \token_if_active:NTF <
+  {
+    \imode_active:w
+  }
+  {
+    \txt_mode_inactive:w
+  }
+}
+
+\group_begin:
+\char_set_catcode_active:N <
+\char_set_catcode_active:N >
+\cs_new:Npn \txt_mode_active:w <#1>
+{
+  \txt_mode_cases:n {#1}
+}
+\group_end:
+
+\cs_new:Npn \txt_mode_inactive:w <#1>
+{
+  \txt_mode_cases:n {#1}
+}
+
+\cs_new:Npn \txt_mode_cases:n #1
+{
+  \peek_catcode_ignore_spaces:NTF \c_group_begin_token
+  {
+    \txt_mode_inline:nn {#1}
+  }
+  {
+    \txt_mode_switch:n {#1}
+  }
+}
+
+\cs_new:Npn \txt_mode_inline:nn #1#2
+{
+  \txt_if_is_mode:nT {#1}{#2}
+}
+
+\prg_new_conditional:Npnn \txt_if_is_mode:n #1 {T,F,TF}
+{
+  \clist_if_in:nnTF {#1} {all}
+  {
+    \prg_return_true:
+  }
+  {
+    \clist_if_in:nVTF {#1} \l__txt_out_tl
+    {
+      \prg_return_true:
+    }
+    {
+      \bool_if:NTF \l__txt_text_bool
+      {
+        \clist_if_in:nnTF {#1} {text}
+        {
+          \prg_return_true:
+        }
+        {
+          \prg_return_false:
+        }
+      }
+      {
+        \clist_if_in:nnTF {#1} {doc}
+        {
+          \prg_return_true:
+        }
+        {
+          \prg_return_false:
+        }
+      }
+    }
+  }
+}
+
+
+\cs_new:Npn \txt_mode_switch:n #1
+{
+  \txt_if_is_mode:nF {#1}
+  {
+    \group_begin:
+    \char_set_catcode_other:N \^^M
+    \endlinechar`\^^M
+    \txt_process_line:w
+  }
+}
+
+\tl_new:N \l__txt_docstart_tl
+\tl_new:N \l__txt_docstop_tl
+\tl_new:N \l__txt_modestop_tl
+\tl_set:Nn \l__txt_modestop_tl {\imode}
+\tl_set:Nn \l__txt_docstart_tl {\begin{document}}
+\tl_set:Nn \l__txt_docstop_tl {\end{document}}
+
+
+\cs_generate_variant:Nn \tl_if_eq:nnTF {V}
+
+\group_begin:
+\char_set_catcode_other:N \^^M%
+\endlinechar=-1%
+\cs_new:Npn \txt_process_line:w #1^^M%
+{%
+  \tl_if_eq:VnTF \l__txt_modestop_tl {#1}%
+  {%
+    \group_end:
+    \imode
+  }%
+  {%
+    \tl_if_eq:VnTF \l__txt_docstop_tl {#1}%
+    {%
+      \group_end:\end{document}%
+    }%
+    {%
+      \tl_if_eq:VnTF \l__txt_docstart_tl {#1}%
+      {%
+        \group_end:\begin{document}%
+      }%
+      {%
+        \txt_process_line:w%
+      }%
+    }%
+  }%
+}%
+\group_end:
+
+
+\endinput
+
+% Local Variables:
+% mode: latex3
+% End:

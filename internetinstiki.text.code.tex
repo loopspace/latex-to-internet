@@ -1,0 +1,218 @@
+% Instiki, prefix: inst
+
+% Built on top of maruku
+\txt_load_file:n {maruku}
+
+% Define the options for the markdown-extra module
+\keys_define:nn {instiki options}
+{
+  unknown .code:n =
+  {
+    \txt_try_options:nnn {maruku,markdown extra,markdown} {\l_keys_key_tl} {#1}
+  }
+}
+% Get and set the options for the markdown-extra module
+\prop_get:NnNT  \l__txt_popts_prop {instiki} \l_tmpa_tl
+{
+  \keys_set:nV {instiki options} \l_tmpa_tl
+}
+
+\PassOptionsToPackage{customdriver=hinst}{hyperref}
+
+\NewDocumentCommand \wikilink {o m}
+{
+  \IfNoValue{#1}
+  {
+    [[#2]]
+  }
+  {
+    [[#2|#1]]
+  }
+}
+
+
+\tl_new:N \l__inst_thanks_tl
+\DeclareDocumentCommand \thanks {m} 
+{
+  \tl_gset:Nn \l__inst_thanks_tl {#1}
+}
+
+
+% Title page
+\RenewDocumentCommand \maketitle {}
+{
+  \# \@title~\#
+  \{: \#title\}
+
+  \#\#\#\#\# \@author~\#\#\#\#\#
+  \{: \#author\}
+
+  \tl_if_empty:NF \l__inst_thanks_tl
+  {
+    \maru_div:n {.thanks}
+    \txt_newline:
+    \tl_use:N \l__inst_thanks_tl
+    \txt_newline:
+    \maru_enddiv:
+  }
+}
+
+\tl_new:N \l__inst_thmstyle_tl
+\tl_new:N \l__inst_thmstyle_plain_tl
+\tl_new:N \l__inst_thmstyle_defn_tl
+\tl_new:N \l__inst_thmstyle_rmk_tl
+
+\tl_set:Nn \l__inst_thmstyle_plain_tl {.thplain}
+\tl_set:Nn \l__inst_thmstyle_definition_tl {.thdefn}
+\tl_set:Nn \l__inst_thmstyle_remark_tl {.thrmk}
+
+\NewDocumentCommand \theoremstyle {m}
+{
+  \tl_if_exist:cT {l__inst_thmstyle_ #1 _tl}
+  {
+    \tl_set_eq:Nc \l__inst_thmstyle_tl {l__inst_thmstyle_ #1 _tl}
+  }
+}
+
+
+\DeclareDocumentCommand \newtheorem {s m o m o}
+{
+  \IfBooleanTF{#1}
+  {
+    \inst_untheorem:nn {#2}{#4}
+  }
+  {
+    \IfNoValueTF{#3}
+    {
+      \inst_numtheorem:nnn {#2}{#2}{#4}
+    }
+    {
+      \inst_numtheorem:nnn {#2}{#3}{#4}
+    }
+  }
+}
+
+\cs_generate_variant:Nn \maru_num_env:nnnn {V}
+\cs_generate_variant:Nn \maru_un_env:nnnn {V}
+\cs_new_nopar:Npn \inst_numtheorem:nnn #1#2#3
+{
+  \maru_num_env:Vnnn \l__inst_thmstyle_tl {#1}{#2}{#3}
+}
+
+\cs_new_nopar:Npn \inst_untheorem:nn #1#2
+{
+  \maru_un_env:Vnnn \l__inst_thmstyle_tl {#1}{#1}{#2}
+}
+
+\DeclareDocumentEnvironment {proof} {}
+{
+  \par
+  \maru_div:n {.proof}
+  \txt_newline:
+}
+{
+  \txt_newline:
+  \maru_enddiv:
+  \par
+}
+
+\theoremstyle{plain}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\newtheorem{prop}{Proposition}
+
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}
+\newtheorem*{defn*}{Definition}
+\newtheorem{definition}[defn]{Definition}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+
+\NewDocumentCommand \eqref {m}
+{
+  \txt_only_chars:nn {alpha} {#1}
+  \string\eqref\{\tl_use:N \l__txt_chars_tl\}
+}
+
+\NewDocumentCommand \includepage {m}
+{
+  \mbox{[[!include #1]]}
+}
+
+% Lists with labels
+
+\cs_new:Npn \inst_hyp_enumerate:
+{
+  \mkdn_list:nn {} {
+    
+  }
+}
+
+\newcounter{enumerations}
+\NewDocumentEnvironment{instiki enumerate} {}
+{
+  \use:c {markdown list} {}
+  {
+    \tl_clear:N \l__mkdn_itemprefix_tl
+    \tl_clear:N \l__mkdn_itempar_tl
+    \mkdn_indent_by:n {3}
+    \stepcounter{enumerations}
+    \setcounter{enumi}{0}
+    \tl_set:Nn \theHItem
+    {
+      \int_to_Alph:n {\value{enumerations}}
+      \int_to_alph:n {\value{enumi}}
+    }
+    \tl_set:Nn \theenumi {\int_to_alph:n {\value{enumi}}}
+    \tl_set:Nn \l__mkdn_preitem_tl
+    {
+      \tl_set:Nn \l__inst_anchor_tl {enum}
+      \refstepcounter{enumi}
+    }
+    \tl_set:Nn \l__mkdn_postitem_tl
+    {
+      \tl_set:Nn \l__inst_anchor_tl {}
+    }
+  }
+}
+{
+  \use:c {end markdown list}
+}
+
+\AtBeginDocument{
+  \@ifpackageloaded{hyperref}{
+    \cs_set_eq:Nc \enumerate {instiki enumerate}
+    \cs_set_eq:Nc \endenumerate {end instiki enumerate}
+  }
+  {}
+}
+
+\RenewDocumentEnvironment{list} {}
+{
+  \use:c {markdown list} {}
+  {
+    \tl_clear:N \l__mkdn_itemprefix_tl
+    \tl_clear:N \l__mkdn_itempar_tl
+    \mkdn_indent_by:n {2}
+    \tl_set:Nn \l__mkdn_preitem_tl
+    {
+      \tl_set:Nn \l__inst_anchor_tl {labellist}
+    }
+    \tl_set:Nn \l__mkdn_postitem_tl
+    {
+      \tl_set:Nn \l__inst_anchor_tl {}
+    }
+    
+  }
+}
+{
+  \use:c {end markdown list}
+}
+
+\endinput
+
+% Local Variables:
+% mode: latex3
+% End:

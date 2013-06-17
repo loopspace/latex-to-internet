@@ -1,0 +1,324 @@
+% Code common to all text-output modes.
+% Command prefix: \text@
+
+% Set our page to be quite large so that we don't get any line breaks
+%\pdfpageheight 500cm
+\pdfpagewidth 200cm
+\setlength{\textwidth}{190cm}
+\setlength{\paperwidth}{200cm}
+\pdfpageheight 297mm
+\setlength{\paperheight}{297mm}
+\setlength{\textheight}{250mm}
+%\setlength{\textheight}{490cm}
+
+% Basic set-up commands expected from a class
+
+% Make font size commands irrelevant (later packages are allowed to
+% modify these if they know what to do with them
+\pdfmapline{=textfont~ cmtt10}
+\pdfmapline{=mathfont~ cmtt10}
+%\pdfmapline{=dummyfont~ dummy}
+\font\dummyfont=dummy
+\everymath{%
+\count0=0
+\loop
+\ifnum\count0<16
+\textfont\count0=\dummyfont
+\scriptfont\count0=\dummyfont
+\scriptscriptfont\count0=\dummyfont
+\advance\count0 by 1
+\repeat}
+\font\tfont=textfont
+\font\mathfont=mathfont
+\renewcommand\normalsize{%
+  \fontsize{10pt}{12pt}\fontfamily\ttdefault\selectfont
+\tfont
+}
+\let\tiny=\relax
+\let\small=\relax
+\let\large=\relax
+\let\Large=\relax
+\let\huge=\relax
+\let\Huge=\relax
+
+% List initialisation commands; generally useless, though we want
+% to make sure that there's no messing with parindents
+\let\@listi\@empty
+\let\@listii\@empty
+\let\@listiii\@empty
+\let\@listiv\@empty
+\let\@listv\@empty
+
+% Don't want any errors
+\raggedbottom
+\frenchspacing
+\raggedright
+
+% Separate paragraphs by a blank line
+\parskip=12pt
+\let\bigskip\par
+
+% No page numbers and so forth
+\pagestyle{empty}
+\thispagestyle{empty}
+\renewcommand\pagestyle[1]{}
+\renewcommand\thispagestyle[1]{}
+
+% Suppress a few commands that don't make sense in a text context
+\let\hfill=\relax
+\let\hfil=\relax % should be a swallow command
+\renewcommand{\setlength}[2]{}
+\let\noindent\relax
+
+\cs_set_eq:NN \txt_newpage: \newpage
+\cs_set_eq:NN \txt_clearpage: \clearpage
+\cs_set:Npn \newpage {}
+\cs_set:Npn \clearpage {}
+%\let\text@newpage=\newpage
+%\let\text@clearpage=\clearpage
+%\let\newpage=\relax
+%\let\clearpage=\relax
+\renewcommand{\pagebreak}[1][]{}
+\AtEndDocument{\txt_newpage: \txt_clearpage:}
+
+% Code for putting literal macros in the output
+%
+% Options:
+% #1: * version does not insert a space after the command name
+%       (only relevant if the command has no options)
+% #2: optional alternative command or string to insert, if the first
+%     token is a command or is active then it will have \string
+%     put in front.
+% #3: this is the command to define
+% #4 and #5 determine the ``options'' to this command in the same
+% manner as `\newcommand`, but options are simply reinserted in the
+% stream with the correct braces around them
+
+\DeclareDocumentCommand \newtextcommand { s o m O{0} o }
+{
+  \tl_clear:N \l_tmpa_tl
+  \tl_clear:N \l_tmpb_tl
+  \IfNoValueTF{#2}
+  {
+    \tl_set:Nx \l_tmpa_tl {\token_to_str:N #3}
+  }
+  {
+    \tl_if_empty:nF {#2}
+    {
+      \tl_if_head_eq_catcode:nNTF {#2} \c_catcode_active_tl
+      {
+        \tl_set:Nx \l_tmpa_tl {\token_to_str:N #2}
+      }
+      {
+        \tl_set:Nx \l_tmpa_tl {\tl_head:n {#2}}
+        \token_if_cs:NTF \l_tmpa_tl
+        {
+          \tl_set:Nx \l_tmpa_tl {\token_to_str:N #2}
+        }
+        {
+          \tl_set:Nx \l_tmpa_tl {#2}
+        }
+      }
+    }
+  }
+  \IfBooleanTF {#1}
+  {
+    \tl_clear:N \l_tmpb_tl
+  }
+  {
+    \tl_set:Nn \l_tmpb_tl {\c_space_token}
+  }
+
+  \IfNoValueTF{#5}
+  {
+    \int_compare:nTF {#4 = 0}
+    {
+      \cs_set:Npx #3 {\tl_use:N \l_tmpa_tl \tl_use:N \l_tmpb_tl}
+    }
+    {
+      \cs_set:Npx #3 {\tl_use:N \l_tmpa_tl \exp_not:N \txt_gobble_mopt:nn {#4} }
+    }
+  }
+  {
+    \cs_set:Npx #3 {\tl_use:N \l_tmpa_tl \exp_not:N \txt_gobble_oopt:nn {#4} {#5} }
+  }
+}
+
+\cs_new:Npn \txt_gobble_mopt:nn #1#2
+{
+  \{#2\}
+  \int_set:Nn \l_tmpa_int {#1 - 1}
+  \int_compare:nF {\l_tmpa_int = 0}
+  {
+    \txt_gobble_mopt:Vn \l_tmpa_int
+  }
+}
+
+\cs_generate_variant:Nn \txt_gobble_mopt:nn {V}
+
+\cs_new:Npn \txt_gobble_oopt:nn #1#2
+{
+  \peek_charcode_ignore_spaces:NTF [%]
+    {
+      \int_set:Nn \l_tmpa_int {#1 - 1}
+      \txt_gobble_oone:Vw \l_tmpa_int
+    }
+    {
+      \tl_if_empty:nF {#2}
+      {
+        [#2]
+      }
+      \int_compare:nTF {#1 = 1}
+      {
+        \c_space_token
+      }
+      {
+        \int_set:Nn \l_tmpa_int {#1 - 1}
+        \txt_gobble_mopt:Vn \l_tmpa_int
+      }
+    }
+}
+
+\cs_new:Npn \txt_gobble_oone:nw #1[#2]
+{
+  [#2]
+  \int_compare:nF {#1 = 0}
+  {
+    \txt_gobble_mopt:nn {#1}
+  }
+}
+
+\cs_generate_variant:Nn \txt_gobble_oone:nw {V}
+
+% Need to add the optional first command as in `\newtextcommand`
+\DeclareDocumentCommand \newtextenvironment { m O{0} o }
+{
+  \IfNoValueTF{#3}
+  {
+    \int_compare:nTF {#2 = 0}
+    {
+      \cs_set:cpn {#1} {\string\begin\{#1\}\par}
+    }
+    {
+      \cs_set:cpn {#1} {\string\begin\{#1\} \txt_gobble_mopt:nn {#2} }
+    }
+  }
+  {
+    \cs_set:cpn {#1} {\string\begin\{#1\} \txt_gobble_oopt:nn {#2} {#3} }
+  }
+  \cs_set:cpn {end #1} {\par\string\end\{#1\}\par}
+}
+
+% Allow us to produce `\begin` and `\end`
+\newtextcommand[\begin]{\text_begin}[1]
+\newtextcommand[\end]{\text_end}
+
+\cs_set_eq:NN \txt_onewline: \\
+
+\cs_set:Nn \txt_newline:
+{
+  \group_begin:
+  \tl_set_eq:NN \@nolnerr \c_empty_tl
+  \txt_onewline:
+  \group_end:
+}
+
+\cs_generate_variant:Nn \tl_map_function:nN {nc}
+\cs_new:Npn \txt_only_chars:nn #1#2
+{
+  \tl_clear:N \l__txt_chars_tl
+  \tl_map_function:nc {#2} {txt_only_#1:n}
+}
+
+\cs_new:Npn \txt_only_alpha:n #1
+{
+  \tl_if_single:nT {#1}
+  {
+    \bool_if:nT {
+      (\int_compare_p:n {`#1 >= `a} && \int_compare_p:n {`#1 <= `z})
+      ||
+      (\int_compare_p:n {`#1 >= `A} && \int_compare_p:n {`#1 <= `Z})
+    }
+    {
+      \tl_put_right:Nn \l__txt_chars_tl {#1}
+    }
+  }
+}
+
+\cs_new:Npn \txt_only_num:n #1
+{
+  \tl_if_single:nT {#1}
+  {
+    \bool_if:nT {
+      (\int_compare_p:n {`#1 >= `0} && \int_compare_p:n {`#1 <= `9})
+    }
+    {
+      \tl_put_right:Nn \l__txt_chars_tl {#1}
+    }
+  }
+}
+
+\cs_new:Npn \txt_only_alphanum:n #1
+{
+  \tl_if_single:nT {#1}
+  {
+    \bool_if:nT {
+      (\int_compare_p:n {`#1 >= `a} && \int_compare_p:n {`#1 <= `z})
+      ||
+      (\int_compare_p:n {`#1 >= `A} && \int_compare_p:n {`#1 <= `Z})
+      ||
+      (\int_compare_p:n {`#1 >= `0} && \int_compare_p:n {`#1 <= `9})
+    }
+    {
+      \tl_put_right:Nn \l__txt_chars_tl {#1}
+    }
+  }
+}
+
+\cs_new:Npn \txt_only_name:n #1
+{
+  \tl_if_single:nT #1
+  {
+    \tl_if_empty:NTF \l__txt_chars_tl
+    {
+      \bool_if:nT {
+        (\int_compare_p:n {`#1 >= `a} && \int_compare_p:n {`#1 <= `z})
+        ||
+        (\int_compare_p:n {`#1 >= `A} && \int_compare_p:n {`#1 <= `Z})
+        ||
+        (\token_if_eq_charcode_p:NN #1 :)
+        ||
+        (\token_if_eq_charcode_p:NN #1 _)
+      }
+      {
+        \tl_put_right:Nn \l__txt_chars_tl {#1}
+      }
+    }
+    {
+      \bool_if:nT {
+        (\int_compare_p:n {`#1 >= `a} && \int_compare_p:n {`#1 <= `z})
+        ||
+        (\int_compare_p:n {`#1 >= `A} && \int_compare_p:n {`#1 <= `Z})
+        ||
+        (\int_compare_p:n {`#1 >= `0} && \int_compare_p:n {`#1 <= `9})
+        ||
+        (\token_if_eq_charcode_p:NN #1 :)
+        ||
+        (\token_if_eq_charcode_p:NN #1 _)
+        ||
+        (\token_if_eq_charcode_p:NN #1 -)
+        ||
+        (\token_if_eq_charcode_p:NN #1 .)
+      }
+      {
+        \tl_put_right:Nn \l__txt_chars_tl {#1}
+      }
+    }
+  }
+}
+
+\endinput
+
+% Local Variables:
+% mode: latex3
+% End:
