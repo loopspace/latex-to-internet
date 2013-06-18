@@ -208,7 +208,7 @@
   \tl_if_eq:NNF \@author \l__xhtm_author_tl
   {
     \xhtm_linebreak:
-    \xhtm_open_tag:nn {dc:creator} {id="title"}
+    \xhtm_open_tag:nn {dc:creator} {id="creator"}
     \@author
     \xhtm_close_tag:n {dc:creator}
     \xhtm_open_tag:nn {meta} {refines="\#creator"~ property="file-as"}
@@ -253,12 +253,12 @@
 \cs_new_nopar:Npn \epub_next_segment:
 {
   \addtocounter{epub segments}{1}
-  \tl_put_right:Nx \l__epub_files_tl
+  \tl_gput_right:Nx \l__epub_files_tl
   {
     \exp_not:N \xhtm_linebreak:
     \exp_not:N \xhtm_empty_tag:nn {item} {href="\jobname \use:c{the epub segments} .xhtml"~ properties="mathml \tl_if_empty:NF \l__xhtm_js_tl {~ scripted}"~ id="page \use:c{the epub segments}"~ media-type="application/xhtml+xml"}
   }
-  \tl_put_right:Nx \l__epub_filelist_tl
+  \tl_gput_right:Nx \l__epub_filelist_tl
   {
     \exp_not:N \xhtm_linebreak:
     \exp_not:N \xhtm_comment:n {\jobname \use:c{the epub segments}.xhtml}
@@ -306,7 +306,7 @@
 
 \cs_new_nopar:Npn \epub_split_section:n #1
 {
-  \int_compare:nT {\seq_item:Nn \l__xhtm_args_seq {1} < \tl_use:c {l__epub_#1_level_tl}}
+  \int_compare:nT {\seq_item:Nn \l__xhtm_args_seq {1} <= \tl_use:c {l__epub_#1_level_tl}}
   {
     \xhtm_close_par:
     \xhtm_close_tag:n {body}
@@ -336,8 +336,8 @@
       }
     }
     {
-      \tl_set:Nn \l__xhtm_baseurl_tl {\jobname \exp_args:No \use_ii:nnnnn #1 .xhtml}
-      \exp_args:No \Hy@setref@link #1 \@empty \@empty \@nil {#2}
+      \tl_set:Nx \l__xhtm_baseurl_tl {\jobname \exp_last_unbraced:No \use_ii:nnnnn #1 .xhtml}
+      \exp_last_unbraced:No \Hy@setref@link #1 \@empty \@empty \@nil {#2}
     }
   }
 }
@@ -348,12 +348,12 @@
 
 \cs_new_nopar:Npn \epubsetpages #1
 {
-  \int_set:Nn\l__epub_pages_int {#1}
+  \int_gset:Nn\l__epub_pages_int {#1}
 }
 
 \int_new:N \l__epub_pages_int
 \int_set:Nn \l__epub_pages_int {1}
-\tl_set:Nn \l__xhtm_hrefcite_tl
+\xhtm_set_hook:nn {cite}
 {
   \tl_set:Nn \l__xhtm_baseurl_tl {\jobname \int_use:N     \l__epub_pages_int .xhtml}
 }
@@ -362,7 +362,7 @@
 
 \cs_set_nopar:Npn \xhtm_tocline:nnn #1#2#3
 {
-  \tl_set:Nn \l__xhtm_baseurl {\jobname #3.xhtml}
+  \tl_set:Nn \l__xhtm_baseurl_tl {\jobname #3.xhtml}
   \epub_tocline:nnn {#1}{#2}{#3}
 }
 

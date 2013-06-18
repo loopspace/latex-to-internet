@@ -3,30 +3,30 @@
 
 \DeclareDocumentCommand \imode {}
 {
-  \token_if_active:NTF <
+  \int_compare:nTF {\char_value_catcode:n {`\<} == 13 }
   {
-    \imode_active:w
+    \txt_imode_active:w
   }
   {
-    \txt_mode_inactive:w
+    \txt_imode_inactive:w
   }
 }
 
 \group_begin:
 \char_set_catcode_active:N <
 \char_set_catcode_active:N >
-\cs_new:Npn \txt_mode_active:w <#1>
+\cs_new:Npn \txt_imode_active:w <#1>
 {
-  \txt_mode_cases:n {#1}
+  \txt_imode_cases:n {#1}
 }
 \group_end:
 
-\cs_new:Npn \txt_mode_inactive:w <#1>
+\cs_new:Npn \txt_imode_inactive:w <#1>
 {
-  \txt_mode_cases:n {#1}
+  \txt_imode_cases:n {#1}
 }
 
-\cs_new:Npn \txt_mode_cases:n #1
+\cs_new:Npn \txt_imode_cases:n #1
 {
   \peek_catcode_ignore_spaces:NTF \c_group_begin_token
   {

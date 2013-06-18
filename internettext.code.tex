@@ -223,11 +223,12 @@
   \group_end:
 }
 
-\cs_generate_variant:Nn \tl_map_function:nN {nc}
+\cs_generate_variant:Nn \tl_map_function:nN {Vc}
 \cs_new:Npn \txt_only_chars:nn #1#2
 {
   \tl_clear:N \l__txt_chars_tl
-  \tl_map_function:nc {#2} {txt_only_#1:n}
+  \tl_set:Nx \l_tmpa_tl {#2}
+  \tl_map_function:Vc \l_tmpa_tl {txt_only_#1:n}
 }
 
 \cs_new:Npn \txt_only_alpha:n #1

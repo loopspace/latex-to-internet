@@ -1,75 +1,95 @@
-% Hyperref driver for ePub-style links
+% Hyperref driver for XHTML-style links
 
 \ProvidesFile{hepub.def}
-  [2012/10/15 v6.83k %
-  Hyperref driver for ePub3]
+  [2012/11/06 v6.83m %
+  Hyperref driver for ePub]
 
 \makeatletter
+\ExplSyntaxOn
 
 \Hy@VersionCheck{hepub.def}
 
 % Anchor syntax might vary considerably
 % It depends on *where* we are in the document
-\def\epub@anchortype{plain}
+\tl_set:Nn \l__xhtm_anchor_tl {plain}
 
 \Hy@WrapperDef\hyper@anchor#1{%
-  \@ifundefined{epub@anchor\epub@anchortype}{%
-    \epub@onlychars{name}{#1}%
-    \epub@opentag{a}{id="\epub@letters"}\epub@closetag{a}%
-  }{%
-    \csname epub@anchor\epub@anchortype\endcsname{#1}%
-  }%
+  \cs_if_exist:cTF {epub_anchor_\tl_use:N \l__epub_anchor_tl :n}
+    {
+      \use:c {epub_anchor_\tl_use:N \l__epub_anchor_tl :n}{#1}
+    }
+    {
+      \txt_only_chars:nn {name} {#1}
+      \epub_open_tag:nn {a} {id="\tl_use:N \l__txt_chars_tl"}
+      \epub_close_tag:n {a}
+    }
 }
 
 \Hy@WrapperDef\hyper@anchorstart#1{%
-  \@ifundefined{epub@anchorstart\epub@anchortype}{%
-    \epub@onlychars{name}{#1}%
-    \epub@opentag{a}{id="\epub@letters"}%
-  }{%
-    \csname epub@anchorstart\epub@anchortype\endcsname{#1}%
-  }%
+  \cs_if_exist:cTF {epub_anchorstart_\tl_use:N \l__epub_anchor_tl :n}
+    {
+      \use:c {epub_anchorstart_\tl_use:N \l__epub_anchor_tl :n}{#1}
+    }
+    {
+      \txt_only_chars:nn {name} {#1}
+      \epub_open_tag:nn {a} {id="\tl_use:N \l__txt_chars_tl"}
+    }
 }
 
 \def\hyper@anchorend{%
-  \@ifundefined{epub@anchorend\epub@anchortype}{%
-  \epub@closetag{a}%
-  }{%
-    \csname epub@anchorend\epub@anchortype\endcsname
-  }%
+    \cs_if_exist:cTF {epub_anchorend_\tl_use:N \l__epub_anchor_tl :}
+    {
+      \use:c {epub_anchorend_\tl_use:N \l__epub_anchor_tl :}
+    }
+    {
+      \epub_close_tag:n {a}
+    }
 }
 
-\let\epub@nextid=\relax
-\def\epub@baseurl{}
 
-\def\epub@anchoronnext#1{%
-    \epub@onlychars{name}{#1}%
-    \xdef\epub@nextid{\epub@letters}%
+\cs_new:Npn \epub_anchor_onnext:n #1
+{
+  \txt_only_chars:nn {name} {#1}
+  \tl_gset_eq:NN \l__epub_nextid_tl \l__txt_chars_tl
 }
-\def\epub@anchorstartonnext#1{%
-    \epub@onlychars{name}{#1}%
-    \xdef\epub@nextid{\epub@letters}%
+
+\cs_new:Npn \epub_anchorstart_onnext:n #1
+{
+  \txt_only_chars:nn {name} {#1}
+  \tl_gset_eq:NN \l__epub_nextid_tl \l__txt_chars_tl
 }
-\def\epub@anchorendonnext{%
-}
+
+\cs_new:Npn \epub_anchorend_onnext: {}
+
 
 \Hy@WrapperDef\hyper@linkfile#1#2#3{#1}%
 
 \Hy@WrapperDef\hyper@link#1#2#3{%
-  \epub@onlychars{name}{#2}%
-\epub@opentag{a}{href="\epub@baseurl\#\epub@letters"}#3\epub@closetag{a}}
+  \use:c {epub_href_#1_hool}
+  \txt_only_chars:nn {name} {#2}
+  \epub_open_tag:nn {a} {href="\tl_use:N \l__epub_baseurl_tl\#\tl_use:N \l__txt_chars_tl"}
+  #3
+  \epub_close_tag:n {a}
+}
 %\Hy@WrapperDef
-\def\hyper@linkurl#1#2{%
-\epub@opentag{a}{href="#2"}#1\epub@closetag{a}}
-\Hy@WrapperDef\hyper@linkstart#1#2{%
-  \epub@onlychars{name}{#2}%
-\epub@opentag{a}{href="\epub@baseurl\#\epub@letters"}}
+\cs_new_nopar:Npn \hyper@linkurl #1#2
+{
+  \epub_open_tag:nn {a}{href="#2"}
+  #1
+  \epub_close_tag:n {a}
+}
 
-\def\hyper@linkend{\epub@closetag{a}}
+\Hy@WrapperDef\hyper@linkstart #1#2
+{
+  \use:c {epub_href_#1_hook}
+  \txt_only_chars:nn {name} {#2}
+  \epub_open_tag:nn {a} {href="\tl_use:N \l__epub_baseurl_tl\#\tl_use:N \l__txt_chars_tl"}
+}
+
+\cs_new_nopar:Npn \hyper@linkend {\epub_close_tag:n {a}}
 
 % Hyperref loads pd1enc which overwrites the accent macros,
 % so we restore them here (if not using unicode)
-\ifint@unicode
-\else
 \renewcommand{\"}[1]{\entity{#1uml}}
 \renewcommand{\`}[1]{\entity{#1grave}}
 \renewcommand{\'}[1]{\entity{#1acute}}
@@ -88,8 +108,12 @@
 \renewcommand{\O}{\entity{Oslash}}
 \renewcommand{\ss}{\entity{szlig}}
 \renewcommand{\P}{\entity{\#182}}
-\fi
 
+\ExplSyntaxOff
 \makeatother
 
 \endinput
+
+% Local Variables:
+% mode: latex3
+% End:

@@ -211,6 +211,34 @@
   \use:c {end markdown list}
 }
 
+% itex in instiki allows for `\begin{equation} ... \end{equation}`
+
+\NewDocumentEnvironment {instiki equation} {}
+{
+  \txt_newline:
+  \itex_begin:n {equation}
+  \txt_newline:
+  \bool_set_true:N \l__itex_display_bool
+  \itex_maths_init:
+  \cs_set_eq:NN \label \itex_label:n
+}
+{
+  \txt_newline:
+  \itex_end:n {equation}
+  \txt_newline:
+}
+
+\cs_new_nopar:Npn \instiki_restore_equation:
+{
+  \cs_set_eq:Nc \equation {instiki equation}
+  \cs_set_eq:Nc \endequation {end instiki equation}
+}
+
+
+\AtBeginDocument{
+  \cs_set_eq:NN \itex_restore_equation: \instiki_restore_equation:
+}
+
 \endinput
 
 % Local Variables:

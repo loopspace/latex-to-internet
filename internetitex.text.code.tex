@@ -86,6 +86,15 @@
 
 \cs_new_nopar:Npn \itex_set_catcodes:
 {
+  \cs_set:Npx \itex_unset_catcodes:
+  {
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \^} {\char_value_catcode:n {`\^}}
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \_} {\char_value_catcode:n {`\_}}
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \>} {\char_value_catcode:n {`\>}}
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \<} {\char_value_catcode:n {`\<}}
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \&} {\char_value_catcode:n {`\_}}
+  }
+
   \char_set_catcode_active:N \^
   \char_set_catcode_active:N \_
   \char_set_catcode_active:N \>
@@ -100,7 +109,7 @@
 
 \NewDocumentCommand \itexRestoreCatcodes {}
 {
-%  \itex_unset_catcodes:
+  \itex_unset_catcodes:
 }
 
 \group_begin:
@@ -227,17 +236,11 @@
 
 \NewDocumentEnvironment {itex equation} {}
 {
-  \txt_newline:
-  \itex_begin:n {equation}
-  \txt_newline:
-  \bool_set_true:N \l__itex_display_bool
-  \itex_maths_init:
-  \cs_set_eq:NN \label \itex_label:n
+  \bool_set_true:N \l__itex_numbered_bool
+  \[
 }
 {
-  \txt_newline:
-  \itex_end:n {equation}
-  \txt_newline:
+  \]
 }
 
 \cs_new_nopar:Npn \itex_restore_equation:
@@ -364,6 +367,13 @@
   \text{#1}
 }
 
+\NewDocumentCommand \intertext {m}
+{
+  \\
+  \text{#1}
+  \\
+}
+
 \NewDocumentCommand \DeclareMathOperator {m m}
 {
   \NewDocumentCommand #1 {} {\@backslashchar #2}
@@ -373,6 +383,8 @@
 {
   \newtextcommand #1
 }
+
+% The `\not` command is quite complicated, this attempts to emulate it
 
 \RenewDocumentCommand \not {}
 {
@@ -398,6 +410,52 @@
     {
       \itex_orig_not: #1
     }
+  }
+}
+
+% Avoid nesting maths inside the `\text` command
+
+\tl_new:N \l__itex_endtext_tl
+\tl_set:Nn \l__itex_endtext_tl {\}\bool_set_false:N \l__itex_text_bool}
+
+\DeclareDocumentCommand \text {}
+{
+  \peek_meaning_ignore_spaces:NTF \c_group_begin_token
+  {
+    \itex_text_group:
+  }
+  {
+    \itex_text:n
+  }
+}
+
+\cs_new_nopar:Npn \itex_text:n #1
+{
+  \itextext \itexgroup {#1}
+}
+
+\cs_new_nopar:Npn \itex_text_group:
+{
+  \bool_set_true:N \l__itex_text_bool
+  \c_group_begin_token
+  \cs_set_eq:NN $ \itex_text_dollar: %$
+  \bool_set_false:N \l__itex_maths_bool
+  \group_insert_after:N \l__itex_endtext_tl
+  \itextext
+  \{
+    \peek_meaning_remove_ignore_spaces:NF \c_group_begin_token {}
+}
+
+\cs_new_nopar:Npn \itex_text_dollar:
+{
+  \bool_if:NTF \l__itex_maths_bool
+  {
+    \{
+      \bool_set_false:N \l__itex_maths_bool
+  }
+    {
+      \}
+    \bool_set_true:N \l__itex_maths_bool
   }
 }
 
@@ -1045,7 +1103,7 @@
 \newtextcommand{\mathbin}
 \newtextcommand{\mathrel}
 \newtextcommand{\includegraphics}
-\newtextcommand{\text}
+\newtextcommand[\text]{\itextext}
 \newtextcommand[\array]{\itexarray}
 \newtextcommand[\align]{\itexalign}
 \newtextcommand[\space]{\itexspace}[3]

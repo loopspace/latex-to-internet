@@ -65,7 +65,7 @@
 \Hy@WrapperDef\hyper@linkfile#1#2#3{#1}%
 
 \Hy@WrapperDef\hyper@link#1#2#3{%
-  \use:c {xhtm_href_#1_hool}
+  \xhtm_use_hook:n {#1}
   \txt_only_chars:nn {name} {#2}
   \xhtm_open_tag:nn {a} {href="\tl_use:N \l__xhtm_baseurl_tl\#\tl_use:N \l__txt_chars_tl"}
   #3

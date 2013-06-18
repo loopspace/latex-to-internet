@@ -47,10 +47,23 @@
   }
 }
 
+\cs_new:Npn \xhtm_addto_hook:nn #1#2
+{
+  \tl_put_right:cn {xhtm_hook_#1_tl} {#2}
+}
+
 \DeclareDocumentCommand \xhtmSetHook {m m}
 {
   
   \xhtm_set_hook:nn {#1} {#2}
+}
+
+% Interface to LaTeX2e conditionals
+
+\prg_new_conditional:Npnn \latex_if:N #1 {p,T,F,TF}
+{
+  \if_meaning:w #1 \iftrue
+  \prg_return_true: \else: \prg_return_false: \fi:
 }
 
 % Hyperref options
@@ -301,7 +314,7 @@
   \refstepcounter{#1}
   \tl_set:Nn \l__xhtm_anchor_tl {plain}
   \xhtm_section_header:nnn {#2} {\use:c {the#1} \c_space_token #3} {id="\tl_use:N \l__xhtm_nextid_tl"}
-  \addcontentsline{toc}{#1}{\protect\numberline{\use:c{the#1}#3}}
+  \addcontentsline{toc}{#1}{\protect\numberline{\use:c{the#1}}#3}
   \txt_newline:
   \xhtm_open_par:
 }
@@ -376,6 +389,7 @@
   {
     \bool_set_false:N \l__xhtm_reopen_par_bool
   }
+  \xhtm_close_par:
   \xhtm_open_tag:nn {#1}{#2}
   \group_begin:
 }
@@ -460,25 +474,29 @@
 
 \cs_new_nopar:Npn \xhtm_first_item:w [#1]
 {
-  \if@noitemarg
-  \@noitemargfalse
-  \if@nmbrlist
-  \tl_set:Nn \l__xhtm_anchor_tl {on next}
-  \refstepcounter\@listctr
-  \xhtm_open_tag:nn {li} {id="\tl_use:N \l__xhtm_nextid_tl"}
-  \xhtm_open_par:
-  \tl_set:Nn \l__xhtm_anchor_tl {plain}
-  \else
-  \xhtm_open_tag:nn {li} {}
-  \xhtm_open_par:
-  \fi
-  \else
-  \xhtm_open_tag:nn {li} {class="listlabel"}
-  \xhtm_open_par:
-  \xhtm_open_tag:nn {span} {class="listlabel"}
-  #1
-  \xhtm_close_tag:n {span}
-  \fi
+  \latex_if:NTF \if@noitemarg
+  {
+    \@noitemargfalse
+    \latex_if:NTF \if@nmbrlist
+    {
+      \tl_set:Nn \l__xhtm_anchor_tl {on next}
+      \refstepcounter\@listctr
+      \xhtm_open_tag:nn {li} {id="\tl_use:N \l__xhtm_nextid_tl"}
+      \xhtm_open_par:
+      \tl_set:Nn \l__xhtm_anchor_tl {plain}
+    }
+    {
+      \xhtm_open_tag:nn {li} {}
+      \xhtm_open_par:
+    }
+  }
+  {
+    \xhtm_open_tag:nn {li} {class="listlabel"}
+    \xhtm_open_par:
+    \xhtm_open_tag:nn {span} {class="listlabel"}
+    #1
+    \xhtm_close_tag:n {span}
+  }
   \cs_set_eq:NN \@item \xhtm_main_item:w
 }
 
@@ -486,25 +504,29 @@
 {
   \xhtm_close_par:
   \xhtm_close_tag:n {li}
-  \if@noitemarg
-  \@noitemargfalse
-  \if@nmbrlist
-  \tl_set:Nn \l__xhtm_anchor_tl {on next}
-  \refstepcounter\@listctr
-  \xhtm_open_tag:nn {li} {id="\tl_use:N \l__xhtm_nextid_tl"}
-  \xhtm_open_par:
-  \tl_gclear:N \l__xhtm_nextid_tl
-  \else
-  \xhtm_open_tag:nn {li} {}
-  \xhtm_open_par:
-  \fi
-  \else
-  \xhtm_open_tag:nn {li} {class="listlabel"}
-  \xhtm_open_par:
-  \xhtm_open_tag:nn {span}{class="listlabel"}
-  #1
-  \xhtm_close_tag:n {span}
-  \fi
+  \latex_if:NTF \if@noitemarg
+  {
+    \@noitemargfalse
+    \latex_if:NTF \if@nmbrlist
+    {
+      \tl_set:Nn \l__xhtm_anchor_tl {on next}
+      \refstepcounter\@listctr
+      \xhtm_open_tag:nn {li} {id="\tl_use:N \l__xhtm_nextid_tl"}
+      \xhtm_open_par:
+      \tl_gclear:N \l__xhtm_nextid_tl
+    }
+    {
+      \xhtm_open_tag:nn {li} {}
+      \xhtm_open_par:
+    }
+  }
+  {
+    \xhtm_open_tag:nn {li} {class="listlabel"}
+    \xhtm_open_par:
+    \xhtm_open_tag:nn {span}{class="listlabel"}
+    #1
+    \xhtm_close_tag:n {span}
+  }
 }
 
 % Entity handling
@@ -716,7 +738,7 @@
     \prg_replicate:nn {#1 - \l__xhtm_toclvl_int} {\enumerate}
   }
   \item #2
-  \int_set:Nn \l__xhtm_toclvl_int {#1}
+  \int_gset:Nn \l__xhtm_toclvl_int {#1}
 }
 
 % Minipage and parbox need thinking about
@@ -735,27 +757,27 @@
 
 \NewDocumentCommand \addcss {+m}
 {
-  \tl_put_right:Nn \l__xhtm_css_tl {#1}
+  \tl_gput_right:Nn \l__xhtm_css_tl {#1}
 }
 
 \NewDocumentCommand \addjavascript {+m}
 {
-  \tl_put_right:Nn \l__xhtm_js_tl {#1}
+  \tl_gput_right:Nn \l__xhtm_js_tl {#1}
 }
 
 \NewDocumentCommand \loadcss {m}
 {
-  \tl_put_right:Nn \l__xhtm_cssfiles_tl
+  \tl_gput_right:Nn \l__xhtm_cssfiles_tl
   {
-    \xhtm_empty_tag:nn {link} {href="#1.css" media="all" rel="stylesheet" type="text/css"}
+    \xhtm_empty_tag:nn {link} {href="#1.css"~ media="all"~ rel="stylesheet"~ type="text/css"}
   }
 }
 
 \NewDocumentCommand \loadjs {m}
 {
-  \tl_put_right:Nn \l__xhtm_jsfiles_tl
+  \tl_gput_right:Nn \l__xhtm_jsfiles_tl
   {
-    \xhtm_empty_tag:nn {script} {src="#1.js" type="text/javascript"}
+    \xhtm_empty_tag:nn {script} {src="#1.js"~ type="text/javascript"}
   }
 }
 
@@ -927,7 +949,6 @@
   \cs_set_nopar:NV \xhtm_tmp_thm: \l_tmpa_tl
   \cs_set_eq:cN {#1} \xhtm_tmp_thm:
   \cs_set_eq:cc {end #1} {end xhtm theorem}
-  \message{defining #1}
 }
 
 \DeclareDocumentEnvironment {xhtm theorem} {m m m O{}}
@@ -1174,6 +1195,18 @@
 }
 
 % Bibliography ...
+
+\NewDocumentEnvironment {thebibliography} {m}
+{
+  \section*{References}
+  \use:c{xhtm enumerate}{class="bibliography"}
+}
+{
+  \use:c{end xhtm enumerate}
+}
+
+\cs_set_eq:NN \newblock \relax
+
 
 % Some general user commands
 
