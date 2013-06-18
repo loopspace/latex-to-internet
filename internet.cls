@@ -96,6 +96,10 @@
       maths to load = itex,
       options = {itex}{#1},
     },
+    basic maths .meta:n ={
+      maths to load = basicmaths,
+      options = {basicmaths}{#1},
+    },
     instiki .meta:n = {
       output mode = instiki,
       files to load = instiki,
@@ -162,6 +166,10 @@
   }
 }
 
+\msg_new:nnnn {text} {no~ file} {Module~ '#1'~ not~ available~ to~ load~ at~ line~ \msg_line_context:} {}
+
+\cs_generate_variant:Nn \msg_warning:nnn {nnV}
+
 \cs_new:Npn \txt_load_file:n #1
 {
   \seq_if_in:NnF \l__txt_lfiles_seq {#1}
@@ -173,9 +181,12 @@
     {
       \tl_set:Nn \l_tmpa_tl {internet#1.doc.code.tex}
     }
-    \file_if_exist:nT {\l_tmpa_tl}
+    \file_if_exist:nTF {\l_tmpa_tl}
     {
       \file_input:n {\l_tmpa_tl}
+    }
+    {
+      \msg_warning:nnV {text} {no~ file} \l_tmpa_tl
     }
     \seq_put_right:Nn \l__txt_lfiles_seq {#1}
   }

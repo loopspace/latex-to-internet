@@ -318,6 +318,116 @@
   }
 }
 
+% HTML Tags
+\seq_new:N \l__html_tag_seq
+
+\cs_new:Npn \html_push_tag:n #1
+{
+  \seq_gpush:Nn \l__html_tag_seq {#1}
+}
+\cs_generate_variant:Nn \html_push_tag:n {V}
+
+
+\msg_new:nnnn {HTML} {no~ tag} {No~ tag~ available~ to~ close~ '#1'~ at~ line~ \msg_line_context:} {}
+\msg_new:nnnn {HTML} {no~ tag~ left} {No~ tag~ available~ to~ close~  at~ line~ \msg_line_context:} {}
+\msg_new:nnnn {HTML} {wrong~ tag} {Tried~ to~ close~ tag~ '#1'~ with~  '#2'~ at~ line~ \msg_line_context:} {}
+\cs_generate_variant:Nn \msg_warning:nnnn {nnVn}
+\cs_new:Npn \html_pop_tag:n #1
+{
+  \seq_get:NNTF \l__html_tag_seq \l_tmpa_tl
+  {
+    \tl_if_eq:VnTF \l_tmpa_tl {#1}
+    {
+      \seq_gpop:NN \l__html_tag_seq \l_tmpa_tl
+    }
+    {
+      \msg_warning:nnVn {HTMLL} {wrong~ tag} \l_tmpa_tl {#1}
+    }
+  }
+  {
+    \msg_warning:nnn {HTMLL} {no~ tag} {#1}
+  }
+}
+
+\cs_new_protected_nopar:Npn \html_open_tag:nn #1#2
+{
+  \mbox{}
+  \html_push_tag:n {#1}
+  <#1
+  \tl_if_empty:nF{#2}
+  {
+    \c_space_token
+    #2
+  }
+  >
+}
+\cs_generate_variant:Nn \html_open_tag:nn {x}
+
+\cs_new_protected_nopar:Npn \html_close_tag:n #1
+{
+  \html_pop_tag:n {#1}
+  </#1>
+}
+\cs_generate_variant:Nn \html_close_tag:n {x}
+
+\cs_new_protected_nopar:Npn \html_close_last_tag:
+{
+  \seq_gpop:NNTF \l__html_tag_seq \l_tmpa_tl
+  {
+    </\tl_use:N \l_tmpa_tl >
+  }
+  {
+    \msg_warning:nn {HTML} {no~ tag~ left}
+  }
+}
+
+\cs_new_protected_nopar:Npn \html_empty_tag:nn #1#2
+{
+  \mbox{}
+  <#1
+  \tl_if_empty:nF{#2}
+  {
+    \c_space_token
+    #2
+  }
+  />
+}
+
+\prg_new_protected_conditional:Npnn \html_if_current_tag_is:n #1 {T,F,TF}
+{
+  \seq_get:NNTF \l__html_tag_seq \l_tmpa_tl
+  {
+    \tl_if_eq:VnTF \l_tmpa_tl {#1}
+    {
+      \prg_return_true:
+    }
+    {
+      \prg_return_false:
+    }
+  }
+  {
+    \prg_return_false:
+  }
+}
+
+\prg_new_protected_conditional:Npnn \html_if_current_tag_is_par: {T,F,TF}
+{
+  \seq_get:NNTF \l__html_tag_seq \l_tmpa_tl
+  {
+    \tl_if_eq:VnTF \l_tmpa_tl {p}
+    {
+      \prg_return_true:
+    }
+    {
+      \prg_return_false:
+    }
+  }
+  {
+    \prg_return_false:
+  }
+}
+
+
 \endinput
 
 % Local Variables:

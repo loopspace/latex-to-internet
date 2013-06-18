@@ -1,0 +1,78 @@
+% basic maths, prefix: bmat
+
+% Define the options for the basic maths module
+\keys_define:nn {basic maths options}
+{
+}
+% Get and set the options for the markdown-extra module
+\prop_get:NnNT  \l__txt_popts_prop {basic maths} \l_tmpa_tl
+{
+  \keys_set:nV {basic maths options} \l_tmpa_tl
+}
+
+\bool_new:N \l__bmat_maths_bool
+
+\char_set_catcode_active:N \$%$
+
+\cs_new:Npn \bmat_dollar:
+{
+  \bool_if:NTF \l__bmat_maths_bool
+  {
+    \bmat_maths_end:
+  }
+  {
+    \bmat_maths_start:
+  }
+}
+
+\group_begin:
+\char_set_catcode_active:N \^
+\char_set_catcode_active:N \;
+\char_set_lccode:nn {`;}{`_}
+\tl_to_lowercase:n {
+\group_end:
+  \cs_new:Npn \bmat_maths_init:
+  {
+    \bool_set_true:N \l__bmat_maths_bool
+    \char_set_catcode_active:N \^
+    \char_set_catcode_active:N ;
+    \cs_set_eq:NN ^ \bmat_sup:n
+    \cs_set_eq:NN ; \bmat_sub:n
+  }
+}
+
+\cs_new:Npn \bmat_maths_start:
+{
+  \html_open_tag:nn {i} {}
+  \bmat_maths_init:
+}
+
+\cs_new:Npn \bmat_maths_end:
+{
+  \html_close_tag:n {i}
+}
+
+\cs_set_eq:NN $ \bmat_dollar: %$
+
+\cs_new_nopar:Npn \bmat_sup:n #1
+{
+  \html_open_tag:nn {sup} {}
+  #1
+  \html_close_tag:n {sup}
+}
+
+\cs_new_nopar:Npn \bmat_sub:n #1
+{
+  \html_open_tag:nn {sub} {}
+  #1
+  \html_close_tag:n {sub}
+}
+
+\cs_set_eq:NN \( $%$
+\cs_set_eq:NN \) $%$
+
+\endinput
+
+% Local Variables:
+% mode: latex3
+% End:

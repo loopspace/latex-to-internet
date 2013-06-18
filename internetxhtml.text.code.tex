@@ -24,14 +24,6 @@
   \keys_set:nV {xhtml options} \l_tmpa_tl
 }
 
-\seq_new:N \l__xhtm_tag_seq
-
-\cs_new:Npn \xhtm_push_tag:n #1
-{
-  \seq_gpush:Nn \l__xhtm_tag_seq {#1}
-}
-\cs_generate_variant:Nn \xhtm_push_tag:n {V}
-
 % Hooks
 
 \cs_new:Npn \xhtm_set_hook:nn #1#2
@@ -74,6 +66,16 @@
 \tl_new:N \l__xhtm_anchor_tl
 \tl_new:N \l__xhtm_nextid_tl
 \tl_new:N \l__xhtm_baseurl_tl
+
+% Tags
+\seq_new:N \l__xhtm_tag_seq
+
+\cs_new:Npn \xhtm_push_tag:n #1
+{
+  \seq_gpush:Nn \l__xhtm_tag_seq {#1}
+}
+\cs_generate_variant:Nn \xhtm_push_tag:n {V}
+
 
 \msg_new:nnnn {XHTML} {no~ tag} {No~ tag~ available~ to~ close~ '#1'~ at~ line~ \msg_line_context:} {}
 \msg_new:nnnn {XHTML} {wrong~ tag} {Tried~ to~ close~ tag~ '#1'~ with~  '#2'~ at~ line~ \msg_line_context:} {}
