@@ -1,0 +1,172 @@
+\documentclass[%
+  use filename,
+  markdownextra={section level=2}
+]{internet}
+
+\usepackage{hyperref}
+
+\title{The \texttt{internet} Class}
+
+\author{Andrew Stacey}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This is a class designed for those that want to use \LaTeX\ to publish material on the internet.
+As it becomes more common to publish material via some content-management system, so it becomes rarer to generate (X)HTML documents directly and content for the web is usually written in some limited markup language.
+This class is designed to make it possible to author material for such systems using the facility of \LaTeX.
+\end{abstract}
+
+\section{Introduction}
+
+It is important at the outset to know what this class is designed for and the easiest way to do that is to explain what it is not for.
+It is \emph{not} intended as a way to take an already authored \LaTeX\ document and convert it into a format suitable for putting on the internet.
+It is also \emph{not} intended as a ``plugin'' for a content-management system so that authors can use \LaTeX\ as the input format for their blog, forum, wiki, or whatever.
+
+The first of these is both impossible and undesirable.
+It is impossible for the following simple reason.
+Because \TeX\ controls the whole process of creating its output, it can do some amazing things.
+A web document, on the other hand, is extremely malleable and the reader can transform it considerably; therefore, not everything that \TeX\ can do can be (easily) done on the web.
+It is, via a considerable amount of trickery, to get quite close but only at the expense of this malleability.
+And this flexibility is a good thing as it allows the reader to make the document as easy for them to access as they can.
+This is why it is undesirable to support absolutely everything that \LaTeX\ can do.
+
+The second, the plugin, is also undesirable.
+There is a good reason that the current input formats were chosen: they are simple.
+They are simple to understand by a human: when writing on a wiki, it would be extremely inconvenient to have to learn the current page's set of macros so there is an advantage to having them consistent across the whole system.
+They are also simple to understand by a computer: parsing a file in, say, markdown is extremely quick and can be done in real time by scripting languages such as Perl and PHP.
+Parsing \TeX\ is much harder due to its complexity, and so either the scripting language has to limit the syntax or it has to pass it to an external program, both of which can put severe limitations on the system.
+
+So this package is designed for someone who wants to write a web page, not necessarily directly, using their \LaTeX\ skills.
+They want the full flexibility of \LaTeX\ together with its familiarity (presumably they write other documents in \LaTeX\ already) but know \emph{at the outset} that the document will end up on the web.
+
+\section{Usage}
+
+Usage of this package is extremely simple.
+It is designed as a \emph{class} and so should be loaded with a simple:
+
+\begin{verbatim}
+\documentclass{internet}
+\end{verbatim}
+
+There are various options available for the class.
+These are used to determine what type of output to produce.
+
+The first pair of options switch between a normal \LaTeX\ document and a ``special'' one.
+In addition to making it easy to produce a PDF version of the final document, it is often an easier workflow to use the PDF when writing as it is simple to view.
+The two options that control this output are:
+
+\begin{description}
+\item[doc] This is the default and processes the document as if it were a \LaTeX\ document.
+\item[text] This produces the alternative output.
+\end{description}
+
+At the next level, one needs to select the desired output format.
+These are further split into two groups: a main format and a mathematical format.
+The main formats are as follows:
+
+\begin{description}
+\item[markdown] The standard Markdown format.
+\item[markdownextra] The Markdown Extra format, which extends the Markdown format.
+\item[maruku] This is the Ruby implementation of Markdown, which extends Markdown Extra.
+\item[xhtml] This produces XHTML code.
+\item[epub] This produces an ePub3 document.
+\item[wordpress] This is basically the \verb+markdownextra+ format, but with a couple of modifications for a wordpress blog.
+\item[instiki] This is suitable for the \verb+instiki+ wiki system.
+Note that this also selects the \verb+itex+ maths format.
+\end{description}
+
+The mathematical formats are currently quite limited:
+
+\begin{description}
+\item[itex] This modifies the mathematics to be suitable for processing by the \verb+itextomml+ program.
+\end{description}
+
+These can take options, which are passed on to the appropriate module (and where one module is built on top of another, they are passed down until one accepts the option).
+The current options are:
+
+\begin{description}
+\item[section level=integer] for the Markdown and XHTML formats, sets the level of the top-level section.
+\item[split at=section type] for the ePub format, sets the level at which the document will be split into separate files.
+\end{description}
+
+There is one further option.
+The \textbf{use filename} option means that \TeX\ will try to determine the output format from the filename.
+It will split off the last part of the filename (without the extension) using an underscore as the separator.
+This will then be passed in as if it were a class option.
+The expected use of this is to have symlinks to the main file with name \verb+file_text.tex+ and \verb+file_doc.tex+ whereupon running \verb+pdflatex+ on one or the other produces the appropriate document.
+
+\section{Requirements}
+
+The code is written in \LaTeX3.
+My version dates from December 2012.
+It may be compatible with earlier versions, but I cannot say for sure.
+When producing a document with any kinds of links in them, it is common to use the \verb+hyperref+ package.
+To use the \verb+hyperref+ package with this class, it needs to be at least version 6.83f (dated 2012-09-26) which introduced support for the \verb+custom driver+ option which this class uses.
+
+
+
+\section{One File, Many Outputs}
+
+Although the intention is that a document written using this system be written knowing the eventual output, it is certainly not unreasonable to use a single file for several outputs, or to use a single fragment in documents on different systems.
+Whilst the attempt is to make it so that the same input works for all outputs, there will be times when one output type requires a slightly different input to another.
+For that situation, the \verb+imode+ command is provided.
+It works in much the same fashion as the \verb+beamer+ command \verb+\mode+.
+The syntax is either \verb+\imode<mode>{stuff}+ or just \verb+\imode<mode>+, the latter must be by itself on a line.
+In both cases, \verb+mode+ is one of the possible outputs or one of the key words \verb+doc+, \verb+text+, or \verb+all+.
+
+Let us take \verb+\imode<mode>{stuff}+ first.
+If \verb+mode+ matches what was specified as a class option, then the contents of the argument is executed.
+If not, it is thrown away.
+
+The second use, \verb+\imode<mode>+ is more complicated.
+If it \verb+mode+ matches, then \TeX\ carries on as normal.
+If not, it starts gobbling stuff until it reaches a line with just \verb+imode+ or \verb+\begin{document}+ or \verb+\end{document}+ on it.
+In the first case, the next line should be of the form \verb+<mode>+ and \TeX\ reevaluates the \verb+mode+.
+In the second or third cases, it starts acting normally again.
+
+Using the \verb+\imode+ command it is possible to specify material that is only processed in one mode.
+
+(There is not yet support for specifying multi-modes.)
+
+\section{Post-Processing}
+
+Whatever the output format, \verb+pdflatex+ produces a PDF.
+When a text format is desired, this needs to be converted to text.
+There are many excellent tools for doing that, the program \verb+pdftotext+ from the \verb+xpdf+ system works well.
+Use it as follows:
+
+\begin{verbatim}
+pdftotext -enc ASCII7 -layout -nopgbrk texfile.pdf
+\end{verbatim}
+
+Since line-breaks and indentation are often significant in text formats, the text modes define an extremely wide page in the hope that no paragraph will be quite \emph{that} long.
+Whilst \verb+pdftotext+ is fairly good at preserving the layout, it is not reliable as to preserving the exact number of spaces.
+For this reason, in a mode where indentation is significant, every line starts with a string of the form \verb+XXXY+ where the number of \verb+X+s is the number of spaces to indent.
+A simple \verb+perl+ script can convert those to spaces.
+A shell script, \verb+latex2txt.sh+ is provided that automates the process of going from \LaTeX\ document to text output with correct indentation.
+
+\section{Limitations}
+
+Too many to mention!
+
+The major limitation is to do with external packages.
+Most external packages will not work directly with this class (at least, in a text mode).
+This harks back to the problem of taking an already-written document and converting it.
+\LaTeX\ packages were written with the understanding that the final outcome would be a static document, not some text that will be further processed.
+
+That is not to say that no packages will ever be supported.
+Packages could be supported by writing an alternative which translates the commands to a sensible output.
+However, this will need to be done on a case-by-case basis as the need arises.
+
+Thus, for now, it is best to put all the \verb+\usepackage+ statements inside a \verb+\imode<doc>{...}+ command.
+
+\section{Obtaining the Code}
+
+This package is still in early days so is not yet on CTAN.
+As it is in development, it is easiest to distribute using a VCS.
+It is available at \href{http://www.math.ntnu.no/~stacey/code/LaTeXporter}{LaTeXporter} as a \verb+bzr+ repository.
+This also contains the source of this document, which was written using this class.
+
+\end{document}

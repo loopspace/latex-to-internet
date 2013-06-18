@@ -27,8 +27,6 @@
 
 % Hyperref loads pd1enc which overwrites the accent macros,
 % so we restore them here (if not using unicode)
-\ifint@unicode
-\else
 \renewcommand{\"}[1]{\entity{#1uml}}
 \renewcommand{\`}[1]{\entity{#1grave}}
 \renewcommand{\'}[1]{\entity{#1acute}}
@@ -47,7 +45,6 @@
 \renewcommand{\O}{\entity{Oslash}}
 \renewcommand{\ss}{\entity{szlig}}
 \renewcommand{\P}{\entity{\#182}}
-\fi
 
 \makeatother
 
