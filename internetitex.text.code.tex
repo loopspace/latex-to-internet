@@ -24,15 +24,40 @@
 }
 
 \char_set_catcode_active:N \$%$
+\AtBeginDocument{
+  \char_set_catcode_active:N \$%$
+}
 
 \cs_new_nopar:Npn \itex_superscript:n #1
 {
-  \tl_use:N \l__txt_caret_tl \{#1\}
+  \tl_use:N \l__txt_caret_tl \{
+    {
+      \bool_if:NTF \l__itex_script_bool
+      {
+        \bool_set_true:N \l__itex_scriptscript_bool
+      }
+      {
+        \bool_set_true:N \l__itex_script_bool
+      }
+      #1
+    }
+    \}
 }
 
 \cs_new_nopar:Npn \itex_subscript:n #1
 {
-  \tl_use:N \l__txt_underscore_tl \{#1\}
+  \tl_use:N \l__txt_underscore_tl \{
+    {
+      \bool_if:NTF \l__itex_script_bool
+      {
+        \bool_set_true:N \l__itex_scriptscript_bool
+      }
+      {
+        \bool_set_true:N \l__itex_script_bool
+      }
+      #1
+    }
+    \}
 }
 
 \cs_new_nopar:Npn \itex_percent:
@@ -50,6 +75,8 @@
 \bool_new:N \l__itex_maths_bool
 \bool_new:N \l__itex_numbered_bool
 \bool_new:N \l__itex_text_bool
+\bool_new:N \l__itex_script_bool
+\bool_new:N \l__itex_scriptscript_bool
 
 \cs_new_nopar:Npn \itex_maths_start:
 {
@@ -112,6 +139,18 @@
   \itex_unset_catcodes:
 }
 
+\cs_if_exist:NT \epub_math_in_toc:
+{
+  \cs_set_eq:NN \itex_math_in_toc: \epub_math_in_toc:
+  \cs_set:Npn \epub_math_in_toc:
+  {
+    \itex_math_in_toc:
+    \AtBeginDocument{
+      \@writefile{toc}{\itexSetCatcodes}
+    }
+  }
+}
+
 \group_begin:
 \char_set_catcode_active:N \^
 \char_set_catcode_active:N \>
@@ -131,6 +170,39 @@
   }
 }
 
+\tl_new:N \l__itex_char_tl
+\group_begin:
+\tl_set:Nn \l__itex_char_tl {^}
+\char_set_catcode_active:N \^
+\cs_gset:Npx ^ {\l__itex_char_tl}
+
+\tl_set:Nn \l__itex_char_tl {>}
+\char_set_catcode_active:N \>
+\exp_last_unbraced:NNo \cs_gset_eq:NN > \l__itex_char_tl
+
+\tl_set:Nn \l__itex_char_tl {<}
+\char_set_catcode_active:N \<
+\exp_last_unbraced:NNo \cs_gset_eq:NN < \l__itex_char_tl
+
+\tl_set:Nn \l__itex_char_tl {&}
+\char_set_catcode_active:N \&
+\exp_last_unbraced:NNo \cs_gset_eq:NN & \l__itex_char_tl
+
+\char_set_catcode_math_subscript:N \;
+\char_set_lccode:nn {`;}{`_}
+\tl_to_lowercase:n
+{
+  \tl_set:Nn \l__itex_char_tl {;}
+}
+\char_set_catcode_active:N \;
+\tl_to_lowercase:n
+{
+  \cs_gset:Npx ; {\l__itex_char_tl}
+}
+\group_end:
+
+
+
 \cs_new_nopar:Npn \itex_maths_init:
 {
   \mathfont
@@ -139,7 +211,12 @@
   \cs_set_eq:NN \% \itex_percent:
   \cs_set_eq:NN \\ \itexnl
   \cs_set_eq:NN \align \itex_align:
+  \cs_set_eq:NN \mbox \itex_text_or_mbox:
   \bool_set_true:N \l__itex_maths_bool
+  \bool_if:NT \l__itex_numbered_bool
+  {
+    \refstepcounter{equation}
+  }
 }
 
 \RenewDocumentCommand \( {} {${}}%$
@@ -416,7 +493,12 @@
 % Avoid nesting maths inside the `\text` command
 
 \tl_new:N \l__itex_endtext_tl
-\tl_set:Nn \l__itex_endtext_tl {\}\bool_set_false:N \l__itex_text_bool}
+\tl_set:Nn \l__itex_endtext_tl {
+\bool_set_false:N
+\l__itex_text_bool
+  \itex_text_closetags:
+  \}
+}
 
 \DeclareDocumentCommand \text {}
 {
@@ -434,6 +516,44 @@
   \itextext \itexgroup {#1}
 }
 
+\seq_new:N \l__itex_tag_seq
+
+\cs_new_nopar:Npn \itex_text_pushtag:
+{
+  \tl_set:Nx \l_tmpa_tl {
+    {\seq_item:Nn \l__xhtm_args_seq {1}}
+    {\seq_item:Nn \l__xhtm_args_seq {2}}
+  }
+  \seq_gpush:NV \l__itex_tag_seq \l_tmpa_tl
+}
+
+\cs_generate_variant:Nn \msg_warning:nnnn {nnVV}
+
+\cs_new:Npn \itex_text_poptag:
+{
+  \seq_gpop:NN \l__itex_tag_seq \l_tmpa_tl
+}
+
+\seq_new:N \l__itex_texttags_seq
+\cs_new:Npn \itex_text_closetags:
+{
+  \seq_gset_eq:NN \l__itex_texttags_seq \l__itex_tag_seq
+  \seq_map_inline:Nn \l__itex_tag_seq
+  {
+    \xhtm_close_tag:x {\tl_item:nn {##1} {1}}
+  }
+  \seq_gclear:N \l__itex_tag_seq
+}
+\cs_new:Npn \itex_text_opentags:
+{
+  \seq_reverse:N \l__itex_texttags_seq
+  \seq_map_inline:Nn \l__itex_texttags_seq
+  {
+    \xhtm_open_tag:xx {\tl_item:nn {##1} {1}} {\tl_item:nn {##1} {2}}
+  }
+  \seq_gclear:N \l__itex_texttags_seq
+}
+
 \cs_new_nopar:Npn \itex_text_group:
 {
   \bool_set_true:N \l__itex_text_bool
@@ -441,8 +561,19 @@
   \cs_set_eq:NN $ \itex_text_dollar: %$
   \bool_set_false:N \l__itex_maths_bool
   \group_insert_after:N \l__itex_endtext_tl
+  \xhtm_set_hook:nn {pre open tag}
+  {
+    \itex_text_pushtag:
+  }
+  \xhtm_set_hook:nn {pre close tag}
+  {
+    \itex_text_poptag:
+  }
   \itextext
   \{
+%  \xhtm_open_tag:nn {semantics} {}
+%  \xhtm_open_tag:nn {annotation_xml} {encoding='XHTML1.1'}
+    \tfont
     \peek_meaning_remove_ignore_spaces:NF \c_group_begin_token {}
 }
 
@@ -450,12 +581,47 @@
 {
   \bool_if:NTF \l__itex_maths_bool
   {
-    \{
+    \itextext\{
       \bool_set_false:N \l__itex_maths_bool
+      \tfont
+      \itex_text_opentags:
   }
     {
+      \itex_text_closetags:
       \}
     \bool_set_true:N \l__itex_maths_bool
+    \mathfont
+  }
+}
+
+% Inside maths, the box commands get out of maths mode
+
+\cs_set_eq:NN \itex_orig_mbox:n \mbox
+
+\cs_new:Npn \itex_text_or_mbox:
+{
+  \peek_meaning_ignore_spaces:NTF \c_group_begin_token
+  {
+    \peek_meaning_remove_ignore_spaces:NT \c_group_begin_token
+    {
+      \itex_text_or_mbox_aux:
+    }
+  }
+  {
+    \itex_text:n
+  }
+}
+
+\cs_new:Npn \itex_text_or_mbox_aux:
+{
+  \peek_meaning_ignore_spaces:NTF \c_group_end_token
+  {
+    % No argument, issue an ordinary mbox
+    \itex_orig_mbox:n {}
+  }
+  {
+    % Argument, revert to `\text`
+    \itex_text_group: \c_group_begin_token
   }
 }
 
@@ -1076,9 +1242,11 @@
 \newtextcommand{\mathbb}[1]
 \newtextcommand{\mathfrak}[1]
 \newtextcommand{\mathfr}[1]
+\let\mathsf=\mathrm
 \newtextcommand{\slash}[1]
 \newtextcommand{\boxed}[1]
 \newtextcommand{\mathcal}[1]
+\let\mathscr=\mathcal
 \newtextcommand{\substack}[1]
 \newtextcommand{\arrayopts}[1]
 \newtextcommand{\colalign}
@@ -1134,6 +1302,35 @@
 \cs_set_eq:NN \dotsb \dots
 \cs_set_eq:NN \land \wedge
 \cs_set_eq:NN \lor \vee
+
+\cs_set:Npn \mathopen #1 {#1}
+\cs_set:Npn \mathclose #1 {#1}
+\cs_set:Npn \mathord #1 {#1}
+\cs_set:Npn \mathbin #1 {#1}
+\cs_set:Npn \mathrel #1 {#1}
+
+\RenewDocumentCommand \mathchoice {m m m m}
+{
+  \bool_if:NTF \l__itex_display_bool
+  {
+    #1
+  }
+  {
+    \bool_if:NTF \l__itex_scriptscript_bool
+    {
+      #4
+    }
+    {
+      \bool_if:NTF \l__itex_script_bool
+      {
+        #3
+      }
+      {
+        #2
+      }
+    }
+  }
+}
 
 \endinput
 

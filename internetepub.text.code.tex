@@ -7,7 +7,7 @@
 \keys_define:nn {epub options}
 {
   split at .code:n = {
-    \tl_put_right:Nn \l__xhtm_presection_tl {\epub_split_section:n {#1}}
+    \xhtm_set_hook:nn {pre section header} {\epub_split_section:n {#1}}
   },
   split~ at .meta:n = {
     split at={#1}
@@ -71,8 +71,14 @@
 
 \cs_new_nopar:Npn \epub_math_in_toc:
 {
-  \tl_put_right:Nn \l__epub_tocprop_tl {\c_space_token mathml}
+  \tl_gput_right:Nn \l__epub_tocprop_tl {\c_space_token mathml}
 }
+
+\NewDocumentCommand \epubMathInToc {}
+{
+  \epub_math_in_toc:
+}
+
 \tl_new:N \l__epub_tocprop_tl
 \tl_set:Nn \l__epub_tocprop_tl {nav}
 \box_new:N \l__epub_toc_box
@@ -293,27 +299,51 @@
 }
 
 
+\int_set:Nn \l_tmpa_int {0}
+\clist_if_in:nVT {report,book} \l__txt_class_tl
+{
+  \tl_new:N \l__epub_chapter_level_tl
+  \tl_set:Nn \l__epub_chapter_level_tl {1}
+  \int_incr:N \l_tmpa_int
+}
+
 \tl_new:N \l__epub_section_level_tl
 \tl_new:N \l__epub_subsection_level_tl
 \tl_new:N \l__epub_subsubsection_level_tl
 \tl_new:N \l__epub_paragraph_level_tl
 \tl_new:N \l__epub_subparagraph_level_tl
-\tl_set:Nn \l__epub_section_level_tl {1}
-\tl_set:Nn \l__epub_subsection_level_tl {2}
-\tl_set:Nn \l__epub_subsubsection_level_tl {3}
-\tl_set:Nn \l__epub_paragraph_level_tl {4}
-\tl_set:Nn \l__epub_subparagraph_level_tl {5}
+
+\tl_set:Nx \l__epub_section_level_tl {\int_eval:n{\l_tmpa_int + 1}}
+\tl_set:Nx \l__epub_subsection_level_tl {\int_eval:n{\l_tmpa_int + 2}}
+\tl_set:Nx \l__epub_subsubsection_level_tl {\int_eval:n{\l_tmpa_int + 3}}
+\tl_set:Nx \l__epub_paragraph_level_tl {\int_eval:n{\l_tmpa_int + 4}}
+\tl_set:Nx \l__epub_subparagraph_level_tl {\int_eval:n{\l_tmpa_int + 5}}
+
+\int_new:N \l__epub_curr_section_int
 
 \cs_new_nopar:Npn \epub_split_section:n #1
 {
-  \int_compare:nT {\seq_item:Nn \l__xhtm_args_seq {1} <= \tl_use:c {l__epub_#1_level_tl}}
+  \bool_if:nT {
+    \int_compare_p:n {
+      \seq_item:Nn \l__xhtm_args_seq {1} <= \tl_use:c             {l__epub_#1_level_tl}
+    }
+    &&
+    \int_compare_p:n {
+      \l__epub_curr_section_int >= \tl_use:c {l__epub_#1_level_tl}
+    }
+  }
   {
     \xhtm_close_par:
+    \xhtm_set_footnotes:
     \xhtm_close_tag:n {body}
     \xhtm_close_tag:n {html}
     \xhtm_comment:n {end~ of~ \jobname \use:c{the epub segments} .xhtml}
     \txt_newpage:
     \epub_next_segment:
+  }
+  \int_gset:Nn \l__epub_curr_section_int
+  {
+    \seq_item:Nn \l__xhtm_args_seq {1}
   }
 }
 
@@ -381,6 +411,158 @@
     \exp_not:N \xhtm_linebreak:
     \exp_not:N \xhtm_comment:n {#1.png}
   }
+}
+
+% Definition lists seem different in ePub3 to XHTML
+
+\NewDocumentEnvironment {epub description} {m}
+{
+  \xhtm_close_par:
+  \xhtm_open_tag:nn {dl} {}
+  \cs_set_eq:NN \@item \epub_first_item:w
+}
+{
+  \xhtm_close_par:
+  \xhtm_close_tag:n {dd}
+  \xhtm_close_tag:n {dl}
+  \xhtm_open_par:
+}
+
+\DeclareDocumentEnvironment {description} {}
+{
+  \use:c {epub description}{}
+}
+{
+  \use:c {end epub description}
+}
+
+\cs_new_nopar:Npn \epub_first_item:w [#1]
+{
+  \xhtm_open_tag:nn {dt} {class="listlabel"}
+  \xhtm_open_tag:nn {dfn} {class="listlabel"}
+  #1
+  \xhtm_close_tag:n {dfn}
+  \xhtm_close_tag:n {dt}
+  \xhtm_open_tag:nn {dd} {}
+  \xhtm_open_par:
+  \cs_set_eq:NN \@item \epub_main_item:w
+}
+
+\cs_new_nopar:Npn \epub_main_item:w [#1]
+{
+  \xhtm_close_par:
+  \xhtm_close_tag:n {dd}
+  \xhtm_open_tag:nn {dt} {class="listlabel"}
+  \xhtm_open_tag:nn {dfn} {class="listlabel"}
+  #1
+  \xhtm_close_tag:n {dfn}
+  \xhtm_close_tag:n {dt}
+  \xhtm_open_tag:nn {dd} {}
+  \xhtm_open_par:
+}
+
+% Required information:
+%  Font file name
+%  Font id
+%  Font family
+%  Font weight
+%  Font style
+%  Font media type
+%  Font format
+%
+% Argument should be a prop with the above information
+%
+\cs_generate_variant:Nn \prop_get:NnN {NxN}
+\cs_new_nopar:Npn \epub_embed_font:N #1
+{
+  \clist_map_inline:nn { regular, italic, bold, bold~ italic }
+  {
+    \prop_if_in:NnT #1 {##1}
+    {
+      \prop_get:NxN \l__epub_fontmedia_prop
+          {\prop_get:Nn #1 {format}} \l_tmpb_tl
+      \tl_put_right:Nx \l__epub_files_tl
+      {
+        \exp_not:N \xhtm_linebreak:
+        \exp_not:N \xhtm_empty_tag:nn {item} {
+          id="font. \prop_get:Nn #1 {family}. ##1"~ 
+          href="\prop_get:Nn #1 {##1}"~
+          media-type="\tl_use:N \l_tmpb_tl"
+        }
+      }
+      \tl_put_right:Nx \l__epub_filelist_tl
+      {
+        \exp_not:N \xhtm_linebreak:
+        \exp_not:N \xhtm_comment:n {\prop_get:Nn #1 {##1}}
+      }
+      \tl_put_right:Nn \l_tmpa_tl
+      {
+        @font-face~
+        \{~
+        }
+        \tl_put_right:Nx \l_tmpa_tl
+        {
+          font-family:~ '\prop_get:Nn #1 {family}';~
+          font-weight:~ \prop_get:Nn \l__epub_fontwt_prop {##1};~
+          font-style:~ \prop_get:Nn \l__epub_fontst_prop {##1};~
+          src:~ url(\prop_get:Nn #1 {##1})~ format('\prop_get:Nn           #1 {format}');~
+        }
+        \tl_put_right:Nn \l_tmpa_tl {\}}
+      \xhtm_add_css:V \l_tmpa_tl
+    }
+  }
+}
+
+\prop_new:N \l__epub_font_prop
+\keys_define:nn { ePub }
+{
+  font .multichoice:,
+  font .choice_code:n =
+  {
+    \prop_put:NVV \l__epub_font_prop \l_keys_choice_tl \l_keys_value_tl
+  },
+  font .generate_choices:n =
+  {
+    family, regular, bold, italic, bold~ italic, format
+  }
+}
+
+\prop_new:N \l__epub_fontmedia_prop
+\prop_put:Nnn \l__epub_fontmedia_prop
+{ opentype }
+{ application/vnd.ms-opentype }
+\prop_new:N \l__epub_fontwt_prop
+\prop_put:Nnn \l__epub_fontwt_prop
+{ regular }
+{ regular }
+\prop_put:Nnn \l__epub_fontwt_prop
+{ italic }
+{ regular }
+\prop_put:Nnn \l__epub_fontwt_prop
+{ bold }
+{ regular }
+\prop_put:Nnn \l__epub_fontwt_prop
+{ bold~ italic }
+{ regular }
+\prop_new:N \l__epub_fontst_prop
+\prop_put:Nnn \l__epub_fontst_prop
+{ regular }
+{ normal }
+\prop_put:Nnn \l__epub_fontst_prop
+{ italic }
+{ italic }
+\prop_put:Nnn \l__epub_fontst_prop
+{ bold }
+{ normal }
+\prop_put:Nnn \l__epub_fontst_prop
+{ bold~ italic }
+{ italic }
+
+\NewDocumentCommand \epubEmbedFont {m}
+{
+  \prop_clear:N \l__epub_font_prop
+  \keys_set:nn { ePub / font } {#1}
+  \epub_embed_font:N \l__epub_font_prop
 }
 
 \endinput

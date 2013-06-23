@@ -20,7 +20,7 @@
     }
     {
       \txt_only_chars:nn {name} {#1}
-      \xhtm_open_tag:nn {a} {id="\tl_use:N \l__txt_chars_tl"}
+      \xhtm_open_tag:nx {a} {id="\tl_use:N \l__txt_chars_tl"}
       \xhtm_close_tag:n {a}
     }
 }
@@ -32,7 +32,7 @@
     }
     {
       \txt_only_chars:nn {name} {#1}
-      \xhtm_open_tag:nn {a} {id="\tl_use:N \l__txt_chars_tl"}
+      \xhtm_open_tag:nx {a} {id="\tl_use:N \l__txt_chars_tl"}
     }
 }
 
@@ -67,7 +67,7 @@
 \Hy@WrapperDef\hyper@link#1#2#3{%
   \xhtm_use_hook:n {#1}
   \txt_only_chars:nn {name} {#2}
-  \xhtm_open_tag:nn {a} {href="\tl_use:N \l__xhtm_baseurl_tl\#\tl_use:N \l__txt_chars_tl"}
+  \xhtm_open_tag:nx {a} {href="\tl_use:N \l__xhtm_baseurl_tl\#\tl_use:N \l__txt_chars_tl"}
   #3
   \xhtm_close_tag:n {a}
 }
@@ -83,7 +83,7 @@
 {
   \use:c {xhtm_href_#1_hook}
   \txt_only_chars:nn {name} {#2}
-  \xhtm_open_tag:nn {a} {href="\tl_use:N \l__xhtm_baseurl_tl\#\tl_use:N \l__txt_chars_tl"}
+  \xhtm_open_tag:nx {a} {href="\tl_use:N \l__xhtm_baseurl_tl\#\tl_use:N \l__txt_chars_tl"}
 }
 
 \cs_new_nopar:Npn \hyper@linkend {\xhtm_close_tag:n {a}}

@@ -1,5 +1,5 @@
 % Code common to all text-output modes.
-% Command prefix: \text@
+% Command prefix: txt
 
 % Set our page to be quite large so that we don't get any line breaks
 %\pdfpageheight 500cm
@@ -17,29 +17,21 @@
 % modify these if they know what to do with them
 \pdfmapline{=textfont~ cmtt10}
 \pdfmapline{=mathfont~ cmtt10}
-%\pdfmapline{=dummyfont~ dummy}
-\font\dummyfont=dummy
-\everymath{%
-\count0=0
-\loop
-\ifnum\count0<16
-\textfont\count0=\dummyfont
-\scriptfont\count0=\dummyfont
-\scriptscriptfont\count0=\dummyfont
-\advance\count0 by 1
-\repeat}
 \font\tfont=textfont
 \font\mathfont=mathfont
 \renewcommand\normalsize{%
   \fontsize{10pt}{12pt}\fontfamily\ttdefault\selectfont
 \tfont
 }
+\let\footnotesize=\relax
 \let\tiny=\relax
 \let\small=\relax
 \let\large=\relax
 \let\Large=\relax
 \let\huge=\relax
 \let\Huge=\relax
+
+\let\noindent=\relax
 
 % List initialisation commands; generally useless, though we want
 % to make sure that there's no messing with parindents
@@ -74,10 +66,7 @@
 \cs_set_eq:NN \txt_clearpage: \clearpage
 \cs_set:Npn \newpage {}
 \cs_set:Npn \clearpage {}
-%\let\text@newpage=\newpage
-%\let\text@clearpage=\clearpage
-%\let\newpage=\relax
-%\let\clearpage=\relax
+
 \renewcommand{\pagebreak}[1][]{}
 \AtEndDocument{\txt_newpage: \txt_clearpage:}
 
@@ -133,14 +122,14 @@
   {
     \int_compare:nTF {#4 = 0}
     {
-      \cs_set:Npx #3 {\tl_use:N \l_tmpa_tl \tl_use:N \l_tmpb_tl}
+      \cs_set_protected:Npx #3 {\tl_use:N \l_tmpa_tl \tl_use:N \l_tmpb_tl}
     }
     {
-      \cs_set:Npx #3 {\tl_use:N \l_tmpa_tl \exp_not:N \txt_gobble_mopt:nn {#4} }
+      \cs_set_protected:Npx #3 {\tl_use:N \l_tmpa_tl \exp_not:N \txt_gobble_mopt:nn {#4} }
     }
   }
   {
-    \cs_set:Npx #3 {\tl_use:N \l_tmpa_tl \exp_not:N \txt_gobble_oopt:nn {#4} {#5} }
+    \cs_set_protected:Npx #3 {\tl_use:N \l_tmpa_tl \exp_not:N \txt_gobble_oopt:nn {#4} {#5} }
   }
 }
 

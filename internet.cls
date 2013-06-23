@@ -138,6 +138,8 @@
 
 \ProcessKeysOptions{internet options}
 
+\tl_set_eq:NN \@classoptionslist \l__txt_copts_clist
+
 \bool_if:nTF \l__txt_text_bool
 {
   \file_input:n {internettext.code.tex}
@@ -195,7 +197,6 @@
 \seq_concat:NNN \l__txt_files_seq \l__txt_files_seq \l__txt_mfiles_seq
 
 \seq_map_function:NN \l__txt_files_seq \txt_load_file:n
-
 
 % Local Variables:
 % mode: latex3
