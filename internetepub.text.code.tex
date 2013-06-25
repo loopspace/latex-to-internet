@@ -2,6 +2,7 @@
 
 % Built on top of XHTML
 \txt_load_file:n {xhtml}
+\tl_set:Nn \l__xhtm_idtype_tl {namenoc}
 
 % Define the options for the ePub module
 \keys_define:nn {epub options}
@@ -27,6 +28,9 @@
 \newcounter{epub segments}
 \setcounter{epub segments}{0}
 \cs_set_eq:Nc \thepage {the epub segments}
+% Disable restyling the page numbering,
+\cs_set:Npn \pagenumbering #1 {}
+
 
 \tl_clear:N \l__xhtm_begindoc_tl
 
@@ -246,7 +250,7 @@
   \xhtm_close_tag:n {manifest}
   \xhtm_linebreak:
   \xhtm_open_tag:nn {spine} {}
-  \int_step_inline:nnnn {1} {1} {\l__epub_pages_int}
+  \int_step_inline:nnnn {1} {1} {\l__epub_bibpage_int}
   {
     \xhtm_empty_tag:nn {itemref} {idref="page #1"}
   }
@@ -300,36 +304,47 @@
 
 
 \int_set:Nn \l_tmpa_int {0}
+\clist_if_in:nVT {book} \l__txt_class_tl
+{
+  \int_new:N \l__epub_part_level_int
+  \int_set:Nn \l__epub_part_level_int {1}
+  \int_incr:N \l_tmpa_int
+}
 \clist_if_in:nVT {report,book} \l__txt_class_tl
 {
-  \tl_new:N \l__epub_chapter_level_tl
-  \tl_set:Nn \l__epub_chapter_level_tl {1}
+  \int_new:N \l__epub_chapter_level_int
+  \int_set:Nn \l__epub_chapter_level_int {\l_tmpa_int + 1}
   \int_incr:N \l_tmpa_int
 }
 
-\tl_new:N \l__epub_section_level_tl
-\tl_new:N \l__epub_subsection_level_tl
-\tl_new:N \l__epub_subsubsection_level_tl
-\tl_new:N \l__epub_paragraph_level_tl
-\tl_new:N \l__epub_subparagraph_level_tl
+\int_new:N \l__epub_section_level_int
+\int_new:N \l__epub_subsection_level_int
+\int_new:N \l__epub_subsubsection_level_int
+\int_new:N \l__epub_paragraph_level_int
+\int_new:N \l__epub_subparagraph_level_int
 
-\tl_set:Nx \l__epub_section_level_tl {\int_eval:n{\l_tmpa_int + 1}}
-\tl_set:Nx \l__epub_subsection_level_tl {\int_eval:n{\l_tmpa_int + 2}}
-\tl_set:Nx \l__epub_subsubsection_level_tl {\int_eval:n{\l_tmpa_int + 3}}
-\tl_set:Nx \l__epub_paragraph_level_tl {\int_eval:n{\l_tmpa_int + 4}}
-\tl_set:Nx \l__epub_subparagraph_level_tl {\int_eval:n{\l_tmpa_int + 5}}
+\int_set:Nn \l__epub_section_level_int {\l_tmpa_int + 1}
+\int_set:Nn \l__epub_subsection_level_int {\l_tmpa_int + 2}
+\int_set:Nn \l__epub_subsubsection_level_int {\l_tmpa_int + 3}
+\int_set:Nn \l__epub_paragraph_level_int {\l_tmpa_int + 4}
+\int_set:Nn \l__epub_subparagraph_level_int {\l_tmpa_int + 5}
 
 \int_new:N \l__epub_curr_section_int
+\int_new:N \l__epub_next_section_int
 
 \cs_new_nopar:Npn \epub_split_section:n #1
 {
+  \int_set:Nn \l__epub_next_section_int
+  {
+    \seq_item:Nn \l__xhtm_args_seq {1} + \l__xhtm_sec_int
+  }
   \bool_if:nT {
     \int_compare_p:n {
-      \seq_item:Nn \l__xhtm_args_seq {1} <= \tl_use:c             {l__epub_#1_level_tl}
+      \l__epub_next_section_int <= \int_use:c {l__epub_#1_level_int}
     }
     &&
     \int_compare_p:n {
-      \l__epub_curr_section_int >= \tl_use:c {l__epub_#1_level_tl}
+      \l__epub_curr_section_int >= \int_use:c {l__epub_#1_level_int}
     }
   }
   {
@@ -341,10 +356,21 @@
     \txt_newpage:
     \epub_next_segment:
   }
-  \int_gset:Nn \l__epub_curr_section_int
-  {
-    \seq_item:Nn \l__xhtm_args_seq {1}
-  }
+  \int_gset_eq:NN \l__epub_curr_section_int \l__epub_next_section_int
+}
+
+\cs_new:Npn \epub_phantom_section:
+{
+  \tl_set:Nx \l_tmpa_tl {{\int_eval:n  {\l__epub_section_level_int -  \l__xhtm_sec_int } }}
+  \seq_set_split:NnV \l__xhtm_args_seq {,} \l_tmpa_tl
+\xhtm_use_hook:n {pre section header}
+  % This ensures we don't break after a \phantomsection
+  \int_gset:Nn \l__epub_curr_section_int {0}
+\epub_orig_phantom_section:
+}
+\AtBeginDocument{
+  \cs_set_eq:NN \epub_orig_phantom_section: \phantomsection
+  \cs_set_eq:NN \phantomsection \epub_phantom_section:
 }
 
 \tl_put_right:Nn \l__xhtm_preabstract_tl
@@ -353,6 +379,29 @@
 }
 
 \cs_new:Npn \use_ii:nnnnn #1#2#3#4#5{#2}
+\cs_new:Npn \use_iiii:nnnnn #1#2#3#4#5{#4}
+
+\cs_set_eq:NN \epub_old_label:nnn \@newl@bel
+
+\cs_new:Npn \epub_label:nnn #1#2#3
+{
+  \epub_old_label:nnn {#1}{#2}{#3}
+  \int_compare:nT {\tl_count:n {#3} == 5}
+  {
+    \tl_gclear_new:c {epub_page_\use_iiii:nnnnn #3}
+    \tl_gset:cx {epub_page_\use_iiii:nnnnn #3} {\use_ii:nnnnn #3}
+  }
+}
+
+\cs_set_eq:NN \@newl@bel \epub_label:nnn
+
+\xhtm_set_hook:nn {link}
+{
+  \tl_if_exist:cT {epub_page_  \seq_item:Nn \l__xhtm_args_seq {2}}
+  {
+    \tl_set:Nx \l__xhtm_baseurl_tl {\jobname \tl_use:c {epub_page_  \seq_item:Nn \l__xhtm_args_seq {2}} .xhtml}
+  }
+}
 
 \AtBeginDocument{
   \cs_set:Npn \@setref #1#2#3
@@ -372,20 +421,22 @@
   }
 }
 
-\xhtm_at_enddocument:n {
-  \write\@auxout{\string\epubsetpages {\use:c {the epub segments}}}
-}
-
-\cs_new_nopar:Npn \epubsetpages #1
+\xhtm_set_hook:nn {post bibliography header}
 {
-  \int_gset:Nn\l__epub_pages_int {#1}
+  \write\@auxout{\string\epubbibpage {\use:c {the epub segments}}}  
 }
 
-\int_new:N \l__epub_pages_int
-\int_set:Nn \l__epub_pages_int {1}
+
+\cs_new_nopar:Npn \epubbibpage #1
+{
+  \int_gset:Nn\l__epub_bibpage_int {#1}
+}
+
+\int_new:N \l__epub_bibpage_int
+\int_set:Nn \l__epub_bibpage_int {1}
 \xhtm_set_hook:nn {cite}
 {
-  \tl_set:Nn \l__xhtm_baseurl_tl {\jobname \int_use:N     \l__epub_pages_int .xhtml}
+  \tl_set:Nn \l__xhtm_baseurl_tl {\jobname \int_use:N     \l__epub_bibpage_int .xhtml}
 }
 
 \cs_set_eq:NN \epub_tocline:nnn \xhtm_tocline:nnn
@@ -475,7 +526,7 @@
 \cs_generate_variant:Nn \prop_get:NnN {NxN}
 \cs_new_nopar:Npn \epub_embed_font:N #1
 {
-  \clist_map_inline:nn { regular, italic, bold, bold~ italic }
+  \clist_map_inline:nn { regular, italic, bold, bold italic }
   {
     \prop_if_in:NnT #1 {##1}
     {
@@ -495,10 +546,10 @@
         \exp_not:N \xhtm_linebreak:
         \exp_not:N \xhtm_comment:n {\prop_get:Nn #1 {##1}}
       }
-      \tl_put_right:Nn \l_tmpa_tl
+      \tl_set:Nn \l_tmpa_tl
       {
         @font-face~
-        \{~
+        \txt_lbrace:~
         }
         \tl_put_right:Nx \l_tmpa_tl
         {
@@ -507,7 +558,8 @@
           font-style:~ \prop_get:Nn \l__epub_fontst_prop {##1};~
           src:~ url(\prop_get:Nn #1 {##1})~ format('\prop_get:Nn           #1 {format}');~
         }
-        \tl_put_right:Nn \l_tmpa_tl {\}}
+        \tl_put_right:Nn \l_tmpa_tl {\txt_rbrace:
+        \xhtm_linebreak:}
       \xhtm_add_css:V \l_tmpa_tl
     }
   }
@@ -523,7 +575,7 @@
   },
   font .generate_choices:n =
   {
-    family, regular, bold, italic, bold~ italic, format
+    family, regular, bold, italic, bold italic, format
   }
 }
 
@@ -542,7 +594,7 @@
 { bold }
 { regular }
 \prop_put:Nnn \l__epub_fontwt_prop
-{ bold~ italic }
+{ bold italic }
 { regular }
 \prop_new:N \l__epub_fontst_prop
 \prop_put:Nnn \l__epub_fontst_prop
@@ -555,7 +607,7 @@
 { bold }
 { normal }
 \prop_put:Nnn \l__epub_fontst_prop
-{ bold~ italic }
+{ bold italic }
 { italic }
 
 \NewDocumentCommand \epubEmbedFont {m}

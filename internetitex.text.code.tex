@@ -23,14 +23,19 @@
   \keys_set:nV {itex options} \l_tmpa_tl
 }
 
-\char_set_catcode_active:N \$%$
-\AtBeginDocument{
+\cs_new:Npn \itex_activate_dollar:
+{
   \char_set_catcode_active:N \$%$
+}
+\itex_activate_dollar:
+
+\AtBeginDocument{
+  \itex_activate_dollar:
 }
 
 \cs_new_nopar:Npn \itex_superscript:n #1
 {
-  \tl_use:N \l__txt_caret_tl \{
+  \tl_use:N \l__txt_caret_tl \txt_lbrace:
     {
       \bool_if:NTF \l__itex_script_bool
       {
@@ -41,12 +46,12 @@
       }
       #1
     }
-    \}
+    \txt_rbrace:
 }
 
 \cs_new_nopar:Npn \itex_subscript:n #1
 {
-  \tl_use:N \l__txt_underscore_tl \{
+  \tl_use:N \l__txt_underscore_tl \txt_lbrace:
     {
       \bool_if:NTF \l__itex_script_bool
       {
@@ -57,7 +62,7 @@
       }
       #1
     }
-    \}
+    \txt_rbrace:
 }
 
 \cs_new_nopar:Npn \itex_percent:
@@ -129,9 +134,34 @@
   \char_set_catcode_active:N \&
 }
 
+\cs_new_nopar:Npn \itex_set_all_catcodes:
+{
+  \cs_set:Npx \itex_unset_catcodes:
+  {
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \^} {\char_value_catcode:n {`\^}}
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \$} {\char_value_catcode:n {`\$}}
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \_} {\char_value_catcode:n {`\_}}
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \>} {\char_value_catcode:n {`\>}}
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \<} {\char_value_catcode:n {`\<}}
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \&} {\char_value_catcode:n {`\_}}
+  }
+
+  \char_set_catcode_active:N \$%$
+  \char_set_catcode_active:N \^
+  \char_set_catcode_active:N \_
+  \char_set_catcode_active:N \>
+  \char_set_catcode_active:N \<
+  \char_set_catcode_active:N \&
+}
+
 \NewDocumentCommand \itexSetCatcodes {}
 {
   \itex_set_catcodes:
+}
+
+\NewDocumentCommand \itexSetAllCatcodes {}
+{
+  \itex_set_all_catcodes:
 }
 
 \NewDocumentCommand \itexRestoreCatcodes {}
@@ -146,7 +176,7 @@
   {
     \itex_math_in_toc:
     \AtBeginDocument{
-      \@writefile{toc}{\itexSetCatcodes}
+      \@writefile{toc}{\itexSetAllCatcodes}
     }
   }
 }
@@ -171,21 +201,26 @@
 }
 
 \tl_new:N \l__itex_char_tl
+
 \group_begin:
 \tl_set:Nn \l__itex_char_tl {^}
 \char_set_catcode_active:N \^
+\cs_gset:Npx \itex_text_caret: {\l__itex_char_tl}
 \cs_gset:Npx ^ {\l__itex_char_tl}
 
 \tl_set:Nn \l__itex_char_tl {>}
 \char_set_catcode_active:N \>
+\cs_gset:Npx \itex_text_rangle: {\l__itex_char_tl}
 \exp_last_unbraced:NNo \cs_gset_eq:NN > \l__itex_char_tl
 
 \tl_set:Nn \l__itex_char_tl {<}
 \char_set_catcode_active:N \<
+\cs_gset:Npx \itex_text_langle: {\l__itex_char_tl}
 \exp_last_unbraced:NNo \cs_gset_eq:NN < \l__itex_char_tl
 
 \tl_set:Nn \l__itex_char_tl {&}
 \char_set_catcode_active:N \&
+\cs_gset:Npx \itex_text_amp: {\l__itex_char_tl}
 \exp_last_unbraced:NNo \cs_gset_eq:NN & \l__itex_char_tl
 
 \char_set_catcode_math_subscript:N \;
@@ -194,12 +229,24 @@
 {
   \tl_set:Nn \l__itex_char_tl {;}
 }
+\cs_gset:Npx \itex_text_underscore: {\l__itex_char_tl}
 \char_set_catcode_active:N \;
 \tl_to_lowercase:n
 {
   \cs_gset:Npx ; {\l__itex_char_tl}
 }
-\group_end:
+\tl_to_lowercase:n
+{
+  \group_end:
+  \cs_new_nopar:Npn \itex_set_text_actives:
+  {
+    \cs_set_eq:NN ^ \itex_text_caret:
+    \cs_set_eq:NN ; \itex_text_underscore:
+    \cs_set_eq:NN > \itex_text_rangle:
+    \cs_set_eq:NN < \itex_text_langle:
+    \cs_set_eq:NN & \itex_text_amp:
+  }
+}
 
 
 
@@ -284,7 +331,7 @@
   \cs_set_eq:cN {itex_maths_\cs_to_str:N #1:} #1
   \cs_set_nopar:Npn #1
   {
-    \bool_if:NTF \itex_maths_bool
+    \bool_if:NTF \l__itex_maths_bool
     {
       \use:c {itex_maths_\cs_to_str:N #1:}
     }
@@ -297,19 +344,8 @@
 \cs_new_nopar:Npn \itex_label:n #1
 {
   \txt_only_chars:nn {alpha} {#1}
-  \string\label \{\tl_use:N \l__txt_chars_tl \}
+  \string\label \txt_lbrace:\tl_use:N \l__txt_chars_tl \txt_rbrace:
 }
-
-\group_begin:
-\cs_set_eq:NN \itex_orig_begin: \begin
-\cs_set_eq:NN \itex_orig_end: \end
-\newtextcommand \begin [1]
-\newtextcommand \end
-\cs_gset_eq:NN \itex_begin:n \begin
-\cs_gset_eq:NN \itex_end:n \end
-\cs_gset_eq:NN \begin \itex_orig_begin:
-\cs_gset_eq:NN \end \itex_orig_end:
-\group_end:
 
 \NewDocumentEnvironment {itex equation} {}
 {
@@ -497,7 +533,8 @@
 \bool_set_false:N
 \l__itex_text_bool
   \itex_text_closetags:
-  \}
+  \txt_rbrace:
+\itex_set_actives:
 }
 
 \DeclareDocumentCommand \text {}
@@ -570,7 +607,8 @@
     \itex_text_poptag:
   }
   \itextext
-  \{
+  \txt_lbrace:
+    \itex_set_text_actives:
 %  \xhtm_open_tag:nn {semantics} {}
 %  \xhtm_open_tag:nn {annotation_xml} {encoding='XHTML1.1'}
     \tfont
@@ -581,14 +619,16 @@
 {
   \bool_if:NTF \l__itex_maths_bool
   {
-    \itextext\{
+    \itextext\txt_lbrace:
       \bool_set_false:N \l__itex_maths_bool
       \tfont
+      \itex_set_text_actives:
       \itex_text_opentags:
   }
     {
       \itex_text_closetags:
-      \}
+      \txt_rbrace:
+    \itex_set_actives:
     \bool_set_true:N \l__itex_maths_bool
     \mathfont
   }
@@ -1242,7 +1282,7 @@
 \newtextcommand{\mathbb}[1]
 \newtextcommand{\mathfrak}[1]
 \newtextcommand{\mathfr}[1]
-\let\mathsf=\mathrm
+\newtextcommand{\mathsf}[1]
 \newtextcommand{\slash}[1]
 \newtextcommand{\boxed}[1]
 \newtextcommand{\mathcal}[1]

@@ -21,7 +21,7 @@
 \NewDocumentCommand \tableofcontents {}
 {
   \par
-  * tic\txt_newline: \{: toc\}
+  * tic\txt_newline: \txt_lbrace: : toc\txt_rbrace:
   \par
 }
 
@@ -59,7 +59,7 @@
   +-{}-
   \tl_if_empty:nF {#1}
   {
-    \{: #1 \}
+    \txt_lbrace: : #1 \txt_rbrace:
   }
 }
 
@@ -105,7 +105,7 @@
   \txt_newline:
   \maru_enddiv:
   \txt_newline:
-  \mkdn_section_header:nn {#1} {#2} \{: .num \tl_use:N \l__txt_underscore_tl \tl_use:N \l_tmpa_tl \}\par
+  \mkdn_section_header:nn {#1} {#2} \txt_lbrace: : .num \tl_use:N \l__txt_underscore_tl \tl_use:N \l_tmpa_tl \txt_rbrace:\par
 }
 
 \AtBeginDocument{
@@ -117,7 +117,7 @@
 
 \RenewDocumentCommand \textup {m}
 {
-  \tl_use:N \l__txt_underscore_tl #1 \l__txt_underscore_tl \{:~style="font-style:~ normal"\}
+  \tl_use:N \l__txt_underscore_tl #1 \l__txt_underscore_tl \txt_lbrace: :~style="font-style:~ normal"\txt_rbrace:
 }
 
 \cs_new_nopar:Npn \maru_block_header:n #1

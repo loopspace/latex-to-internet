@@ -70,6 +70,10 @@
 \renewcommand{\pagebreak}[1][]{}
 \AtEndDocument{\txt_newpage: \txt_clearpage:}
 
+% Literal braces in the text
+\cs_set_eq:NN \txt_lbrace: \{
+\cs_set_eq:NN \txt_rbrace: \}
+
 % Code for putting literal macros in the output
 %
 % Options:
@@ -135,7 +139,7 @@
 
 \cs_new:Npn \txt_gobble_mopt:nn #1#2
 {
-  \{#2\}
+  \txt_lbrace:#2\txt_rbrace:
   \int_set:Nn \l_tmpa_int {#1 - 1}
   \int_compare:nF {\l_tmpa_int = 0}
   {
@@ -186,16 +190,16 @@
   {
     \int_compare:nTF {#2 = 0}
     {
-      \cs_set:cpn {#1} {\string\begin\{#1\}\par}
+      \cs_set:cpn {#1} {\string\begin\txt_lbrace:#1\txt_rbrace:}
     }
     {
-      \cs_set:cpn {#1} {\string\begin\{#1\} \txt_gobble_mopt:nn {#2} }
+      \cs_set:cpn {#1} {\string\begin\txt_lbrace:#1\txt_rbrace: \txt_gobble_mopt:nn {#2} }
     }
   }
   {
-    \cs_set:cpn {#1} {\string\begin\{#1\} \txt_gobble_oopt:nn {#2} {#3} }
+    \cs_set:cpn {#1} {\string\begin\txt_lbrace:#1\txt_rbrace: \txt_gobble_oopt:nn {#2} {#3} }
   }
-  \cs_set:cpn {end #1} {\par\string\end\{#1\}\par}
+  \cs_set:cpn {end #1} {\string\end\txt_lbrace:#1\txt_rbrace:}
 }
 
 % Allow us to produce `\begin` and `\end`
@@ -204,11 +208,14 @@
 
 \cs_set_eq:NN \txt_onewline: \\
 
+\cs_set_eq:NN \txt_mbox:n \mbox
+
 \cs_set:Nn \txt_newline:
 {
   \group_begin:
   \tl_set_eq:NN \@nolnerr \c_empty_tl
   \txt_onewline:
+  \txt_mbox:n {}
   \group_end:
 }
 
@@ -219,6 +226,8 @@
   \tl_set:Nx \l_tmpa_tl {#2}
   \tl_map_function:Vc \l_tmpa_tl {txt_only_#1:n}
 }
+\cs_generate_variant:Nn \txt_only_chars:nn {Vn,nV,VV}
+
 
 \cs_new:Npn \txt_only_alpha:n #1
 {
@@ -271,17 +280,23 @@
   {
     \tl_if_empty:NTF \l__txt_chars_tl
     {
-      \bool_if:nT {
+      \bool_if:nTF {
         (\int_compare_p:n {`#1 >= `a} && \int_compare_p:n {`#1 <= `z})
         ||
         (\int_compare_p:n {`#1 >= `A} && \int_compare_p:n {`#1 <= `Z})
         ||
         (\token_if_eq_charcode_p:NN #1 :)
-        ||
-        (\token_if_eq_charcode_p:NN #1 _)
       }
       {
         \tl_put_right:Nn \l__txt_chars_tl {#1}
+      }
+      {
+        \bool_if:nT {
+          (\token_if_eq_charcode_p:NN #1 _)
+        }
+        {
+          \tl_put_right:Nx \l__txt_chars_tl {\token_to_str:N #1}
+        }
       }
     }
     {
@@ -294,7 +309,55 @@
         ||
         (\token_if_eq_charcode_p:NN #1 :)
         ||
-        (\token_if_eq_charcode_p:NN #1 _)
+        (\token_if_eq_charcode_p:NN #1 -)
+        ||
+        (\token_if_eq_charcode_p:NN #1 .)
+      }
+      {
+        \tl_put_right:Nn \l__txt_chars_tl {#1}
+      }
+      {
+        \bool_if:nT {
+          (\token_if_eq_charcode_p:NN #1 _)
+        }
+        {
+          \tl_put_right:Nx \l__txt_chars_tl {\token_to_str:N #1}
+        }
+      }
+    }
+  }
+}
+
+\cs_new:Npn \txt_only_namenoc:n #1
+{
+  \tl_if_single:nT #1
+  {
+    \tl_if_empty:NTF \l__txt_chars_tl
+    {
+      \bool_if:nTF {
+        (\int_compare_p:n {`#1 >= `a} && \int_compare_p:n {`#1 <= `z})
+        ||
+        (\int_compare_p:n {`#1 >= `A} && \int_compare_p:n {`#1 <= `Z})
+      }
+      {
+        \tl_put_right:Nn \l__txt_chars_tl {#1}
+      }
+      {
+        \bool_if:nT {
+          (\token_if_eq_charcode_p:NN #1 _)
+        }
+        {
+          \tl_put_right:Nx \l__txt_chars_tl {\token_to_str:N #1}
+        }
+      }
+    }
+    {
+      \bool_if:nT {
+        (\int_compare_p:n {`#1 >= `a} && \int_compare_p:n {`#1 <= `z})
+        ||
+        (\int_compare_p:n {`#1 >= `A} && \int_compare_p:n {`#1 <= `Z})
+        ||
+        (\int_compare_p:n {`#1 >= `0} && \int_compare_p:n {`#1 <= `9})
         ||
         (\token_if_eq_charcode_p:NN #1 -)
         ||
@@ -302,6 +365,14 @@
       }
       {
         \tl_put_right:Nn \l__txt_chars_tl {#1}
+      }
+      {
+        \bool_if:nT {
+          (\token_if_eq_charcode_p:NN #1 _)
+        }
+        {
+          \tl_put_right:Nx \l__txt_chars_tl {\token_to_str:N #1}
+        }
       }
     }
   }

@@ -42,10 +42,10 @@
 \RenewDocumentCommand \maketitle {}
 {
   \# \@title~\#
-  \{: \#title\}
+  \txt_lbrace: : \#title\txt_rbrace:
 
   \#\#\#\#\# \@author~\#\#\#\#\#
-  \{: \#author\}
+  \txt_lbrace: : \#author\txt_rbrace:
 
   \tl_if_empty:NF \l__inst_thanks_tl
   {
@@ -133,7 +133,7 @@
 \NewDocumentCommand \eqref {m}
 {
   \txt_only_chars:nn {alpha} {#1}
-  \string\eqref\{\tl_use:N \l__txt_chars_tl\}
+  \string\eqref\txt_lbrace:\tl_use:N \l__txt_chars_tl\txt_rbrace:
 }
 
 \NewDocumentCommand \includepage {m}
