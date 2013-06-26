@@ -123,7 +123,7 @@
   }
   >
 }
-\cs_generate_variant:Nn \xhtm_open_tag:nn {x,V,xx,nx}
+\cs_generate_variant:Nn \xhtm_open_tag:nn {x,V,xx,nx,nV}
 
 \cs_new_protected_nopar:Npn \xhtm_close_tag:n #1
 {
@@ -194,6 +194,13 @@
   \xhtm_open_tag:nn {em} {}
   #1
   \xhtm_close_tag:n {em}
+}
+
+\RenewDocumentCommand \textsc {m}
+{
+  \xhtm_open_tag:nn {span} {style="font-variant: small-caps;"}
+  #1
+  \xhtm_close_tag:n {span}
 }
 
 \RenewDocumentCommand \textbf {m}
@@ -843,6 +850,19 @@
 
 % Minipage and parbox need thinking about
 
+\cs_set:Npn \@iiiminipage #1#2[#3]#4
+{
+  \xhtm_close_par:
+  \xhtm_open_tag:nn {div}{class="minipage"}
+  \xhtm_open_par:
+}
+\cs_set:Npn \endminipage
+{
+  \xhtm_close_par:
+  \xhtm_close_tag:n {div}
+  \xhtm_close_par:
+}
+
 \cs_set:Npn \thepage {}
 \cs_set:Npn \indexname {}
 \cs_set:Npn \hfill {}
@@ -1464,6 +1484,273 @@
   \xhtm_close_tag:n {body}
   \xhtm_close_tag:n {html}
 }
+
+% Figures
+\newcounter{figure}
+\tl_set:Nn \ext@figure {lof}
+\cs_new:Npn \fnum@figure {\figurename\nobreakspace\thefigure}
+\tl_set:Nn \figurename {Figure}
+
+\DeclareDocumentEnvironment {figure} {}
+{
+  \xhtm_close_par:
+  \xhtm_open_tag:nn {div} {class="figure"}
+  \xhtm_open_par:
+  \tl_set:Nn \@captype {figure}
+}
+{
+  \xhtm_close_par:
+  \xhtm_close_tag:n {div}
+  \xhtm_open_par:
+}
+
+\newcounter{table}
+\tl_set:Nn \ext@table {lot}
+\cs_new:Npn \fnum@table {\tablename\nobreakspace\thetable}
+\tl_set:Nn \tablename {Table}
+\DeclareDocumentEnvironment {table} {o}
+{
+  \xhtm_close_par:
+  \xhtm_open_tag:nn {div} {class="table"}
+  \xhtm_open_par:
+  \tl_set:Nn \@captype {table}
+}
+{
+  \xhtm_close_par:
+  \xhtm_close_tag:n {div}
+  \xhtm_open_par:
+}
+
+\cs_new:Npn \xhtm_makecaption:nn #1#2
+{
+  \xhtm_close_par:
+  \xhtm_open_par:
+  \xhtm_open_tag:nn {span} {class="caption"}
+  #1: #2
+  \xhtm_close_tag:n {span}
+  \xhtm_close_par:
+  \xhtm_open_par:
+}
+
+\cs_set_eq:NN \@makecaption \xhtm_makecaption:nn
+
+
+% Tabular support
+
+\tl_new:N \l__xhtm_tablerow_tl
+\tl_new:N \l__xhtm_tablecell_tl
+
+
+\DeclareDocumentEnvironment {tabular} {o m}
+{
+  \xhtm_close_par:
+  \xhtm_open_tag:nn {table} {class="tabular"}
+  \cs_set_eq:NN \\ \xhtm_table_rowsep:
+  \char_set_catcode_active:N &
+  \xhtm_table_setamp:
+  \cs_set_eq:NN \multicolumn \xhtm_table_multicolumn:nn
+  \cs_set_eq:NN \hline \xhtm_table_hline:
+  \cs_set_eq:NN \toprule \xhtm_table_toprule:
+  \cs_set_eq:NN \midrule \xhtm_table_midrule:
+  \cs_set_eq:NN \bottomrule \xhtm_table_bottomrule:
+  \cs_set_eq:NN \addlinespace \xhtm_table_addlinespace:
+  \xhtm_table_startrow:
+}
+{
+  \xhtm_close_tag:n {td}
+  \xhtm_close_tag:n {tr}
+  \xhtm_close_tag:n {table}
+  \xhtm_open_par:
+}
+
+\group_begin:
+\char_set_catcode_active:N &
+\cs_new:Npn \xhtm_table_setamp:
+{
+  \cs_set_eq:NN & \xhtm_table_cellsep:
+}
+\group_end:
+
+\cs_new:Npn \xhtm_table_cellsep:
+{
+  \xhtm_close_par:
+  \xhtm_close_tag:n {td}
+  \xhtm_linebreak:
+  \xhtm_table_startcell:
+}
+
+\cs_new:Npn \xhtm_table_rowsep:
+{
+  \xhtm_close_par:
+  \xhtm_close_tag:n {td}
+  \xhtm_close_tag:n {tr}
+  \xhtm_linebreak:
+  \tl_clear:N \l__xhtm_tablerow_tl
+  \xhtm_table_startrow:
+}
+
+\cs_new:Npn \xhtm_table_hline:
+{
+  \tl_if_empty:NF \l__xhtm_tablerow_tl
+  {
+    \tl_put_right:Nn \l__xhtm_tablerow_tl {~}
+  }
+  \tl_put_right:Nn \l__xhtm_tablerow_tl {class="hline"}
+  \xhtm_table_startrow:
+}
+
+\cs_new:Npn \xhtm_table_toprule:
+{
+  \tl_if_empty:NF \l__xhtm_tablerow_tl
+  {
+    \tl_put_right:Nn \l__xhtm_tablerow_tl {~}
+  }
+  \tl_put_right:Nn \l__xhtm_tablerow_tl {class="toprule"}
+  \xhtm_table_startrow:
+}
+
+\cs_new:Npn \xhtm_table_midrule:
+{
+  \tl_if_empty:NF \l__xhtm_tablerow_tl
+  {
+    \tl_put_right:Nn \l__xhtm_tablerow_tl {~}
+  }
+  \tl_put_right:Nn \l__xhtm_tablerow_tl {class="midrule"}
+  \xhtm_table_startrow:
+}
+
+\cs_new:Npn \xhtm_table_bottomrule:
+{
+  \tl_if_empty:NF \l__xhtm_tablerow_tl
+  {
+    \tl_put_right:Nn \l__xhtm_tablerow_tl {~}
+  }
+  \tl_put_right:Nn \l__xhtm_tablerow_tl {class="bottomrule"}
+  \xhtm_table_startrow:
+}
+
+\cs_new:Npn \xhtm_table_addlinespace:
+{
+  \peek_charcode_ignore_spaces:NTF [%]
+    {
+      \xhtm_table_addlinespace_aux:w
+    }
+    {
+      \xhtm_table_addlinespace_aux:w []
+    }
+}
+
+\cs_new:Npn \xhtm_table_addlinespace_aux:w [#1]
+{
+  \tl_if_empty:nF {#1}
+  {
+    \tl_if_empty:NF \l__xhtm_tablerow_tl
+    {
+      \tl_put_right:Nn \l__xhtm_tablerow_tl {~}
+    }
+    \tl_put_right:Nn \l__xhtm_tablerow_tl {style="padding-bottom:~ #1;"}
+  }
+  \xhtm_table_startrow:
+}
+
+\cs_new:Npn \xhtm_table_startrow:
+{
+  \peek_after:Nw \xhtm_table_testrow:
+}
+
+\cs_new:Npn \xhtm_table_testrow:
+{
+  \token_if_eq_meaning:NNTF \l_peek_token \c_space_token
+  {
+    \xhtm_table_testrow_aux:
+  }
+  {
+    \token_if_eq_meaning:NNF \l_peek_token \xhtm_table_hline:
+    {
+      \token_if_eq_meaning:NNF \l_peek_token \xhtm_table_bottomrule:
+      {
+        \token_if_eq_meaning:NNF \l_peek_token \xhtm_table_midrule:
+        {
+          \token_if_eq_meaning:NNF \l_peek_token \xhtm_table_toprule:
+          {
+            \token_if_eq_meaning:NNF \l_peek_token \xhtm_table_addlinespace:
+            {
+              \xhtm_table_startrow_aux:
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+\cs_new_protected_nopar:Npn \xhtm_table_testrow_aux:
+{
+  \if_meaning:w \l_peek_token \c_space_token
+    \exp_after:wN \peek_after:Nw
+    \exp_after:wN \xhtm_table_testrow_aux:
+    \tex_romannumeral:D -`0
+  \else:
+    \exp_after:wN \xhtm_table_testrow:
+  \fi:
+}
+
+\cs_new:Npn \xhtm_table_startrow_aux:
+{
+  \xhtm_open_tag:nV {tr} \l__xhtm_tablerow_tl
+  \xhtm_table_startcell:
+}
+
+\cs_new:Npn \xhtm_table_startcell:
+{
+  \tl_clear:N \l__xhtm_tablecell_tl
+  \peek_after:Nw \xhtm_table_testcell:
+}
+
+\cs_new:Npn \xhtm_table_testcell:
+{
+  \token_if_eq_meaning:NNTF \l_peek_token \c_space_token
+  {
+    \xhtm_table_testcell_aux:
+  }
+  {
+    \token_if_eq_meaning:NNF \l_peek_token \xhtm_table_multicolumn:nn
+    {
+      \xhtm_table_startcell_aux:
+    }
+  }
+}
+
+\cs_new_protected_nopar:Npn \xhtm_table_testcell_aux:
+{
+  \if_meaning:w \l_peek_token \c_space_token
+    \exp_after:wN \peek_after:Nw
+    \exp_after:wN \xhtm_table_testcell_aux:
+    \tex_romannumeral:D -`0
+  \else:
+    \exp_after:wN \xhtm_table_testcell:
+  \fi:
+}
+
+\cs_new:Npn \xhtm_table_startcell_aux:
+{
+  \xhtm_open_tag:nV {td} \l__xhtm_tablecell_tl
+}
+
+\cs_new:Npn \xhtm_table_multicolumn:nn #1#2
+{
+  \tl_set:Nn \l__xhtm_tablecell_tl {colspan="#1"}
+  \tl_if_in:nnT {c} {#2}
+  {
+    \tl_put_right:Nn \l__xhtm_tablecell_tl {~ style="text-align: center;"}
+  }
+  \tl_if_in:nnT {r} {#2}
+  {
+    \tl_put_right:Nn \l__xhtm_tablecell_tl {~ style="text-align: right;"}
+  }
+  \xhtm_table_startcell_aux:
+}
+
 
 \endinput
 

@@ -6,7 +6,7 @@ use MathML::Entities;
 my $file = $ARGV[0];
 my $base;
 my $pdf;
-my $epubcheck = $ENV{HOME} . '/local/share/epubcheck-3.0/epubcheck-3.0.jar';
+my $epubcheck = $ENV{HOME} . '/local/share/epubcheck-3.0.1/epubcheck-3.0.1.jar';
 my $debug = 1;
 my $runtex = 1;
 my $pdftxt = 1;

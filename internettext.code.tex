@@ -67,6 +67,45 @@
 \cs_set:Npn \newpage {}
 \cs_set:Npn \clearpage {}
 
+% But this plays merry havoc with \include as we need to flush the aux
+% files between calls to \include
+
+
+\cs_set_eq:NN \txtnewpage \txt_newpage:
+\cs_set:Npn \restore_colon {\char_set_catcode_letter:N :}
+\char_set_catcode_other:N :
+\def\@include#1 {%
+  \txtnewpage
+  \if@filesw
+    \immediate\write\@mainaux{\string\@input{#1.aux}}%
+  \fi
+  \@tempswatrue
+  \if@partsw
+    \@tempswafalse
+    \edef\reserved@b{#1}%
+    \@for\reserved@a:=\@partlist\do
+      {\ifx\reserved@a\reserved@b\@tempswatrue\fi}%
+  \fi
+  \if@tempswa
+    \let\@auxout\@partaux
+    \if@filesw
+      \immediate\openout\@partaux #1.aux
+      \immediate\write\@partaux{\relax}%
+    \fi
+    \@input@{#1.tex}%
+    \txtnewpage
+    \@writeckpt{#1}%
+    \if@filesw
+      \immediate\closeout\@partaux
+    \fi
+  \else
+    \deadcycles\z@
+    \@nameuse{cp@#1}%
+  \fi
+  \let\@auxout\@mainaux}
+\restore_colon
+
+
 \renewcommand{\pagebreak}[1][]{}
 \AtEndDocument{\txt_newpage: \txt_clearpage:}
 
