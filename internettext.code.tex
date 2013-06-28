@@ -526,6 +526,59 @@
   }
 }
 
+% Hooks
+
+\seq_new:N \l__txt_args_seq
+
+% Module, hook, code
+
+\cs_new:Npn \txt_set_hook:nnn #1#2#3
+{
+  \tl_set:cn {txt_hook_#1_#2_tl} {#3}
+}
+
+\cs_new:Npn \txt_use_hook:nn #1#2
+{
+  \tl_if_exist:cT {txt_hook_#1_#2_tl}
+  {
+    \tl_use:c {txt_hook_#1_#2_tl}
+  }
+}
+
+\cs_new:Npn \txt_addto_hook:nnn #1#2#3
+{
+  \tl_if_exist:cTF {txt_hook_#1_#2_tl}
+  {
+    \tl_put_right:cn {txt_hook_#1_#2_tl} {#3}
+  }
+  {
+    \tl_set:cn {txt_hook_#1_#2_tl} {#3}
+  }
+}
+
+\cs_new:Npn \txt_show_hook:nn #1#2
+{
+  \tl_if_exist:cT {txt_hook_#1_#2_tl}
+  {
+    \tl_show:c {txt_hook_#1_#2_tl}
+  }
+}
+
+\cs_new:Npn \txt_clear_hook:nn #1#2
+{
+  \tl_if_exist:cT {txt_hook_#1_#2_tl}
+  {
+    \tl_clear:c {txt_hook_#1_#2_tl}
+  }
+}
+
+\DeclareDocumentCommand \SetHook {m m m}
+{
+  
+  \itex_set_hook:nnn {#1} {#2} {#3}
+}
+
+
 
 \endinput
 

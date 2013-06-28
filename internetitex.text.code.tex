@@ -1,27 +1,17 @@
 % iTex, prefix: itex
 
-\tl_new:N \l__itex_beginmaths_tl
-\tl_new:N \l__itex_endmaths_tl
-\tl_new:N \l__itex_begindisplay_tl
-\tl_new:N \l__itex_enddisplay_tl
-\tl_new:N \l__itex_begininline_tl
-\tl_new:N \l__itex_endinline_tl
 
 % Define the options for the itex module
 \keys_define:nn {itex options}
 {
-  at begin maths .tl_set:N = \l__itex_beginmaths_tl,
-  at end maths .tl_set:N = \l__itex_endmaths_tl,
-  at begin display .tl_set:N = \l__itex_begindisplay_tl,
-  at end display  .tl_set:N = \l__itex_enddisplay_tl,
-  at begin inline .tl_set:N = \l__itex_begininline_tl,
-  at end inline  .tl_set:N = \l__itex_endinline_tl,
 }
+
 % Get and set the options for the markdown-extra module
 \prop_get:NnNT  \l__txt_popts_prop {itex} \l_tmpa_tl
 {
   \keys_set:nV {itex options} \l_tmpa_tl
 }
+
 
 \cs_new:Npn \itex_activate_dollar:
 {
@@ -85,16 +75,20 @@
 
 \cs_new_nopar:Npn \itex_maths_start:
 {
-  \tl_use:N \l__itex_beginmaths_tl
+  \txt_use_hook:nn {itex} {begin maths}
   \bool_if:NTF \l__itex_display_bool
   {
-    \tl_use:N \l__itex_begindisplay_tl
+    \bool_if:NT \l__itex_numbered_bool
+    {
+      \refstepcounter{equation}
+    }
+    \txt_use_hook:nn {itex} {begin display}
     \txt_newline:
     \$\$
     \txt_newline:
   }
   {
-    \tl_use:N \l__itex_begininline_tl
+    \txt_use_hook:nn {itex} {begin inline}
     \$%$
   }
 }
@@ -106,13 +100,13 @@
     \txt_newline:
     \$\$
     \txt_newline:
-    \tl_use:N \l__itex_enddisplay_tl
+    \txt_use_hook:nn {itex} {end display}
   }
   {
     \$%$
-    \tl_use:N \l__itex_endinline_tl
+    \txt_use_hook:nn {itex} {end inline}
   }
-  \tl_use:N \l__itex_endmaths_tl
+  \txt_use_hook:nn {itex} {end maths}
   \group_end:
 }
 
@@ -260,10 +254,6 @@
   \cs_set_eq:NN \align \itex_align:
   \cs_set_eq:NN \mbox \itex_text_or_mbox:
   \bool_set_true:N \l__itex_maths_bool
-  \bool_if:NT \l__itex_numbered_bool
-  {
-    \refstepcounter{equation}
-  }
 }
 
 \RenewDocumentCommand \( {} {${}}%$
@@ -391,6 +381,7 @@
 \NewDocumentEnvironment {align*} {}
 {
   \bool_set_false:N \l__itex_numbered_bool
+  \txt_use_hook:nn {itex} {begin align}
   $$
   \begin{aligned}
   \txt_newline:
@@ -404,19 +395,23 @@
 \NewDocumentEnvironment {align} {}
 {
   \bool_set_true:N \l__itex_numbered_bool
+  \txt_use_hook:nn {itex} {pre begin align}
   \[
   \begin{aligned}
   \txt_newline:
 }
 {
+  \txt_use_hook:nn {itex} {pre end align}
   \txt_newline:
   \end{aligned}
   \]
+  \txt_use_hook:nn {itex} {post end align}
 }
 
 \NewDocumentEnvironment {gather*} {}
 {
   \bool_set_false:N \l__itex_numbered_bool
+  \txt_use_hook:nn {itex} {begin gather}
   $$
   \begin{gathered}
   \txt_newline:
@@ -430,6 +425,7 @@
 \NewDocumentEnvironment {gather} {}
 {
   \bool_set_true:N \l__itex_numbered_bool
+  \txt_use_hook:nn {itex} {begin gather}
   $$
   \begin{gathered}
   \txt_newline:
@@ -558,8 +554,8 @@
 \cs_new_nopar:Npn \itex_text_pushtag:
 {
   \tl_set:Nx \l_tmpa_tl {
-    {\seq_item:Nn \l__xhtm_args_seq {1}}
-    {\seq_item:Nn \l__xhtm_args_seq {2}}
+    {\seq_item:Nn \l__txt_args_seq {1}}
+    {\seq_item:Nn \l__txt_args_seq {2}}
   }
   \seq_gpush:NV \l__itex_tag_seq \l_tmpa_tl
 }
@@ -598,19 +594,17 @@
   \cs_set_eq:NN $ \itex_text_dollar: %$
   \bool_set_false:N \l__itex_maths_bool
   \group_insert_after:N \l__itex_endtext_tl
-  \xhtm_set_hook:nn {pre open tag}
+  \txt_set_hook:nnn {xhtm} {pre open tag}
   {
     \itex_text_pushtag:
   }
-  \xhtm_set_hook:nn {pre close tag}
+  \txt_set_hook:nnn {xhtm} {pre close tag}
   {
     \itex_text_poptag:
   }
   \itextext
   \txt_lbrace:
     \itex_set_text_actives:
-%  \xhtm_open_tag:nn {semantics} {}
-%  \xhtm_open_tag:nn {annotation_xml} {encoding='XHTML1.1'}
     \tfont
     \peek_meaning_remove_ignore_spaces:NF \c_group_begin_token {}
 }
@@ -674,6 +668,7 @@
 \itexmathscommand{\thinspace}
 \itexmathscommand{\dots}
 \itexmathscommand{\phantom}[1]
+\itexmathscommand{\ldots}
 
 \newtextcommand{\left}
 \newtextcommand{\right}
@@ -900,7 +895,6 @@
 \newtextcommand{\xhookleftarrow}[2][]
 \newtextcommand{\xhookrightarrow}[2][]
 \newtextcommand{\xmapsto}[2][]
-\newtextcommand{\ldots}
 \newtextcommand{\cdots}
 \newtextcommand{\ddots}
 \newtextcommand{\udots}

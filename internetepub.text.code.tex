@@ -8,7 +8,7 @@
 \keys_define:nn {epub options}
 {
   split at .code:n = {
-    \xhtm_set_hook:nn {pre section header} {\epub_split_section:n {#1}}
+    \txt_set_hook:nnn {xhtm} {pre section header} {\epub_split_section:n {#1}}
   },
   split~ at .meta:n = {
     split at={#1}
@@ -157,11 +157,6 @@
   \tl_if_empty:NF \l__xhtm_css_tl
   {
     \write\@auxout{\string\loadcss{\jobname}}
-    \tl_put_right:Nn \l__epub_files_tl
-    {
-      \xhtm_linebreak:
-      \xhtm_empty_tag:nn {item} {id="css"~ href="\jobname.css"~ media-type="text/css"}
-    }
     \tl_put_right:Nn \l__epub_filelist_tl {
       \xhtm_linebreak:
       \xhtm_comment:n {\jobname.css}
@@ -176,11 +171,6 @@
   \tl_if_empty:NF \l__xhtm_js_tl
   {
     \write\@auxout{\string\loadjs{\jobname}}
-    \tl_put_right:Nn \l__epub_files_tl
-    {
-      \xhtm_linebreak:
-      \xhtm_empty_tag:nn {item} {id="js"~ href="\jobname.js"~ media-type="text/javascript"}
-    }
     \tl_put_right:Nn \l__epub_filelist_tl {
       \xhtm_linebreak:
       \xhtm_comment:n {\jobname.js}
@@ -260,6 +250,38 @@
   \group_end:
 }
 
+\txt_set_hook:nnn {xhtm} {load css}
+{
+  \tl_gput_right:Nx \l__epub_files_tl
+  {
+    \exp_not:N \xhtm_linebreak:
+    \exp_not:N \xhtm_empty_tag:nn {item} {id="\seq_item:Nn \l__txt_args_seq {1} _css"~ href="
+      \seq_item:Nn \l__txt_args_seq {1} .css"~ media-type="text/css"}
+  }
+  \tl_gput_right:Nx \l__epub_filelist_tl
+  {
+    \exp_not:N \xhtm_linebreak:
+    \exp_not:N \xhtm_comment:n {\seq_item:Nn \l__txt_args_seq {1} .css}
+  }
+
+}
+
+\txt_set_hook:nnn {xhtm} {load js}
+{
+  \tl_gput_right:Nx \l__epub_files_tl
+  {
+    \exp_not:N \xhtm_linebreak:
+    \exp_not:N \xhtm_empty_tag:nn {item} {id="\seq_item:Nn \l__txt_args_seq {1} _js"~ href="
+      \seq_item:Nn \l__txt_args_seq {1} .js"~ media-type="text/javascript"}
+  }
+  \tl_gput_right:Nx \l__epub_filelist_tl
+  {
+    \exp_not:N \xhtm_linebreak:
+    \exp_not:N \xhtm_comment:n {\seq_item:Nn \l__txt_args_seq {1} .js}
+  }
+}
+
+
 \cs_new_nopar:Npn \epub_next_segment:
 {
   \addtocounter{epub segments}{1}
@@ -336,7 +358,7 @@
 {
   \int_set:Nn \l__epub_next_section_int
   {
-    \seq_item:Nn \l__xhtm_args_seq {1} + \l__xhtm_sec_int
+    \seq_item:Nn \l__txt_args_seq {1} + \l__xhtm_sec_int
   }
   \bool_if:nT {
     \int_compare_p:n {
@@ -362,8 +384,8 @@
 \cs_new:Npn \epub_phantom_section:
 {
   \tl_set:Nx \l_tmpa_tl {{\int_eval:n  {\l__epub_section_level_int -  \l__xhtm_sec_int } }}
-  \seq_set_split:NnV \l__xhtm_args_seq {,} \l_tmpa_tl
-\xhtm_use_hook:n {pre section header}
+  \seq_set_split:NnV \l__txt_args_seq {,} \l_tmpa_tl
+\txt_use_hook:nn {xhtm} {pre section header}
   % This ensures we don't break after a \phantomsection
   \int_gset:Nn \l__epub_curr_section_int {0}
 \epub_orig_phantom_section:
@@ -395,11 +417,11 @@
 
 \cs_set_eq:NN \@newl@bel \epub_label:nnn
 
-\xhtm_set_hook:nn {link}
+\txt_set_hook:nnn {xhtm} {link}
 {
-  \tl_if_exist:cT {epub_page_  \seq_item:Nn \l__xhtm_args_seq {2}}
+  \tl_if_exist:cT {epub_page_  \seq_item:Nn \l__txt_args_seq {2}}
   {
-    \tl_set:Nx \l__xhtm_baseurl_tl {\jobname \tl_use:c {epub_page_  \seq_item:Nn \l__xhtm_args_seq {2}} .xhtml}
+    \tl_set:Nx \l__xhtm_baseurl_tl {\jobname \tl_use:c {epub_page_  \seq_item:Nn \l__txt_args_seq {2}} .xhtml}
   }
 }
 
@@ -421,7 +443,7 @@
   }
 }
 
-\xhtm_set_hook:nn {post bibliography header}
+\txt_set_hook:nnn {xhtm} {post bibliography header}
 {
   \write\@auxout{\string\epubbibpage {\use:c {the epub segments}}}  
 }
@@ -434,7 +456,7 @@
 
 \int_new:N \l__epub_bibpage_int
 \int_set:Nn \l__epub_bibpage_int {1}
-\xhtm_set_hook:nn {cite}
+\txt_set_hook:nnn {xhtm} {cite}
 {
   \tl_set:Nn \l__xhtm_baseurl_tl {\jobname \int_use:N     \l__epub_bibpage_int .xhtml}
 }

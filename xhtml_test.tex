@@ -4,7 +4,38 @@
   itex
 ]{internet}
 
+\usepackage{lipsum}
 \usepackage{hyperref}
+
+\addcss+.eqnnumber {float: right;}+
+\addcss+.eqnnumber:before {content: "(";}+
+\addcss+.eqnnumber:after {content: ")";}+
+\addcss+.alignnumber:before {content: "(";}+
+\addcss+.alignnumber:after {content: ")";}+
+\addcss+.alignnumber_row {vertical-align: middle;}+
+\addcss+table.align {width: 100%;}+
+\addcss+table.align > tr {vertical-align: top;}+
+\addcss+table.align td.label {width: 2em;}+
+\addcss+table.align td.label table {width: 100%; text-align:right;}+
+
+\addjavascript@
+function moveEqNums() {
+  var aligns = document.getElementsByClassName('align');
+  for (var i = 0; i < aligns.length; i++) {
+    var align = aligns[i];
+    if (align.tagName == 'table')
+    {
+      var math = align.firstChild.childNodes[1].firstChild.childNodes[1].firstChild.firstChild.children;
+var label = align.firstChild.childNodes[2].firstChild.children;
+      for (var j = 0; j < math.length; j++) {
+        label[j].style.height = math[j].scrollHeight + 'px';
+      }
+    }
+  }
+}
+
+window.onload = moveEqNums;
+@
 
 
 \newtheorem{theorem}{Theorem}
@@ -109,6 +140,41 @@ a &= b + c
 
 Testing not: \(a \not\cong b\) \(a \not\in b\) \(a \not\le b\)
 
+\begin{equation}
+\label{eq:pyth}
+a^2 + b^2 = c^2
+\end{equation}
+
+And let's refer back to \ref{eq:pyth}.
+What about multiline numbered equations?
+
+\begin{align}
+\label{eq:one}
+x &= y + z \\
+\label{eq:two}
+a &= \int b + c \\
+\label{eq:three}
+d &= e + f
+\end{align}
+
+And we can refer back to \ref{eq:one} and \ref{eq:two} and \ref{eq:three}.
+
+\begin{align}
+\label{eq:four}
+x &= y + z \\
+\nonumber
+\label{eq:five}
+a &= \int b + c \\
+\label{eq:six}
+d &= e + f
+\end{align}
+
+Equations \ref{eq:four}, \ref{eq:five}, and \ref{eq:six}.
+
+\begin{equation}
+\sum a_i
+\end{equation}
+
 \subsection{Tabular}
 
 \begin{tabular}{rrr}
@@ -116,5 +182,9 @@ A & table \\
 with & entries \\ \hline
 and & lines
 \end{tabular}
+
+\subsection{Filler}
+
+\lipsum
 
 \end{document}

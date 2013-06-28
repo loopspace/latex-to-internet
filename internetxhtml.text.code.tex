@@ -24,34 +24,6 @@
   \keys_set:nV {xhtml options} \l_tmpa_tl
 }
 
-% Hooks
-
-\seq_new:N \l__xhtm_args_seq
-
-\cs_new:Npn \xhtm_set_hook:nn #1#2
-{
-  \tl_set:cn {xhtm_hook_#1_tl} {#2}
-}
-
-\cs_new:Npn \xhtm_use_hook:n #1
-{
-  \tl_if_exist:cT {xhtm_hook_#1_tl}
-  {
-    \tl_use:c {xhtm_hook_#1_tl}
-  }
-}
-
-\cs_new:Npn \xhtm_addto_hook:nn #1#2
-{
-  \tl_put_right:cn {xhtm_hook_#1_tl} {#2}
-}
-
-\DeclareDocumentCommand \xhtmSetHook {m m}
-{
-  
-  \xhtm_set_hook:nn {#1} {#2}
-}
-
 % Interface to LaTeX2e conditionals from @egreg at
 % http://tex.stackexchange.com/a/119826/86
 
@@ -78,8 +50,8 @@
 
 \cs_new:Npn \xhtm_push_tag:n #1
 {
-  \seq_set_split:Nnn \l__xhtm_args_seq {,} {{#1}}
-  \xhtm_use_hook:n {pre push tag}
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
+  \txt_use_hook:nn {xhtm} {pre push tag}
   \seq_gpush:Nn \l__xhtm_tag_seq {#1}
 }
 \cs_generate_variant:Nn \xhtm_push_tag:n {V}
@@ -90,8 +62,8 @@
 \cs_generate_variant:Nn \msg_warning:nnnn {nnVn}
 \cs_new:Npn \xhtm_pop_tag:n #1
 {
-  \seq_set_split:Nnn \l__xhtm_args_seq {,} {{#1}}
-  \xhtm_use_hook:n {pre pop tag}
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
+  \txt_use_hook:nn {xhtm} {pre pop tag}
   \seq_get:NNTF \l__xhtm_tag_seq \l_tmpa_tl
   {
     \tl_if_eq:VnTF \l_tmpa_tl {#1}
@@ -111,8 +83,8 @@
 
 \cs_new_protected_nopar:Npn \xhtm_open_tag:nn #1#2
 {
-  \seq_set_split:Nnn \l__xhtm_args_seq {,} {{#1},{#2}}
-  \xhtm_use_hook:n {pre open tag}
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1},{#2}}
+  \txt_use_hook:nn {xhtm} {pre open tag}
   \xhtm_mbox:n {}
   \xhtm_push_tag:n {#1}
   <#1
@@ -127,8 +99,8 @@
 
 \cs_new_protected_nopar:Npn \xhtm_close_tag:n #1
 {
-  \seq_set_split:Nnn \l__xhtm_args_seq {,} {{#1}}
-  \xhtm_use_hook:n {pre close tag}
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
+  \txt_use_hook:nn {xhtm} {pre close tag}
   \xhtm_pop_tag:n {#1}
   </#1>
 }
@@ -199,6 +171,13 @@
 \RenewDocumentCommand \textsc {m}
 {
   \xhtm_open_tag:nn {span} {style="font-variant: small-caps;"}
+  #1
+  \xhtm_close_tag:n {span}
+}
+
+\RenewDocumentCommand \textup {m}
+{
+  \xhtm_open_tag:nn {span} {style="font-style: normal;"}
   #1
   \xhtm_close_tag:n {span}
 }
@@ -349,13 +328,13 @@
 
 \cs_new_nopar:Npn \xhtm_section_header:nnn #1#2#3
 {
-  \seq_set_split:Nnn \l__xhtm_args_seq {,} {{#1},{#2},{#3}}
-  \xhtm_use_hook:n {pre section header}
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1},{#2},{#3}}
+  \txt_use_hook:nn {xhtm} {pre section header}
   \xhtm_open_tag:xn {h \int_eval:n {\l__xhtm_sec_int + #1}}{#3}
   #2
   \xhtm_close_tag:x {h \int_eval:n {\l__xhtm_sec_int + #1}}
-  \seq_set_split:Nnn \l__xhtm_args_seq {,} {{#1},{#2},{#3}}
-  \xhtm_use_hook:n {post section header}
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1},{#2},{#3}}
+  \txt_use_hook:nn {xhtm} {post section header}
 }
 
 \cs_new_nopar:Npn \xhtm_num_section:nnn #1#2#3
@@ -366,6 +345,7 @@
   \refstepcounter{#1}
   \tl_set:Nn \l__xhtm_anchor_tl {plain}
   \xhtm_section_header:nnn {#2} {\use:c {the#1} \c_space_token #3} {id="\tl_use:N \l__xhtm_nextid_tl"}
+\tl_gclear:N \l__xhtm_nextid_tl
   \addcontentsline{toc}{#1}{\protect\numberline{\use:c{the#1}}#3}
   \txt_newline:
   \xhtm_open_par:
@@ -549,7 +529,7 @@
 {
   \xhtm_close_par:
   \xhtm_open_tag:nn {dl} {}
-  \xhtm_set_hook:nn {after list item} {\xhtm_close_tag:n {dd}}
+  \txt_set_hook:nnn {xhtm} {after list item} {\xhtm_close_tag:n {dd}}
   \tl_set:Nn \l__xhtm_listitem_tl {di}
   \cs_set_eq:NN \xhtm_list_label:n \xhtm_desc_label:n
   \cs_set_eq:NN \@item \xhtm_first_item:w
@@ -581,6 +561,7 @@
       \tl_set:Nn \l__xhtm_anchor_tl {on next}
       \refstepcounter\@listctr
       \xhtm_open_tag:Vn \l__xhtm_listitem_tl {id="\tl_use:N \l__xhtm_nextid_tl"}
+      \tl_gclear:N \l__xhtm_nextid_tl
       \xhtm_open_par:
       \tl_set:Nn \l__xhtm_anchor_tl {plain}
     }
@@ -600,7 +581,7 @@
 {
   \xhtm_close_par:
   {
-    \xhtm_use_hook:n {after list item}
+    \txt_use_hook:nn {xhtm} {after list item}
   }
   \xhtm_close_tag:V \l__xhtm_listitem_tl
   \latex_if:nTF {@noitemarg}
@@ -611,8 +592,8 @@
       \tl_set:Nn \l__xhtm_anchor_tl {on next}
       \refstepcounter\@listctr
       \xhtm_open_tag:Vn \l__xhtm_listitem_tl {id="\tl_use:N \l__xhtm_nextid_tl"}
-      \xhtm_open_par:
       \tl_gclear:N \l__xhtm_nextid_tl
+      \xhtm_open_par:
     }
     {
       \xhtm_open_tag:Vn \l__xhtm_listitem_tl {}
@@ -884,7 +865,10 @@
 
 \NewDocumentCommand \addcss {+v}
 {
-  \xhtm_add_css:n {#1}
+  \tl_set:Nn \l_tmpa_tl {#1}
+  \tl_replace_all:NVn \l_tmpa_tl \g__xhtm_newline_tl {\xhtm_linebreak:}%
+  \xhtm_add_css:V \l_tmpa_tl
+% Make this a test on the last token
   \xhtm_add_css:n {\txt_newline:}
 }
 
@@ -893,13 +877,24 @@
   \tl_gput_right:Nn \l__xhtm_js_tl {#1}
 }
 
+\cs_generate_variant:Nn \xhtm_add_js:n {V,x}
+
+\cs_generate_variant:Nn \tl_replace_all:Nnn {NVn}
+
+\tl_new:N \g__xhtm_newline_tl
+\tl_set:Nx \g__xhtm_newline_tl { \cs_to_str:N \^^M }
+
 \NewDocumentCommand \addjavascript {+v}
 {
-  \xhtm_add_js:n {#1}
+  \tl_set:Nn \l_tmpa_tl {#1}
+  \tl_replace_all:NVn \l_tmpa_tl \g__xhtm_newline_tl {\xhtm_linebreak:}%
+  \xhtm_add_js:V \l_tmpa_tl
 }
 
 \NewDocumentCommand \loadcss {m}
 {
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
+  \txt_use_hook:nn {xhtm} {load css}
   \tl_gput_right:Nn \l__xhtm_cssfiles_tl
   {
     \xhtm_empty_tag:nn {link} {href="#1.css"~ media="all"~ rel="stylesheet"~ type="text/css"}
@@ -908,6 +903,8 @@
 
 \NewDocumentCommand \loadjs {m}
 {
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
+  \txt_use_hook:nn {xhtm} {load js}
   \tl_gput_right:Nn \l__xhtm_jsfiles_tl
   {
     \xhtm_empty_tag:nn {script} {src="#1.js"~ type="text/javascript"}
@@ -917,7 +914,9 @@
 \tl_new:N \l__xhtm_declaration_tl
 \tl_set:Nn \l__xhtm_declaration_tl
 {
-  <?xml~ version="1.0"~ encoding="UTF-8"?><!DOCTYPE~ html~ PUBLIC~ "-//W3C//DTD~ XHTML~ 1.1~ plus~ MathML~ 2.0~ plus~ SVG~ 1.1//EN"~ "http://www.w3.org/2002/04/xhtml-math-svg/xhtml-math-svg.dtd"~ >
+  <?xml~ version="1.0"~ encoding="UTF-8"?>
+  \xhtm_linebreak:
+<!DOCTYPE~ html~ PUBLIC~ "-//W3C//DTD~ XHTML~ 1.1~ plus~ MathML~ 2.0~ plus~ SVG~ 1.1//EN"~ "http://www.w3.org/2002/04/xhtml-math-svg/xhtml-math-svg.dtd"~ >
   \xhtm_open_tag:nn {html} {xmlns="http://www.w3.org/1999/xhtml"}
 }
 
@@ -972,9 +971,10 @@
     \xhtm_linebreak:
     //<![CDATA[
         \xhtm_linebreak:
-    \tl_use:N \l__xhtm_js_tl
-    \xhtm_linebreak:
+        \tl_use:N \l__xhtm_js_tl
+        \xhtm_linebreak:
         //]]>
+    \xhtm_linebreak:
     \xhtm_close_tag:n {script}
     \xhtm_linebreak:
   }
@@ -1095,6 +1095,7 @@
   }
   {
     \xhtm_open_tag:nn {div} {class="gentheorem~ \tl_use:N \l__xhtm_ctheoremstyle_tl"~ id="\tl_use:N \l__xhtm_nextid_tl"}
+    \tl_gclear:N \l__xhtm_nextid_tl
   }
   \xhtm_open_tag:nn {span} {class="title"}
   \tl_if_empty:nTF {#3}
@@ -1289,7 +1290,7 @@
   #1
   \xhtm_close_tag:n {span}
   {
-    \xhtm_use_hook:n {after~ proof~ title}
+    \txt_use_hook:nn {xhtm} {after~ proof~ title}
   }
   \xhtm_open_tag:nn {div} {class="body"}
   \xhtm_open_par:
@@ -1303,15 +1304,33 @@
 
 % Maths
 
+\tl_new:N \l__xhtm_beginmaths_tl
+\tl_set:Nn \l__xhtm_beginmaths_tl
+{
+  \bool_if:nT
+  {
+    \l__itex_display_bool && \l__itex_numbered_bool
+  }
+  {
+    \tl_set:Nn \l__xhtm_anchor_tl {on next}
+  }
+}
+
 \tl_new:N \l__xhtm_begindisplay_tl
 \tl_set:Nn \l__xhtm_begindisplay_tl
 {
   \xhtm_close_par:
   \xhtm_linebreak:
-  \xhtm_open_tag:nn {div} {class="displaymaths"}
+  \tl_if_empty:NTF \l__xhtm_nextid_tl
+  {
+    \xhtm_open_tag:nn {div} {class="displaymaths"}
+  }
+  {
+    \xhtm_open_tag:nn {div} {class="displaymaths"~ id="\tl_use:N \l__xhtm_nextid_tl"}
+    \tl_gclear:N \l__xhtm_nextid_tl
+  }
   \bool_if:NT \l__itex_numbered_bool
   {
-    \refstepcounter{equation}
     \xhtm_open_tag:nn {span} {class="eqnnumber"}
     \theequation
     \xhtm_close_tag:n {span}
@@ -1326,14 +1345,112 @@
   \xhtm_open_par:
 }
 
-\keys_set:nn {internet options}
+\bool_new:N \l__xhtm_next_num_bool
+\tl_new:N \l__xhtm_eqnnums_tl
+\tl_new:N \l__xhtm_beginalign_tl
+\tl_set:Nn \l__xhtm_beginalign_tl
 {
-  options = {itex}
+  \tl_set:Nn \l__xhtm_begindisplay_tl
   {
-    at begin display={\tl_use:N \l__xhtm_begindisplay_tl},
-    at end display={\tl_use:N \l__xhtm_enddisplay_tl},
+    \xhtm_close_par:
+    \xhtm_linebreak:
+    \xhtm_open_tag:nn {table} {class="align"}
+    \xhtm_open_tag:nn {tr} {}
+    \xhtm_open_tag:nn {td} {class="label"}
+    \xhtm_close_tag:n {td}
+    \xhtm_open_tag:nn {td} {class="maths"}
+    \xhtm_open_tag:nn {div} {class="displaymaths~ align"}
+    \tl_gclear:N \l__xhtm_eqnnums_tl
+    \tl_gset:Nn \l__xhtm_eqnnums_tl
+    {
+      \xhtm_open_tag:nn {table} {}
+      \xhtm_linebreak:
+    }
+  }
+  \bool_if:NT \l__itex_numbered_bool
+  {
+    \cs_set_eq:NN \xhtm_itexnl: \itexnl
+    \cs_set:Npn \nonumber
+    {
+      \bool_set_false:N \l__xhtm_next_num_bool
+    }
+    \bool_set_true:N \l__xhtm_next_num_bool
+    \cs_set:Npn \itexnl
+    {
+      \tl_if_empty:NF \l__xhtm_nextid_tl
+      {
+        \tl_gput_right:Nx \l__xhtm_eqnnums_tl
+        {
+          \exp_not:N \xhtm_open_tag:nn {tr} {class="alignnumber_row"}
+          \exp_not:N \xhtm_open_tag:nn {td} {}
+          \bool_if:NT \l__xhtm_next_num_bool
+          {
+            \exp_not:N \xhtm_open_tag:nn {span} {class="alignnumber"~ id="\tl_use:N \l__xhtm_nextid_tl"}
+            \theequation
+            \exp_not:N \xhtm_close_tag:n {span}
+          }
+          \exp_not:N \xhtm_close_tag:n {td}
+          \exp_not:N \xhtm_close_tag:n {tr}
+          \exp_not:N \xhtm_linebreak:
+        }
+      }
+      \xhtm_itexnl:
+      \xhtm_linebreak:
+      \bool_if:NT \l__xhtm_next_num_bool
+      {
+        \tl_set:Nn \l__xhtm_anchor_tl {on next}
+        \refstepcounter{equation}
+      }
+      \bool_set_true:N \l__xhtm_next_num_bool
+    }
   }
 }
+
+\tl_new:N \l__xhtm_endalign_tl
+\tl_set:Nn \l__xhtm_endalign_tl
+{
+  \bool_if:NT \l__itex_numbered_bool
+  {
+    \tl_gput_right:Nx \l__xhtm_eqnnums_tl
+    {
+      \exp_not:N \xhtm_open_tag:nn {tr} {class="alignnumber_row"}
+      \exp_not:N \xhtm_open_tag:nn {td} {}
+      \bool_if:NT \l__xhtm_next_num_bool
+      {
+        \exp_not:N \xhtm_open_tag:nn {span} {class="alignnumber"~           id="\tl_use:N \l__xhtm_nextid_tl"}
+        \theequation
+        \exp_not:N \xhtm_close_tag:n {span}
+      }
+      \exp_not:N \xhtm_close_tag:n {td}
+      \exp_not:N \xhtm_close_tag:n {tr}
+      \exp_not:N \xhtm_linebreak:
+      \exp_not:N \xhtm_close_tag:n {table}
+    }
+    \tl_gclear:N \l__xhtm_nextid_tl
+  }
+}
+
+\tl_new:N \l__xhtm_postendalign_tl
+\tl_set:Nn \l__xhtm_postendalign_tl
+{
+  \xhtm_close_par:
+  \xhtm_close_tag:n {td}
+  \xhtm_open_tag:nn {td} {class="label"}
+  \tl_use:N \l__xhtm_eqnnums_tl
+  \tl_gclear:N \l__xhtm_eqnnums_tl
+  \xhtm_close_tag:n {td}
+  \xhtm_close_tag:n {tr}
+  \xhtm_close_tag:n {table}
+}
+
+\txt_addto_hook:nnn {itex} {begin maths} {\tl_use:N \l__xhtm_beginmaths_tl}
+\txt_addto_hook:nnn {itex} {begin display} {\tl_use:N \l__xhtm_begindisplay_tl}
+\txt_addto_hook:nnn {itex} {end display} {\tl_use:N \l__xhtm_enddisplay_tl}
+\txt_addto_hook:nnn {itex} {pre begin align} {\tl_use:N \l__xhtm_beginalign_tl}
+\txt_addto_hook:nnn {itex} {pre end align} {\tl_use:N \l__xhtm_endalign_tl}
+\txt_addto_hook:nnn {itex} {post end align} {\tl_use:N \l__xhtm_postendalign_tl}
+
+
 
 % Bibliography ...
 
@@ -1341,11 +1458,11 @@
 
 \NewDocumentEnvironment {thebibliography} {m}
 {
-  \seq_set_split:Nnn \l__xhtm_args_seq {,} {{#1}}
-  \xhtm_use_hook:n {pre bibliography header}
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
+  \txt_use_hook:nn {xhtm} {pre bibliography header}
   \section*{References}
-  \seq_set_split:Nnn \l__xhtm_args_seq {,} {{#1}}
-  \xhtm_use_hook:n {post bibliography header}
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
+  \txt_use_hook:nn {xhtm} {post bibliography header}
   \use:c{xhtm enumerate}{class="bibliography"}
 }
 {
