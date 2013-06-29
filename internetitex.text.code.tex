@@ -1210,8 +1210,10 @@
 \newtextcommand{\Oplus}
 \newtextcommand{\bigoplus}
 \newtextcommand{\bigodot}
+\newtextcommand{\bigsqcap}
 \newtextcommand{\bigsqcup}
 \newtextcommand{\biguplus}
+\newtextcommand{\biginterleave}
 \newtextcommand{\wedge}
 \newtextcommand{\Wedge}
 \newtextcommand{\bigwedge}
@@ -1223,8 +1225,8 @@
 \newtextcommand{\tfrac}[2]
 \newtextcommand{\binom}[2]
 \newtextcommand{\tbinom}[2]
-\newtextcommand{\tensor}
-\newtextcommand{\multiscripts}
+\newtextcommand{\tensor}[2]
+\newtextcommand{\multiscripts}[3]
 \newtextcommand{\overbrace}[1]
 \newtextcommand{\underbrace}[1]
 \newtextcommand{\underline}[1]
@@ -1300,10 +1302,12 @@
 \newtextcommand{\thickspace}
 \newtextcommand{\negspace}
 %\newtextcommand{\href}
-\newtextcommand{\operatorname}
-\newtextcommand{\mathop}
-\newtextcommand{\mathbin}
-\newtextcommand{\mathrel}
+\newtextcommand{\operatorname}[1]
+\newtextcommand{\mathop}[1]
+\newtextcommand{\mathbin}[1]
+\newtextcommand{\mathrel}[1]
+\newtextcommand{\itexnum}[1]
+\newtextcommand{\mathraisebox}[1]
 \newtextcommand{\includegraphics}
 \newtextcommand[\text]{\itextext}
 \newtextcommand[\array]{\itexarray}
@@ -1340,8 +1344,6 @@
 \cs_set:Npn \mathopen #1 {#1}
 \cs_set:Npn \mathclose #1 {#1}
 \cs_set:Npn \mathord #1 {#1}
-\cs_set:Npn \mathbin #1 {#1}
-\cs_set:Npn \mathrel #1 {#1}
 
 \RenewDocumentCommand \mathchoice {m m m m}
 {
