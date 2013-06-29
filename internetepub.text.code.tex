@@ -25,9 +25,10 @@
   \keys_set:nV {epub options} \l_tmpa_tl
 }
 
-\newcounter{epub segments}
-\setcounter{epub segments}{0}
-\cs_set_eq:Nc \thepage {the epub segments}
+\int_new:N \l__epub_segments_int
+\int_set:Nn \l__epub_segments_int {0}
+
+\cs_set:Npn \thepage {\int_use:N \l__epub_segments_int}
 % Disable restyling the page numbering,
 \cs_set:Npn \pagenumbering #1 {}
 
@@ -129,7 +130,7 @@
     \item 
     \tl_if_eq:NNF \@title \l__xhtm_title_tl
     {
-      \href{\jobname \use:c {the epub segments}.xhtml}{\@title}
+      \href{\jobname \int_use:N \l__epub_segments_int .xhtml}{\@title}
     }
     \int_gzero_new:N \l__xhtm_toclvl_int
     \@starttoc{toc}
@@ -150,7 +151,7 @@
 
 \xhtm_at_enddocument:n
 {
-  \xhtm_comment:n {end~ of~ \jobname \use:c{the epub segments}.xhtml}
+  \xhtm_comment:n {end~ of~ \jobname \int_use:N \l__epub_segments_int .xhtml}
   \tl_use:N \l__epub_filelist_tl
   \xhtm_comment:n {end~ of~ file~ list}
 
@@ -240,7 +241,7 @@
   \xhtm_close_tag:n {manifest}
   \xhtm_linebreak:
   \xhtm_open_tag:nn {spine} {}
-  \int_step_inline:nnnn {1} {1} {\l__epub_bibpage_int}
+  \int_step_inline:nnnn {1} {1} {\l__epub_segments_int}
   {
     \xhtm_empty_tag:nn {itemref} {idref="page #1"}
   }
@@ -284,18 +285,18 @@
 
 \cs_new_nopar:Npn \epub_next_segment:
 {
-  \addtocounter{epub segments}{1}
+  \int_gincr:N \l__epub_segments_int
   \tl_gput_right:Nx \l__epub_files_tl
   {
     \exp_not:N \xhtm_linebreak:
-    \exp_not:N \xhtm_empty_tag:nn {item} {href="\jobname \use:c{the epub segments} .xhtml"~ properties="mathml \tl_if_empty:NF \l__xhtm_js_tl {~ scripted}"~ id="page \use:c{the epub segments}"~ media-type="application/xhtml+xml"}
+    \exp_not:N \xhtm_empty_tag:nn {item} {href="\jobname \int_use:N \l__epub_segments_int  .xhtml"~ properties="mathml \tl_if_empty:NF \l__xhtm_js_tl {~ scripted}"~ id="page \int_use:N \l__epub_segments_int "~ media-type="application/xhtml+xml"}
   }
   \tl_gput_right:Nx \l__epub_filelist_tl
   {
     \exp_not:N \xhtm_linebreak:
-    \exp_not:N \xhtm_comment:n {\jobname \use:c{the epub segments}.xhtml}
+    \exp_not:N \xhtm_comment:n {\jobname \int_use:N \l__epub_segments_int .xhtml}
   }
-  \xhtm_comment:n {start~ of~ \jobname\use:c{the epub segments}.xhtml}
+  \xhtm_comment:n {start~ of~ \jobname\int_use:N \l__epub_segments_int .xhtml}
   \tl_use:N \l__epub_declaration_tl
   \xhtm_open_tag:nn {head} {}
   \tl_if_eq:NNF \@title \l__xhtm_title_tl
@@ -354,6 +355,21 @@
 \int_new:N \l__epub_curr_section_int
 \int_new:N \l__epub_next_section_int
 
+% Rules for splitting:
+%  We specify a ``level'' at which to split, say ``section''.
+%  Each time the section command is called, we compare it with the
+%  previous one and with the splitting level.
+%
+% The rules are:
+%  We don't split if the next level is lower down the hierarchy than
+%  the current level,
+%  We don't split if the next level is lower down the hierarchy than
+%  the splitting level.
+%  We don't split at phantom sections.
+%
+% Note that numerically, the higher sections levels have lower
+% numerical value.
+
 \cs_new_nopar:Npn \epub_split_section:n #1
 {
   \int_set:Nn \l__epub_next_section_int
@@ -366,7 +382,7 @@
     }
     &&
     \int_compare_p:n {
-      \l__epub_curr_section_int >= \int_use:c {l__epub_#1_level_int}
+      \l__epub_next_section_int <= \l__epub_curr_section_int
     }
   }
   {
@@ -374,7 +390,7 @@
     \xhtm_set_footnotes:
     \xhtm_close_tag:n {body}
     \xhtm_close_tag:n {html}
-    \xhtm_comment:n {end~ of~ \jobname \use:c{the epub segments} .xhtml}
+    \xhtm_comment:n {end~ of~ \jobname \int_use:N \l__epub_segments_int .xhtml}
     \txt_newpage:
     \epub_next_segment:
   }
@@ -387,7 +403,7 @@
   \seq_set_split:NnV \l__txt_args_seq {,} \l_tmpa_tl
 \txt_use_hook:nn {xhtm} {pre section header}
   % This ensures we don't break after a \phantomsection
-  \int_gset:Nn \l__epub_curr_section_int {0}
+  \int_gset:Nn \l__epub_curr_section_int {-1}
 \epub_orig_phantom_section:
 }
 \AtBeginDocument{
@@ -395,7 +411,7 @@
   \cs_set_eq:NN \phantomsection \epub_phantom_section:
 }
 
-\tl_put_right:Nn \l__xhtm_preabstract_tl
+\txt_set_hook:nnn {xhtm} {pre abstract}
 {
   \cs_set_eq:NN \epub_split_section:n \use:n
 }
@@ -445,7 +461,7 @@
 
 \txt_set_hook:nnn {xhtm} {post bibliography header}
 {
-  \write\@auxout{\string\epubbibpage {\use:c {the epub segments}}}  
+  \write\@auxout{\string\epubbibpage {\int_use:N \l__epub_segments_int }}
 }
 
 
@@ -614,10 +630,10 @@
 { regular }
 \prop_put:Nnn \l__epub_fontwt_prop
 { bold }
-{ regular }
+{ bold }
 \prop_put:Nnn \l__epub_fontwt_prop
 { bold italic }
-{ regular }
+{ bold }
 \prop_new:N \l__epub_fontst_prop
 \prop_put:Nnn \l__epub_fontst_prop
 { regular }
