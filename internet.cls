@@ -116,6 +116,11 @@
       files to load = markdown,
       options = {markdown}{#1},
     },
+    github .meta:n = {
+      output mode = github,
+      files to load = github,
+      options = {github}{#1},
+    },
     markdownextra .meta:n = {
       output mode = markdownextra,
       files to load = markdownextra,

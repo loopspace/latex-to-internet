@@ -1,0 +1,30 @@
+% GitHub flavour markdown, prefix: gthb
+
+% Built on top of markdown
+\txt_load_file:n {markdown}
+
+% Define the options for the markdown-extra module
+\keys_define:nn {github options}
+{
+  unknown .code:n =
+  {
+    \txt_try_options:nnn {markdown} {\l_keys_key_tl} {#1}
+  }
+}
+
+% Get and set the options for the markdown-extra module
+\prop_get:NnNT  \l__txt_popts_prop {github} \l_tmpa_tl
+{
+  \keys_set:nV {github options} \l_tmpa_tl
+}
+
+% Better verbatim handling
+
+\tl_set:Nn \l__mkdn_verbpre_tl {`{}`{}`}
+\tl_set:Nn \l__mkdn_verbpost_tl {`{}`{}`}
+
+\endinput
+
+% Local Variables:
+% mode: latex3
+% End:
