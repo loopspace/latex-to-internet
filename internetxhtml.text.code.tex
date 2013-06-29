@@ -1301,6 +1301,8 @@
 
 % Maths
 
+\tl_new:N \l__xhtm_mathtype_tl
+
 \tl_new:N \l__xhtm_beginmaths_tl
 \tl_set:Nn \l__xhtm_beginmaths_tl
 {
@@ -1318,26 +1320,55 @@
 {
   \xhtm_close_par:
   \xhtm_linebreak:
-  \tl_if_empty:NTF \l__xhtm_nextid_tl
+  \tl_if_empty:NTF \l__xhtm_mathtype_tl
   {
-    \xhtm_open_tag:nn {div} {class="displaymaths"}
+    \xhtm_open_tag:nn {table} {class="displaymaths"}
   }
   {
-    \xhtm_open_tag:nn {div} {class="displaymaths"~ id="\tl_use:N \l__xhtm_nextid_tl"}
-    \tl_gclear:N \l__xhtm_nextid_tl
+    \xhtm_open_tag:nn {table} {class="displaymaths~ \tl_use:N \l__xhtm_mathtype_tl"}
   }
-  \bool_if:NT \l__itex_numbered_bool
-  {
-    \xhtm_open_tag:nn {span} {class="eqnnumber"}
-    \theequation
-    \xhtm_close_tag:n {span}
-  }
+  \xhtm_open_tag:nn {tr} {}
+  \xhtm_open_tag:nn {td} {class="label"}
+  \xhtm_close_tag:n {td}
+  \xhtm_open_tag:nn {td} {class="maths"}
+  \tl_gclear:N \l__xhtm_eqnnums_tl
+  \bool_set_true:N \l__xhtm_next_num_bool
 }
 
 \tl_new:N \l__xhtm_enddisplay_tl
 \tl_set:Nn \l__xhtm_enddisplay_tl
 {
-  \xhtm_close_tag:n {div}
+  \bool_if:NT \l__itex_numbered_bool
+  {
+    \tl_gput_right:Nx \l__xhtm_eqnnums_tl
+    {
+      \exp_not:N \xhtm_open_tag:nn {tr} {class="eqnnumber"}
+      \exp_not:N \xhtm_open_tag:nn {td} {}
+      \bool_if:NT \l__xhtm_next_num_bool
+      {
+        \exp_not:N \xhtm_open_tag:nn {span} {class="eqnnumber"~           id="\tl_use:N \l__xhtm_nextid_tl"}
+        \theequation
+        \exp_not:N \xhtm_close_tag:n {span}
+      }
+      \exp_not:N \xhtm_close_tag:n {td}
+      \exp_not:N \xhtm_close_tag:n {tr}
+      \exp_not:N \xhtm_linebreak:
+    }
+    \tl_gclear:N \l__xhtm_nextid_tl
+  }
+  \xhtm_close_par:
+  \xhtm_close_tag:n {td}
+  \xhtm_open_tag:nn {td} {class="label"}
+  \tl_if_empty:NF \l__xhtm_eqnnums_tl
+  {
+    \xhtm_open_tag:nn {table} {}
+    \tl_use:N \l__xhtm_eqnnums_tl
+    \xhtm_close_tag:n {table}
+    \tl_gclear:N \l__xhtm_eqnnums_tl
+  }
+  \xhtm_close_tag:n {td}
+  \xhtm_close_tag:n {tr}
+  \xhtm_close_tag:n {table}
   \xhtm_linebreak:
   \xhtm_open_par:
 }
@@ -1347,23 +1378,7 @@
 \tl_new:N \l__xhtm_beginalign_tl
 \tl_set:Nn \l__xhtm_beginalign_tl
 {
-  \tl_set:Nn \l__xhtm_begindisplay_tl
-  {
-    \xhtm_close_par:
-    \xhtm_linebreak:
-    \xhtm_open_tag:nn {table} {class="align"}
-    \xhtm_open_tag:nn {tr} {}
-    \xhtm_open_tag:nn {td} {class="label"}
-    \xhtm_close_tag:n {td}
-    \xhtm_open_tag:nn {td} {class="maths"}
-    \xhtm_open_tag:nn {div} {class="displaymaths~ align"}
-    \tl_gclear:N \l__xhtm_eqnnums_tl
-    \tl_gset:Nn \l__xhtm_eqnnums_tl
-    {
-      \xhtm_open_tag:nn {table} {}
-      \xhtm_linebreak:
-    }
-  }
+  \tl_set:Nn \l__xhtm_mathtype_tl {align}
   \bool_if:NT \l__itex_numbered_bool
   {
     \cs_set_eq:NN \xhtm_itexnl: \itexnl
@@ -1371,18 +1386,17 @@
     {
       \bool_set_false:N \l__xhtm_next_num_bool
     }
-    \bool_set_true:N \l__xhtm_next_num_bool
     \cs_set:Npn \itexnl
     {
       \tl_if_empty:NF \l__xhtm_nextid_tl
       {
         \tl_gput_right:Nx \l__xhtm_eqnnums_tl
         {
-          \exp_not:N \xhtm_open_tag:nn {tr} {class="alignnumber_row"}
+          \exp_not:N \xhtm_open_tag:nn {tr} {class="eqnnumber"}
           \exp_not:N \xhtm_open_tag:nn {td} {}
           \bool_if:NT \l__xhtm_next_num_bool
           {
-            \exp_not:N \xhtm_open_tag:nn {span} {class="alignnumber"~ id="\tl_use:N \l__xhtm_nextid_tl"}
+            \exp_not:N \xhtm_open_tag:nn {span} {class="eqnnumber"~ id="\tl_use:N \l__xhtm_nextid_tl"}
             \theequation
             \exp_not:N \xhtm_close_tag:n {span}
           }
@@ -1403,49 +1417,13 @@
   }
 }
 
-\tl_new:N \l__xhtm_endalign_tl
-\tl_set:Nn \l__xhtm_endalign_tl
-{
-  \bool_if:NT \l__itex_numbered_bool
-  {
-    \tl_gput_right:Nx \l__xhtm_eqnnums_tl
-    {
-      \exp_not:N \xhtm_open_tag:nn {tr} {class="alignnumber_row"}
-      \exp_not:N \xhtm_open_tag:nn {td} {}
-      \bool_if:NT \l__xhtm_next_num_bool
-      {
-        \exp_not:N \xhtm_open_tag:nn {span} {class="alignnumber"~           id="\tl_use:N \l__xhtm_nextid_tl"}
-        \theequation
-        \exp_not:N \xhtm_close_tag:n {span}
-      }
-      \exp_not:N \xhtm_close_tag:n {td}
-      \exp_not:N \xhtm_close_tag:n {tr}
-      \exp_not:N \xhtm_linebreak:
-      \exp_not:N \xhtm_close_tag:n {table}
-    }
-    \tl_gclear:N \l__xhtm_nextid_tl
-  }
-}
-
-\tl_new:N \l__xhtm_postendalign_tl
-\tl_set:Nn \l__xhtm_postendalign_tl
-{
-  \xhtm_close_par:
-  \xhtm_close_tag:n {td}
-  \xhtm_open_tag:nn {td} {class="label"}
-  \tl_use:N \l__xhtm_eqnnums_tl
-  \tl_gclear:N \l__xhtm_eqnnums_tl
-  \xhtm_close_tag:n {td}
-  \xhtm_close_tag:n {tr}
-  \xhtm_close_tag:n {table}
-}
 
 \txt_addto_hook:nnn {itex} {begin maths} {\tl_use:N \l__xhtm_beginmaths_tl}
 \txt_addto_hook:nnn {itex} {begin display} {\tl_use:N \l__xhtm_begindisplay_tl}
 \txt_addto_hook:nnn {itex} {end display} {\tl_use:N \l__xhtm_enddisplay_tl}
 \txt_addto_hook:nnn {itex} {pre begin align} {\tl_use:N \l__xhtm_beginalign_tl}
-\txt_addto_hook:nnn {itex} {pre end align} {\tl_use:N \l__xhtm_endalign_tl}
-\txt_addto_hook:nnn {itex} {post end align} {\tl_use:N \l__xhtm_postendalign_tl}
+%\txt_addto_hook:nnn {itex} {pre end align} {\tl_use:N \l__xhtm_endalign_tl}
+%\txt_addto_hook:nnn {itex} {post end align} {\tl_use:N \l__xhtm_postendalign_tl}
 
 
 
