@@ -388,13 +388,10 @@
   }
 }
 
-% TODO: Shift these to hooks
-\tl_new:N \l__xhtm_preabstract_tl
-\tl_new:N \l__xhtm_postabstract_tl
 \DeclareDocumentEnvironment {abstract} {}
 {
   \xhtm_close_par:
-  \tl_use:N \l__xhtm_preabstract_tl
+  \txt_use_hook:nn {xhtm} {pre abstract}
   \xhtm_open_tag:nn {div} {class="abstract"}
   \section*{Abstract}
   \xhtm_open_par:
@@ -402,7 +399,7 @@
 {
   \xhtm_close_par:
   \xhtm_close_tag:n {div}
-  \tl_use:N \l__xhtm_postabstract_tl
+  \txt_use_hook:nn {xhtm} {post abstract}
   \xhtm_open_par:
 }
 
