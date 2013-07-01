@@ -20,8 +20,9 @@
 
 % Better verbatim handling
 
-\tl_set:Nn \l__mkdn_verbpre_tl {`{}`{}`}
-\tl_set:Nn \l__mkdn_verbpost_tl {`{}`{}`}
+\txt_set_hook:nnn {mkdn} {verbatim} {`{}`{}`}
+\txt_set_hook:nnn {mkdn} {end verbatim} {`{}`{}`}
+
 
 \endinput
 

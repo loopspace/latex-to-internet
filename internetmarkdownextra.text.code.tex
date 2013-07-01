@@ -27,8 +27,8 @@
 \tl_set:Nn \l__mkex_ttilde_tl {;;;}
 }
 
-\tl_set:Nn \l__mkdn_verbpre_tl {\tl_use:N \l__mkex_ttilde_tl}
-\tl_set:Nn \l__mkdn_verbpost_tl {\tl_use:N \l__mkex_ttilde_tl}
+\txt_set_hook:nnn {mkdn} {verbatim} {\tl_use:N \l__mkex_ttilde_tl}
+\txt_set_hook:nnn {mkdn} {end verbatim} {\tl_use:N \l__mkex_ttilde_tl}
 
 % Native description lists
 

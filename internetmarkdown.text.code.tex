@@ -345,18 +345,13 @@
   \everypar \expandafter{\the\everypar \unpenalty}
 }
 
-
-
-\tl_new:N \l__mkdn_verbpre_tl
-\tl_new:N \l__mkdn_verbpost_tl
-
-\tl_set:Nn \l__mkdn_verbpre_tl {\mkdn_indent_by:n {4}}
+\txt_set_hook:nnn {mkdn} {verbatim} {\mkdn_indent_by:n {4}}
 
 \cs_set:Npn \verbatim
 {
   \vskip\parskip
   \group_begin:
-  \tl_use:N \l__mkdn_verbpre_tl
+  \txt_use_hook:nn {mkdn} {verbatim}
   \cs_set_eq:NN \@verbatim \mkdn_verbatim:
   \mkdn_orig_verbatim:
 }
@@ -364,7 +359,7 @@
 \cs_set:Npn \endverbatim
 {
   \mkdn_orig_endverbatim:
-  \tl_use:N \l__mkdn_verbpost_tl
+  \txt_use_hook:nn {mkdn} {end verbatim}
   \group_end:
   \par
 }
