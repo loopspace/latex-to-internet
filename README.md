@@ -1,3 +1,17 @@
+# Licence #
+
+Copyright 2013 Andrew Stacey.
+
+This work may be distributed and/or modified under the conditions of the LaTeX Project Public License, either version 1.3 of this license or (at your option) any later version.
+
+The latest version of this license is in [LPPL](http://www.latex-project.org/lppl.txt) and version 1.3 or later is part of all distributions of LaTeX version 2005/12/01 or later.
+
+This work has the LPPL maintenance status "maintained".
+
+The Current Maintainer of this work is Andrew Stacey.
+
+This work consists of all of the files in [this repository located on GitHub](https://github.com/loopspace/latex-to-internet).
+
 # Introduction #
 
 The `internet` class and suite of modules is designed to make it possible to write a wide range of documents using LaTeX as the input format. It is **not** intended as a conversion tool but the intention is for an author to use it from the outset. Using it, an author can write a blog post, a wiki page, an ePub document, or more, using their knowledge of and skills with LaTeX. It is also possible to use the same source to produce a variety of different outputs (including letting TeX do its usual thing to produce a PDF or DVI).
@@ -43,7 +57,6 @@ The currently available types are:
 * Markdown, `markdown`
 
 * Markdown Extra, `markdownextra`
-
 * Maruku, `maruku`
 
 * Instiki, `instiki`
@@ -57,6 +70,7 @@ The currently available types are:
 There are also options as to how the mathematics is translated. At present, these are:
 
 * Basic, `basicmaths`
+
 * iTeX, `itex`
 
 # Known Issues #
