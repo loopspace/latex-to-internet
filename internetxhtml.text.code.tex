@@ -1322,10 +1322,10 @@
   \xhtm_linebreak:
   \tl_if_empty:NTF \l__xhtm_mathtype_tl
   {
-    \xhtm_open_tag:nn {table} {class="displaymaths"}
+    \xhtm_open_tag:nn {table} {class="displaymaths\bool_if:NT \l__itex_numbered_bool {~numbered}"}
   }
   {
-    \xhtm_open_tag:nn {table} {class="displaymaths~ \tl_use:N \l__xhtm_mathtype_tl"}
+    \xhtm_open_tag:nn {table} {class="displaymaths\bool_if:NT \l__itex_numbered_bool {~numbered}~ \tl_use:N \l__xhtm_mathtype_tl"}
   }
   \xhtm_open_tag:nn {tr} {}
   \xhtm_open_tag:nn {td} {class="label"}
@@ -1386,6 +1386,13 @@
     {
       \bool_set_false:N \l__xhtm_next_num_bool
     }
+    \txt_set_hook:nnn {cmd} {matrix} {\cs_set_eq:NN \\ \xhtm_itexnl:}
+    \txt_set_hook:nnn {cmd} {pmatrix} {\cs_set_eq:NN \\ \xhtm_itexnl:}
+    \txt_set_hook:nnn {cmd} {bmatrix} {\cs_set_eq:NN \\ \xhtm_itexnl:}
+    \txt_set_hook:nnn {cmd} {vmatrix} {\cs_set_eq:NN \\ \xhtm_itexnl:}
+    \txt_set_hook:nnn {cmd} {Bmatrix} {\cs_set_eq:NN \\ \xhtm_itexnl:}
+    \txt_set_hook:nnn {cmd} {Vmatrix} {\cs_set_eq:NN \\ \xhtm_itexnl:}
+    \txt_set_hook:nnn {cmd} {smallmatrix} {\cs_set_eq:NN \\ \xhtm_itexnl:}
     \cs_set:Npn \itexnl
     {
       \tl_if_empty:NF \l__xhtm_nextid_tl
@@ -1421,10 +1428,8 @@
 \txt_addto_hook:nnn {itex} {begin maths} {\tl_use:N \l__xhtm_beginmaths_tl}
 \txt_addto_hook:nnn {itex} {begin display} {\tl_use:N \l__xhtm_begindisplay_tl}
 \txt_addto_hook:nnn {itex} {end display} {\tl_use:N \l__xhtm_enddisplay_tl}
-\txt_addto_hook:nnn {itex} {pre begin align} {\tl_use:N \l__xhtm_beginalign_tl}
-%\txt_addto_hook:nnn {itex} {pre end align} {\tl_use:N \l__xhtm_endalign_tl}
-%\txt_addto_hook:nnn {itex} {post end align} {\tl_use:N \l__xhtm_postendalign_tl}
-
+\txt_addto_hook:nnn {itex} {begin align} {\tl_use:N \l__xhtm_beginalign_tl}
+\txt_addto_hook:nnn {itex} {begin gather} {\tl_use:N \l__xhtm_beginalign_tl}
 
 
 % Bibliography ...

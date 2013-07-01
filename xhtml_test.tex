@@ -7,32 +7,9 @@
 \usepackage{lipsum}
 \usepackage{hyperref}
 
-\addcss+span.eqnnumber:before {content: "(";}+
-\addcss+span.eqnnumber:after {content: ")";}+
-\addcss+tr.eqnnumber {vertical-align: middle;}+
-\addcss+table.displaymaths {width: 100%;}+
-\addcss+table.displaymaths > tr {vertical-align: top;}+
-\addcss+table.displaymaths td.label {width: 2em; vertical-align: middle;}+
-\addcss+table.displaymaths td.label table {width: 100%; text-align:right;}+
+\loadcss{numberedeqns}
+\loadjs{numberedeqns}
 
-\addjavascript@
-function moveEqNums() {
-  var dmaths = document.getElementsByClassName('displaymaths align');
-  for (var i = 0; i < dmaths.length; i++) {
-    var dmath = dmaths[i];
-    if (dmath.tagName == 'table')
-    {
-      var rows = dmath.firstChild.childNodes[1].children[0].firstChild.firstChild.children;
-      var labels = dmath.firstChild.childNodes[2].firstChild.children;
-        for (var j = 0; j < rows.length; j++) {
-          labels[j].style.height = rows[j].scrollHeight + 'px';
-        }
-    }
-  }
-}
-
-window.onload = moveEqNums;
-@
 
 
 \newtheorem{theorem}{Theorem}

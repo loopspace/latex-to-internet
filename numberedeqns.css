@@ -1,0 +1,23 @@
+span.eqnnumber:before {
+    content: "(";
+}
+span.eqnnumber:after {
+    content: ")";
+}
+tr.eqnnumber {
+    vertical-align: middle;
+}
+table.displaymaths {
+    width: 100%;
+}
+table.displaymaths > tr {
+    vertical-align: top;
+}
+table.displaymaths td.label {
+    width: 2em; 
+    vertical-align: middle;
+}
+table.displaymaths td.label table {
+    width: 100%;
+    text-align:right;
+}

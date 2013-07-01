@@ -1,6 +1,131 @@
-\documentclass[text,itex,xhtml]{internet}
+\documentclass[text,xhtml,itex]{internet}
+
+\usepackage{hyperref}
+
+\loadcss{numberedeqns}
+\loadjs{numberedeqns}
+
 
 \begin{document}
+
+\section{Greek Letters}
+
+\begin{tabular}{llllll}
+\verb+\alpha+ & \(\alpha\) &&& \verb+\Alpha+ & \(\Alpha\) \\
+\verb+\beta+ & \(\beta\) &&& \verb+\Beta+ & \(\Beta\) \\
+\verb+\gamma+ & \(\gamma\) &&& \verb+\Gamma+ & \(\Gamma\) \\
+\verb+\delta+ & \(\delta\) &&& \verb+\Delta+ & \(\Delta\) \\
+\verb+\epsilon+ & \(\epsilon\) & \verb+\varepsilon+ & \(\varepsilon\) & \verb+E+ & E \\
+\verb+\zeta+ & \(\zeta\) &&& \verb+\Zeta+ & \(\Zeta\) \\
+\verb+\eta+ & \(\eta\) &&& \verb+\Eta+ & \(\Eta\) \\
+\verb+\theta+ & \(\theta\) & \verb+\vartheta+ & \(\vartheta\) & \verb+\Theta+ & \(\Theta\) \\
+\verb+\iota+ & \(\iota\) &&& \verb+\Iota+ & \(\Iota\) \\
+\verb+\kappa+ & \(\kappa\) & \verb+\varkappa+ & \(\varkappa\) & \verb+\Kappa+ & \(\Kappa\) \\
+\verb+\lambda+ & \(\lambda\) &&& \verb+\Lambda+ & \(\Lambda\) \\
+\verb+\mu+ & \(\mu\) &&& \verb+\Mu+ & \(\Mu\) \\
+\verb+\nu+ & \(\nu\) &&& \verb+\Nu+ & \(\Nu\) \\
+\verb+\xi+ & \(\xi\) &&& \verb+\Xi+ & \(\Xi\) \\
+\verb+\omicron+ & \(\omicron\) &&& \verb+O+ & O \\
+\verb+\pi+ & \(\pi\) & \verb+\varpi+ & \(\varpi\) & \verb+\Pi+ & \(\Pi\) \\
+\verb+\rho+ & \(\rho\) & \verb+\varrho+ & \(\varrho\) & \verb+\Rho+ & \(\Rho\) \\
+\verb+\sigma+ & \(\sigma\) & \verb+\varsigma+ & \(\varsigma\) & \verb+\Sigma+ & \(\Sigma\) \\
+\verb+\tau+ & \(\tau\) &&& \verb+\Tau+ & \(\Tau\) \\
+\verb+\upsilon+ & \(\upsilon\) &&& \verb+\Upsilon+ & \(\Upsilon\) \\
+\verb+\phi+ & \(\phi\) & \verb+\varphi+ & \(\varphi\) & \verb+\Phi+ & \(\Phi\) \\
+\verb+\chi+ & \(\chi\) &&& \verb+X+ & X \\
+\verb+\psi+ & \(\psi\) &&& \verb+\Psi+ & \(\Psi\) \\
+\verb+\omega+ & \(\omega\) &&& \verb+\Omega+ & \(\Omega\)
+\end{tabular}
+
+\begin{tabular}{ll}
+\verb+\backepsilon+ & \(\backepsilon\) \\
+\verb+\digamma+ & \(\digamma\) \\
+\verb+\mho+ & \(\mho\)
+\end{tabular}
+
+\section{Predefined Operators}
+
+\begin{tabular}{ll}
+\verb+\arccos{x}+  & \(\arccos{x}\)  &\\
+\verb+\exp{x}+    & \(\exp{x}\)     \\
+\verb+\max{x}+    & \(\max{x}\)\\
+\verb+\arcsin{x}+  & \(\arcsin{x}\)  \\
+\verb+\gcd{x}+    & \(\gcd{x}\)     \\
+\verb+\min{x}+    & \(\min{x}\)\\
+\verb+\arctan{x}+  & \(\arctan{x}\)  \\
+\verb+\inf{x}+    & \(\inf{x}\)     \\
+\verb+x \mod{m}+  & \(x \mod{m}\)\\
+\verb+\arg{x}+     & \(\arg{x}\)     \\
+\verb+\hom{x}+    & \(\hom{x}\)     \\
+\verb+x \pmod{m}+ & \(x \pmod{m}\)\\
+\verb+\cos{x}+     & \(\cos{x}\)     \\
+\verb+\ker{x}+    & \(\ker{x}\)     \\
+\verb+\Pr{x}+     & \(\Pr{x}\)\\
+\verb+\cosh{x}+    & \(\cosh{x}\)    \\
+\verb+\lg{x}+     & \(\lg{x}\)      \\
+\verb+\sec{x}+    & \(\sec{x}\)\\
+\verb+\cot{x}+     & \(\cot{x}\)     \\
+\verb+\lim{x}+    & \(\lim{x}\)     \\
+\verb+\sin{x}+    & \(\sin{x}\)\\
+\verb+\coth{x}+    & \(\coth{x}\)    \\
+\verb+\liminf{x}+ & \(\liminf{x}\)  \\
+\verb+\sinh{x}+   & \(\sinh{x}\)\\
+\verb+\csc{x}+     & \(\csc{x}\)     \\
+\verb+\limsup{x}+ & \(\limsup{x}\)  \\
+\verb+\sup{x}+    & \(\sup{x}\)\\
+\verb+\deg{x}+     & \(\deg{x}\)     \\
+\verb+\ln{x}+     & \(\ln{x}\)      \\
+\verb+\tan{x}+    & \(\tan{x}\)\\
+\verb+\det{x}+     & \(\det{x}\)     \\
+\verb+\log{x}+    & \(\log{x}\)     \\
+\verb+\tanh{x}+   & \(\tanh{x}\)\\
+\verb+\dim{x}+     & \(\dim{x}\)
+\end{tabular}
+
+
+
+\[
+  \begin{matrix}
+  a & b \\
+  c & d
+  \end{matrix}
+\]
+
+\begin{align}
+\label{eq:one}
+x &= y + z \\
+\label{eq:two}
+a &= \int b + c \\
+\label{eq:three}
+d &= e + f
+\end{align}
+
+\begin{gather}
+\label{eq:four}
+x = y + z \\
+\label{eq:five}
+a = \int b + c \\
+\label{eq:six}
+d = e + f
+\end{gather}
+
+
+
+\begin{align}
+  \begin{bmatrix}
+  a & b \\
+  c & d \\
+  e & f \\
+  g & h
+  \end{bmatrix}
+  \\
+  \begin{pmatrix}
+  a & b \\
+  c & d \\
+  e & f \\
+  g & h
+  \end{pmatrix} 
+\end{align}
 
 \(\left\{ x \in X\right\} \mathcal{A}\)
 

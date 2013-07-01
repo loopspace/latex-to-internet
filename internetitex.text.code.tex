@@ -390,22 +390,22 @@
   \txt_newline:
   \end{aligned}
   $$
+  \txt_use_hook:nn {itex} {end align}
 }
 
 \NewDocumentEnvironment {align} {}
 {
   \bool_set_true:N \l__itex_numbered_bool
-  \txt_use_hook:nn {itex} {pre begin align}
+  \txt_use_hook:nn {itex} {begin align}
   \[
   \begin{aligned}
   \txt_newline:
 }
 {
-  \txt_use_hook:nn {itex} {pre end align}
   \txt_newline:
   \end{aligned}
   \]
-  \txt_use_hook:nn {itex} {post end align}
+  \txt_use_hook:nn {itex} {end align}
 }
 
 \NewDocumentEnvironment {gather*} {}
@@ -420,6 +420,7 @@
   \txt_newline:
   \end{gathered}
   $$
+  \txt_use_hook:nn {itex} {end gather}
 }
 
 \NewDocumentEnvironment {gather} {}
@@ -434,11 +435,13 @@
   \txt_newline:
   \end{gathered}
   $$
+  \txt_use_hook:nn {itex} {end gather}
 }
 
 \NewDocumentEnvironment {multline*} {}
 {
   \bool_set_false:N \l__itex_numbered_bool
+  \txt_use_hook:nn {itex} {begin multline}
   $$
   \begin{aligned}
   \txt_newline:
@@ -447,11 +450,13 @@
   \txt_newline:
   \end{aligned}
   $$
+  \txt_use_hook:nn {itex} {end multline}
 }
 
 \NewDocumentEnvironment {multline} {}
 {
   \bool_set_true:N \l__itex_numbered_bool
+  \txt_use_hook:nn {itex} {begin multline}
   \[
   \begin{aligned}
   \txt_newline:
@@ -460,15 +465,18 @@
   \txt_newline:
   \end{aligned}
   \]
+  \txt_use_hook:nn {itex} {end multline}
 }
 
 \NewDocumentEnvironment {equation*} {}
 {
   \bool_set_false:N \l__itex_numbered_bool
+  \txt_use_hook:nn {itex} {begin equation}
   $$
 }
 {
   $$
+  \txt_use_hook:nn {itex} {end equation}
 }
 
 \RenewDocumentCommand \textrm {m}
@@ -1253,7 +1261,7 @@
 \newtextcommand{\atop}
 \newtextcommand{\underoverset}[3]
 \newtextcommand{\sqrt}[1]
-\newtextcommand{\root}
+\newtextcommand{\root}[2]
 %\newtextcommand{\space}
 \newtextcommand{\statusline}
 \newtextcommand{\tooltip}
