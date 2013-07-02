@@ -1,0 +1,47 @@
+% pandoc, prefix: pdoc
+
+% Define the options for the pandoc module
+\keys_define:nn {pandoc options}
+{
+}
+
+% Get and set the options for the pandoc module
+\prop_get:NnNT  \l__txt_popts_prop {pandoc} \l_tmpa_tl
+{
+  \keys_set:nV {pandoc options} \l_tmpa_tl
+}
+
+\newtextcommand[\documentclass]{\pdoc_dclass}[2][]
+
+\AtBeginDocument{
+  \pdoc_dclass{\tl_use:N \l__txt_class_tl}
+  \txt_newline:
+  \string\begin\{document\}
+  \txt_newline:
+}
+
+\tl_new:N \l__pdoc_enddoc_tl
+\tl_put_left:Nn \@enddocumenthook
+{
+  \tl_use:N \l__pdoc_enddoc_tl
+}
+
+\cs_new_nopar:Npn \pdoc_at_enddocument:n #1
+{
+  \tl_put_right:Nn \l__pdoc_enddoc_tl {#1}
+}
+
+\pdoc_at_enddocument:n
+{
+  \txt_newline:
+  \string\end\{document\}
+  \txt_newline:
+}
+
+\newtextcommand\texttt[1]
+
+\endinput
+
+% Local Variables:
+% mode: latex3
+% End:

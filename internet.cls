@@ -87,6 +87,11 @@
       files to load = epub,
       options = {epub}{#1},
     },
+    pandoc .meta:n = {
+      output mode = pandoc,
+      files to load = pandoc,
+      options = {pandoc}{#1},
+    },
     xhtml .meta:n = {
       output mode = xhtml,
       files to load = xhtml,
