@@ -285,7 +285,7 @@
   \tl_set:Nx \l_tmpa_tl {#2}
   \tl_map_function:Vc \l_tmpa_tl {txt_only_#1:n}
 }
-\cs_generate_variant:Nn \txt_only_chars:nn {Vn,nV,VV}
+\cs_generate_variant:Nn \txt_only_chars:nn {Vn,nV,VV,nx,Vx}
 
 
 \cs_new:Npn \txt_only_alpha:n #1
@@ -570,6 +570,17 @@
   \tl_if_exist:cTF {txt_hook_#1_#2_tl}
   {
     \tl_put_right:cn {txt_hook_#1_#2_tl} {#3}
+  }
+  {
+    \tl_set:cn {txt_hook_#1_#2_tl} {#3}
+  }
+}
+
+\cs_new:Npn \txt_preaddto_hook:nnn #1#2#3
+{
+  \tl_if_exist:cTF {txt_hook_#1_#2_tl}
+  {
+    \tl_put_left:cn {txt_hook_#1_#2_tl} {#3}
   }
   {
     \tl_set:cn {txt_hook_#1_#2_tl} {#3}

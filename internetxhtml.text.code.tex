@@ -1006,8 +1006,6 @@
   \tl_put_right:Nn \l__xhtm_enddoc_tl {#1}
 }
 
-% Tables ...
-
 % Theorems ...
 
 \RenewDocumentCommand \newtheorem {s m o m o}
@@ -1654,6 +1652,7 @@
   \xhtm_table_startrow:
 }
 {
+  \xhtm_close_par:
   \xhtm_close_tag:n {td}
   \xhtm_close_tag:n {tr}
   \xhtm_close_tag:n {table}
@@ -1848,6 +1847,132 @@
   \xhtm_table_startcell_aux:
 }
 
+% Indexing
+
+% \item is level 0
+% \subitem is level 1
+% \subsubitem is level 2
+% \indexspace starts a new list
+
+\cs_new:Npn \xhtm_index_item:
+{
+  \prg_replicate:nn {\l__xhtm_index_lvl_int} {\use:c {end xhtm itemize}}
+  \xhtm_orig_item:
+  \int_gset:Nn \l__xhtm_index_lvl_int {0}
+}
+
+\cs_new:Npn \xhtm_index_subitem:
+{
+  \int_compare:nT {\l__xhtm_index_lvl_int > 1}
+  {
+    \prg_replicate:nn {\l__xhtm_index_lvl_int - 1} {\use:c {end xhtm itemize}}
+  }
+  \int_compare:nT {\l__xhtm_index_lvl_int == 0}
+  {
+    \use:c {xhtm itemize} {class="index~ subitem"}
+  }
+  \xhtm_orig_item:
+  \int_gset:Nn \l__xhtm_index_lvl_int {1}
+}
+
+\cs_new:Npn \xhtm_index_subsubitem:
+{
+  \int_compare:nT {\l__xhtm_index_lvl_int > 2}
+  {
+    \prg_replicate:nn {\l__xhtm_index_lvl_int - 2} {\use:c {end xhtm itemize}}
+  }
+  \int_compare:nT {\l__xhtm_index_lvl_int == 0}
+  {
+    \use:c {xhtm itemize} {class="index~ subitem"}
+    \use:c {xhtm itemize} {class="index~ subsubitem"}
+  }
+  \int_compare:nT {\l__xhtm_index_lvl_int == 1}
+  {
+    \use:c {xhtm itemize} {class="index~ subitem"}
+  }
+  \xhtm_orig_item:
+  \int_gset:Nn \l__xhtm_index_lvl_int {2}
+}
+
+\cs_new:Npn \xhtm_index_space:
+{
+  \prg_replicate:nn {\l__xhtm_index_lvl_int + 1} {\use:c {end xhtm itemize}}
+  \use:c {xhtm itemize}{class="index"}
+  \int_gset:Nn \l__xhtm_index_lvl_int {0}
+}
+
+
+
+\int_new:N \l__xhtm_index_lvl_int
+
+\NewDocumentEnvironment{theindex} {}
+{
+  \use:c {xhtm itemize}{class="index"}
+  \cs_set_eq:NN \xhtm_orig_item: \item
+  \cs_set_eq:NN \item \xhtm_index_item:
+  \cs_set_eq:NN \subitem \xhtm_index_subitem:
+  \cs_set_eq:NN \subsubitem \xhtm_index_subsubitem:
+  \cs_set_eq:NN \indexspace \xhtm_index_space:
+  \txt_preaddto_hook:nnn {xhtm} {link} {
+    \tl_set:Nx \l_tmpa_tl {\seq_item:Nn \l__txt_args_seq {2}}
+    \tl_if_in:NnT \l_tmpa_tl {page.}
+    {
+      \tl_replace_once:Nnn \l_tmpa_tl {page.} {indexanchor.}
+      \seq_clear:N \l_tmpa_seq
+      \seq_pop:NN \l__txt_args_seq \l_tmpb_tl 
+      \seq_push:NV \l_tmpa_seq \l_tmpa_tl
+      \seq_push:NV \l_tmpa_seq \l_tmpb_tl
+      \seq_pop:NN \l__txt_args_seq \l_tmpb_tl
+      \seq_concat:NNN \l__txt_args_seq \l_tmpa_seq \l__txt_args_seq
+    }
+  }
+  \int_gset:Nn \l__xhtm_index_lvl_int {0}
+}
+{
+  \prg_replicate:nn {\l__xhtm_index_lvl_int + 1}
+  {
+    \use:c {end xhtm itemize}
+  }
+}
+
+\int_new:N \l__xhtm_index_int
+\cs_new:Npn \theindexanchor {\int_use:N \l__xhtm_index_int}
+
+\cs_set:Npn \xhtm_index:n #1
+{
+  \group_begin:
+  \int_gincr:N \l__xhtm_index_int
+  \hyper@makecurrent{indexanchor}
+  \label{indexanchor. \int_use:N \l__xhtm_index_int}
+  \hyper@anchorstart{\@currentHref}\hyper@anchorend
+  \group_end:
+  \xhtm_orig_index:n {#1}
+}
+
+\cs_set:Npn \xhtm_write_index:n #1
+{
+  \cs_set:Npn \thepage {\int_use:N \l__xhtm_index_int}
+  \cs_set_eq:NN \protected@write \xhtm_semiprotected_write:nnn
+  \xhtm_orig_wrindex:n {#1}
+}
+
+\cs_new:Npn \xhtm_semiprotected_write:nnn #1#2#3
+{
+  \group_begin:
+  #2%
+  \cs_set_eq:NN \protect \@unexpandable@protect
+  \tl_set:Nx \reserved@a {\write #1 {#3}}
+  \reserved@a
+  \group_end:
+  \if@nobreak\ifvmode\nobreak\fi\fi
+}
+
+\AtBeginDocument{
+  \cs_gset_eq:NN \xhtm_orig_index:n \index
+  \cs_gset_eq:NN \index \xhtm_index:n
+  \cs_gset_eq:NN \xhtm_orig_wrindex:n \@wrindex
+  \cs_gset_eq:NN \@wrindex \xhtm_write_index:n
+}
 
 \endinput
 
