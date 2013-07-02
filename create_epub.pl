@@ -165,7 +165,7 @@ unlink($epub);
 
 chdir($tmpdir);
 system('zip', '-X0', $epub, 'mimetype');
-system('zip', '-rDX9', $epub, '.', '-x', 'mimetype');
+system('zip', '-rDX9', $epub, '.', '-x', 'mimetype', '-x', '*~');
 
 chdir($cdir);
 
