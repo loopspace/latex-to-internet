@@ -91,7 +91,7 @@ if ($pdftxt) {
 
     my $ftxt;
 
-    while ($utf8 =~ s/<!-- start of ([a-zA-Z._0-9-]+) -->(.*)<!-- end of \1 -->//s) {
+    while ($utf8 =~ s/<!-- +start +of +([a-zA-Z._0-9-]+) +-->(.*)<!-- +end +of +\1 +-->//s) {
 	push @files, $1;
 	open(SEC,">$tmpdir/OEBPS/$1")
 	    || die "Couldn't open $1 for writing.\n";
