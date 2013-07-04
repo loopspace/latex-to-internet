@@ -590,6 +590,7 @@
       \refstepcounter\@listctr
       \xhtm_open_tag:Vn \l__xhtm_listitem_tl {id="\tl_use:N \l__xhtm_nextid_tl"}
       \tl_gclear:N \l__xhtm_nextid_tl
+      \tl_set:Nn \l__xhtm_anchor_tl {plain}
       \xhtm_open_par:
     }
     {
@@ -842,7 +843,7 @@
 }
 
 \cs_set:Npn \thepage {}
-\cs_set:Npn \indexname {}
+\cs_set:Npn \indexname {Index}
 \cs_set:Npn \hfill {}
 
 \RenewDocumentCommand \hspace {m} {}
