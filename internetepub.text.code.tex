@@ -406,6 +406,26 @@
   \int_gset:Nn \l__epub_curr_section_int {-1}
 \epub_orig_phantom_section:
 }
+
+\DeclareDocumentCommand \epubNewSegment {o}
+{
+  \IfValueTF {#1}
+  {
+    \tl_set:Nx \l_tmpa_tl {{\int_eval:n  {\int_use:c {l__epub_#1_level_int} -  \l__xhtm_sec_int } }}
+    \seq_set_split:NnV \l__txt_args_seq {,} \l_tmpa_tl
+    \txt_use_hook:nn {xhtm} {pre section header}
+  }
+  {
+    \xhtm_close_par:
+    \xhtm_set_footnotes:
+    \xhtm_close_tag:n {body}
+    \xhtm_close_tag:n {html}
+    \xhtm_comment:n {end~ of~ \jobname \int_use:N \l__epub_segments_int .xhtml}
+    \txt_newpage:
+    \epub_next_segment:
+  }
+}
+
 \AtBeginDocument{
   \cs_set_eq:NN \epub_orig_phantom_section: \phantomsection
   \cs_set_eq:NN \phantomsection \epub_phantom_section:
@@ -587,7 +607,7 @@
       \tl_set:Nn \l_tmpa_tl
       {
         @font-face~
-        \txt_lbrace:~
+        \txt_lbrace:{}~
         }
         \tl_put_right:Nx \l_tmpa_tl
         {
