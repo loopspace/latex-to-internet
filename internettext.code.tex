@@ -546,6 +546,19 @@
   }
 }
 
+\DeclareDocumentCommand \htmltag { O{} m }
+{
+  \html_empty_tag:nn {#2}{#1}
+}
+
+\DeclareDocumentEnvironment {html} {O{} m}
+{
+  \html_open_tag:nn {#2}{#1}
+}
+{
+  \html_close_tag:n {#2}
+}
+
 % Hooks
 
 \seq_new:N \l__txt_args_seq
