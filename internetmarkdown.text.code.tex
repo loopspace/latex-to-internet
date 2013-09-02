@@ -5,14 +5,33 @@
 \msg_redirect_module:nnn { LaTeX / xparse } { info }    { none }
 \msg_redirect_module:nnn { LaTeX / xparse } { warning } { none }
 
-% Sets the top level for sections (and other headings) 
-\int_new:N \l__mkdn_sec_int
-\int_set:Nn \l__mkdn_sec_int {1}
+% Sets the section levels (and other headings)
+% Global offset:
+\int_new:N \l__mkdn_secoff_int
+\int_set:Nn \l__mkdn_secoff_int {1}
+\int_new:N \l__mkdn_chapter_int
+\int_new:N \l__mkdn_section_int
+\int_new:N \l__mkdn_subsection_int
+\int_new:N \l__mkdn_subsubsection_int
+\int_new:N \l__mkdn_paragraph_int
+\int_new:N \l__mkdn_subparagraph_int
+\int_set:Nn \l__mkdn_chapter_int {0}
+\int_set:Nn \l__mkdn_section_int {1}
+\int_set:Nn \l__mkdn_subsection_int {2}
+\int_set:Nn \l__mkdn_subsubsection_int {3}
+\int_set:Nn \l__mkdn_paragraph_int {4}
+\int_set:Nn \l__mkdn_subparagraph_int {5}
 
 % Define the options for the markdown module
 \keys_define:nn {markdown options}
 {
-  section~ level .int_set:N = \l__mkdn_sec_int
+  section~ offset .int_set:N = \l__mkdn_secoff_int,
+  chapter~ level .int_set:N = \l__mkdn_chapter_int,
+  section~ level .int_set:N = \l__mkdn_section_int,
+  subsection~ level .int_set:N = \l__mkdn_subsection_int,
+  subsubsection~ level .int_set:N = \l__mkdn_subsubsection_int,
+  paragraph~ level .int_set:N = \l__mkdn_paragraph_int,
+  subparagraph~ level .int_set:N = \l__mkdn_subparagraph_int
 }
 
 % Get and set the options for the markdown module
@@ -34,25 +53,25 @@
   {
     \IfBooleanTF {#1}
     {
-      \mkdn_section:nn {0}{#2}
+      \mkdn_section:nn {chapter}{#2}
     }
     {
-      \mkdn_num_section:nn {0}{#2}
+      \mkdn_num_section:nn {chapter}{#2}
     }
   }
 }
 {
-  \int_decr:N \l__mkdn_sec_int
+  \int_decr:N \l__mkdn_secoff_int
 }
 
 \NewDocumentCommand \section {s m}
 {
   \IfBooleanTF {#1}
   {
-    \mkdn_section:nn {1}{#2}
+    \mkdn_section:nn {section}{#2}
   }
   {
-    \mkdn_num_section:nn {1}{#2}
+    \mkdn_num_section:nn {section}{#2}
   }
 }
 
@@ -60,10 +79,10 @@
 {
   \IfBooleanTF {#1}
   {
-    \mkdn_section:nn {2}{#2}
+    \mkdn_section:nn {subsection}{#2}
   }
   {
-    \mkdn_num_section:nn {2}{#2}
+    \mkdn_num_section:nn {subsection}{#2}
   }
 }
 
@@ -71,10 +90,10 @@
 {
   \IfBooleanTF {#1}
   {
-    \mkdn_section:nn {3}{#2}
+    \mkdn_section:nn {subsubsection}{#2}
   }
   {
-    \mkdn_num_section:nn {3}{#2}
+    \mkdn_num_section:nn {subsubsection}{#2}
   }
 }
 
@@ -82,10 +101,10 @@
 {
   \IfBooleanTF {#1}
   {
-    \mkdn_section:nn {4}{#2}
+    \mkdn_section:nn {paragraph}{#2}
   }
   {
-    \mkdn_num_section:nn {4}{#2}
+    \mkdn_num_section:nn {paragraph}{#2}
   }
 }
 
@@ -93,10 +112,10 @@
 {
   \IfBooleanTF {#1}
   {
-    \mkdn_section:nn {5}{#2}
+    \mkdn_section:nn {subparagraph}{#2}
   }
   {
-    \mkdn_num_section:nn {5}{#2}
+    \mkdn_num_section:nn {subparagraph}{#2}
   }
 }
 
@@ -109,9 +128,9 @@
 
 \cs_new_nopar:Npn \mkdn_section_header:nn #1#2
 {
-  \prg_replicate:nn {#1 + \l__mkdn_sec_int} {\#}
+  \prg_replicate:nn {\int_use:c {l__mkdn_ #1 _int} + \l__mkdn_secoff_int} {\#}
   \c_space_token #2 \c_space_token
-  \prg_replicate:nn {#1 + \l__mkdn_sec_int} {\#}
+  \prg_replicate:nn {\int_use:c {l__mkdn_ #1 _int} + \l__mkdn_secoff_int} {\#}
 }
 
 \cs_set_eq:NN  \mkdn_num_section:nn \mkdn_section:nn
