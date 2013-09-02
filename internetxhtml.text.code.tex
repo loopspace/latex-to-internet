@@ -1906,6 +1906,15 @@
 
 \int_new:N \l__xhtm_index_lvl_int
 
+\cs_set_eq:NN \xhtm_index_ref:n \ref
+\cs_generate_variant:Nn \xhtm_index_ref:n {V}
+
+\AtBeginDocument{
+  \@ifpackageloaded{cleveref}{%
+    \cs_gset_eq:NN \xhtm_index_ref:n \cref
+  }{}
+}
+
 \NewDocumentEnvironment{theindex} {}
 {
   \use:c {xhtm itemize}{class="index"}
@@ -1919,12 +1928,14 @@
     \tl_if_in:NnT \l_tmpa_tl {page.}
     {
       \tl_replace_once:Nnn \l_tmpa_tl {page.} {indexanchor.}
-      \seq_clear:N \l_tmpa_seq
-      \seq_pop:NN \l__txt_args_seq \l_tmpb_tl 
-      \seq_push:NV \l_tmpa_seq \l_tmpa_tl
-      \seq_push:NV \l_tmpa_seq \l_tmpb_tl
-      \seq_pop:NN \l__txt_args_seq \l_tmpb_tl
-      \seq_concat:NNN \l__txt_args_seq \l_tmpa_seq \l__txt_args_seq
+      \xhtm_index_ref:V \l_tmpa_tl
+      \seq_clear:N \l__txt_args_seq
+%      \seq_clear:N \l_tmpa_seq
+%      \seq_pop:NN \l__txt_args_seq \l_tmpb_tl 
+%      \seq_push:NV \l_tmpa_seq \l_tmpa_tl
+%      \seq_push:NV \l_tmpa_seq \l_tmpb_tl
+%      \seq_pop:NN \l__txt_args_seq \l_tmpb_tl
+%      \seq_concat:NNN \l__txt_args_seq \l_tmpa_seq \l__txt_args_seq
     }
   }
   \int_gset:Nn \l__xhtm_index_lvl_int {0}
