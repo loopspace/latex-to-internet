@@ -67,9 +67,16 @@
   \seq_set_split:Nnn \l__txt_args_seq {,} {{#1},{#2},{#3}}
   \txt_use_hook:nn {xhtm} {#1}
   \txt_only_chars:Vn \l__xhtm_idtype_tl {\seq_item:Nn \l__txt_args_seq {2}}
-  \xhtm_open_tag:nx {a} {href="\tl_use:N \l__xhtm_baseurl_tl\#\tl_use:N \l__txt_chars_tl"}
-  #3
-  \xhtm_close_tag:n {a}
+  \seq_if_empty:NF \l__txt_args_seq
+  {
+    \tl_set:Nx \l_tmpa_tl
+    {
+      \exp_not:N \xhtm_open_tag:nx {a} {href="\tl_use:N         \l__xhtm_baseurl_tl\#\tl_use:N \l__txt_chars_tl"}
+      \seq_item:Nn \l__txt_args_seq {3}
+      \exp_not:N \xhtm_close_tag:n {a}
+    }
+    \tl_use:N \l_tmpa_tl
+  }
 }
 %\Hy@WrapperDef
 \cs_new_nopar:Npn \hyper@linkurl #1#2
