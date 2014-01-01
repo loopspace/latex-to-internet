@@ -107,7 +107,13 @@ if ($pdftxt) {
 	my @f = split("\n", $flist);
 	for my $file (@f) {
 	    if (!-e $tmpdir . "/OEBPS/" . $file) {
-		system ('cp', $file, $tmpdir . "/OEBPS/");
+		$figdir = $tmpdir . "/OEBPS/" . $file;
+		$figdir =~ s%/[^/]*$%%;
+		if (!-e $figdir) {
+		    mkdir($figdir,0777)
+			|| die "Couldn't create $figdir\n";
+		}
+		system ('cp', $file, $tmpdir . "/OEBPS/" . $file);
 		push @files, $file;
 	    }
 	}
