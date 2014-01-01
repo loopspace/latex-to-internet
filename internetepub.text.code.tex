@@ -67,6 +67,7 @@
 \cs_set_eq:NN \epub_orig_tableofcontents: \tableofcontents
 \cs_set:Npn \tableofcontents {}
 
+\seq_new:N \l__epub_files_seq
 \tl_new:N \l__epub_files_tl
 \tl_new:N \l__epub_filelist_tl
 \tl_set:Nn \l__epub_filelist_tl
@@ -509,16 +510,20 @@
 
 \cs_set_nopar:Npn \xhtm_pre_graphics:n #1
 {
-  \stepcounter{epub graphics files}
-  \tl_put_right:Nn \l__epub_files_tl
+  \seq_if_in:NnF \l__epub_files_seq {#1}
   {
-    \exp_not:N \xhtm_linebreak:
-    \exp_not:N \xhtm_empty_tag:nn {item} {id="img\use:c{the graphics files}"~ href="#1.png"~ media-type="image/png"}
-  }
-  \tl_put_right:Nn \l__epub_filelist_tl
-  {
-    \exp_not:N \xhtm_linebreak:
-    \exp_not:N \xhtm_comment:n {#1.png}
+    \stepcounter{epub graphics files}
+    \tl_gput_right:Nx \l__epub_files_tl
+    {
+      \exp_not:N \xhtm_linebreak:
+      \exp_not:N \xhtm_empty_tag:nn {item} {id="img\use:c{the epub           graphics files}"~ href="#1"~ media-type="image/png"}
+    }
+    \tl_gput_right:Nx \l__epub_filelist_tl
+    {
+      \exp_not:N \xhtm_linebreak:
+      \exp_not:N \xhtm_comment:n {#1}
+    }
+    \seq_gput_left:Nn \l__epub_files_seq {#1}
   }
 }
 
