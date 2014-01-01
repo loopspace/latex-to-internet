@@ -744,15 +744,36 @@
 }
 
 % Graphics handling
+% List of known image extensions:
+\clist_new:N \l__xhtm_grext_clist
+\clist_set:Nn \l__xhtm_grext_clist {png,PNG,jpg,JPG,jpeg,JPEG,gif,GIF}
 \DeclareDocumentCommand \xhtm_includegraphics {o m}
 {
-  \xhtm_pre_graphics:n {#2}
-  \xhtm_empty_tag:nn {img} {src="#2.png" style="max-width: 80\@percentchar; margin-left: 5\@percentchar;"}
-  \xhtm_post_graphics:n {#2}
+  \tl_set:Nn \l_tmpa_tl {#2}
+  \file_if_exist:nF {#2}
+  {
+    \clist_map_inline:Nn \l__xhtm_grext_clist
+    {
+      \file_if_exist:nT {#2.##1}
+      {
+        \tl_set:Nn \l_tmpa_tl {#2.##1}
+        \clist_map_break:
+      }
+    }
+  }
+  \tl_set:Nx \l_tmpb_tl
+  {
+    \exp_not:N \xhtm_pre_graphics:n {\l_tmpa_tl}
+    \exp_not:N \xhtm_empty_tag:nn {img} {src="\l_tmpa_tl"~ style="max-width:~ 80\exp_not:N\@percentchar;~ margin-left:~ 5\exp_not:N\@percentchar;"}
+    \exp_not:N \xhtm_post_graphics:n {\l_tmpa_tl}
+  }
+  \tl_use:N \l_tmpb_tl
 }
 
 \cs_new_nopar:Npn \xhtm_pre_graphics:n #1 {}
 \cs_new_nopar:Npn \xhtm_post_graphics:n #1 {}
+
+
 
 \AtBeginDocument{
   \cs_if_exist:NT \includegraphics
