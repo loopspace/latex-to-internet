@@ -2,7 +2,6 @@
 
 \parskip0pt
 
-
 % We do a lot of redefining
 
 \msg_redirect_module:nnn { LaTeX / xparse } { info }    { none }
@@ -11,6 +10,8 @@
 % Sets the top level for sections (and other headings)
 \int_new:N \l__xhtm_sec_int
 \int_set:Nn \l__xhtm_sec_int {1}
+
+\tl_new:N \l__xhtm_tmpa_tl
 
 % Define the options for the xhtml module
 \keys_define:nn {xhtml options}
@@ -44,6 +45,23 @@
 \tl_new:N \l__xhtm_baseurl_tl
 \tl_set:Nn \l__xhtm_anchor_tl {plain}
 \tl_set:Nn \l__xhtm_idtype_tl {name}
+
+\cs_new_protected_nopar:Npn \tl_if_begins:NnT  { \exp_args:No \tl_if_begins:nnT  }
+\cs_new_protected_nopar:Npn \tl_if_begins:NnF  { \exp_args:No \tl_if_begins:nnF  }
+\cs_new_protected_nopar:Npn \tl_if_begins:NnTF { \exp_args:No \tl_if_begins:nnTF }
+\cs_generate_variant:Nn \tl_if_begins:NnT { c }
+\cs_generate_variant:Nn \tl_if_begins:NnF  { c }
+\cs_generate_variant:Nn \tl_if_begins:NnTF { c }
+\prg_new_protected_conditional:Npnn \tl_if_begins:nn #1#2 { T  , F , TF }
+  {
+    \cs_set:Npn \__tl_tmp:w ##1 \q_stop #2 { }
+    \tl_if_empty:oTF { \__tl_tmp:w \q_stop #1 {} {} \q_stop #2 }
+      { \prg_return_false: } { \prg_return_true: }
+  }
+\cs_generate_variant:Nn \tl_if_begins:nnT  { V , o , no, VV }
+\cs_generate_variant:Nn \tl_if_begins:nnF  { V , o , no, VV }
+\cs_generate_variant:Nn \tl_if_begins:nnTF { V , o , no, VV }
+
 
 % Tags
 \seq_new:N \l__xhtm_tag_seq
@@ -351,6 +369,12 @@
   \xhtm_open_par:
 }
 
+\newcommand\appendix{\par
+  \setcounter{section}{0}%
+  \setcounter{subsection}{0}%
+  \gdef\thesection{\@Alph\c@section}}
+
+
 \cs_new_nopar:Npn \xhtm_linebreak:
 {
   {
@@ -378,13 +402,31 @@
   }
 }
 
+\seq_new:N \l__xhtm_par_classes_seq
+
 \cs_new_nopar:Npn \xhtm_reopen_par:
 {
   \xhtm_if_current_tag_is_par:T
   {
     \xhtm_close_tag:n {p}
     \xhtm_linebreak:
-    \xhtm_open_tag:nn {p}{}
+    \tl_clear:N \l__xhtm_tmpa_tl
+    \seq_if_empty:NF  \l__xhtm_par_classes_seq
+    {
+      \tl_set:Nx \l__xhtm_tmpa_tl {class="\seq_use:Nn \l__xhtm_par_classes_seq {\c_space_token}"}
+    }
+    \xhtm_open_tag:nn {p}{\tl_use:N \l__xhtm_tmpa_tl}
+  }
+}
+
+\clist_map_inline:nn 
+{
+  Huge,huge,LARGE,Large,large,tiny,scriptsize
+}
+{
+  \exp_args:Nc \DeclareDocumentCommand {#1} {}
+  {
+    \seq_push:Nn \l__xhtm_par_classes_seq {#1}
   }
 }
 
@@ -485,7 +527,7 @@
 }
 
 \int_new:N \l__xhtm_enum_int
-\NewDocumentEnvironment {xhtm enumerate} {m}
+\cs_new_nopar:Npn \xhtm_enumerate:n #1
 {
   \xhtm_close_par:
   \int_compare:nF {\l__xhtm_enum_int > 3}
@@ -498,6 +540,8 @@
   \cs_set_eq:NN \xhtm_list_label:n \xhtm_item_label:n
   \cs_set_eq:NN \@item \xhtm_first_item:w
 }
+
+\cs_new_nopar:Npn \xhtm_end_enumerate:
 {
   \xhtm_close_par:
   \xhtm_close_tag:n {li}
@@ -507,10 +551,10 @@
 
 \RenewDocumentEnvironment {enumerate} {o}
 {
-  \use:c {xhtm enumerate}{}
+  \xhtm_enumerate:n {}
 }
 {
-  \use:c {end xhtm enumerate}
+  \xhtm_end_enumerate:
 }
 
 \cs_new:Npn \xhtm_desc_label:n #1
@@ -646,10 +690,15 @@
 
 % Verbatim handling ...
 
+\cs_generate_variant:Nn \tl_replace_all:Nnn {NnV}
 \RenewDocumentCommand \verb {v}
 {
+  \tl_set:Nn \l__xhtm_tmpa_tl {#1}
+  \tl_replace_all:NnV \l__xhtm_tmpa_tl {&} \xhtm_amp:
+  \tl_replace_all:NnV \l__xhtm_tmpa_tl {<} \xhtm_lt:
+  \tl_replace_all:NnV \l__xhtm_tmpa_tl {>} \xhtm_gt:
   \xhtm_open_tag:nn {code}{}
-  #1
+  \tl_use:N \l__xhtm_tmpa_tl
   \xhtm_close_tag:n {code}
 }
 
@@ -731,8 +780,61 @@
   \group_end:
   \xhtm_close_tag:n {code}
   \xhtm_close_tag:n {pre}
-  \par
+  \xhtm_open_par:
 }
+
+\cs_set:Npn \xhtm_make_verbatim:n #1
+{
+  \tl_put_right:Nn \l_tmpa_tl {\cs_new:cpn {xhtm verbatim #1} ##1}
+  \tl_set:Nx \l_tmpb_tl {\token_to_str:N \\}
+  \tl_set:Nx \l_tmpb_tl {\tl_head:N \l_tmpb_tl}
+  \tl_put_right:Nx \l_tmpa_tl {\l_tmpb_tl end \token_to_str:N {
+      #1 \token_to_str:N }}
+  \tl_put_right:Nn \l_tmpa_tl {{##1\end{#1}}}
+  \l_tmpa_tl
+}
+
+\DeclareDocumentCommand \newverbatim {m o o} {
+  \xhtm_make_verbatim:n {#1}
+  \IfNoValueTF {#2}
+  {
+    \cs_new:cpn {#1}
+    {
+      \cs_set_eq:Nc \@xverbatim {xhtm verbatim #1}
+      \verbatim
+    }
+  }
+  {
+    \IfNoValueTF {#3}
+    {
+      \cs_new:cpn {#1} ##1
+      {
+        \cs_set_eq:Nc \@xverbatim {xhtm verbatim #1}
+        \verbatim
+      }
+    }
+    {
+      \cs_new:cpn {#1}
+      {
+        \peek_meaning:NTF [%]
+          {
+            \use:c {#1 aux}
+          }
+          {
+            \use:c {#1 aux} []
+          }            
+        }
+        \cs_new:cpn {#1 aux} [##1]
+        {
+          \cs_set_eq:Nc \@xverbatim {xhtm verbatim #1}
+          \verbatim
+        }
+      }
+    }
+  \cs_set_eq:cN {end #1} \endverbatim
+}
+
+
 
 % Floats
 \DeclareDocumentEnvironment {float} {m}
@@ -747,6 +849,8 @@
 % List of known image extensions:
 \clist_new:N \l__xhtm_grext_clist
 \clist_set:Nn \l__xhtm_grext_clist {png,PNG,jpg,JPG,jpeg,JPEG,gif,GIF}
+\cs_generate_variant:Nn \file_if_exist:nF {VF,xF}
+% Need to figure out a good way to get the caption into the alt text.
 \DeclareDocumentCommand \xhtm_includegraphics {o m}
 {
   \tl_set:Nn \l_tmpa_tl {#2}
@@ -764,7 +868,7 @@
   \tl_set:Nx \l_tmpb_tl
   {
     \exp_not:N \xhtm_pre_graphics:n {\l_tmpa_tl}
-    \exp_not:N \xhtm_empty_tag:nn {img} {src="\l_tmpa_tl"~ style="max-width:~ 80\exp_not:N\@percentchar;~ margin-left:~ 5\exp_not:N\@percentchar;"}
+    \exp_not:N \xhtm_empty_tag:nn {img} {src="\l_tmpa_tl"~ class="includegraphics"~ alt=""}
     \exp_not:N \xhtm_post_graphics:n {\l_tmpa_tl}
   }
   \tl_use:N \l_tmpb_tl
@@ -783,17 +887,24 @@
 }
 
 % Table of contents
+\usepackage{trace}
 \NewDocumentCommand \tableofcontents {}
 {
   \group_begin:
   \everypar{}
+  \xhtm_close_par:
+  \xhtm_open_tag:nn {div} {id="toc"}
+  \xhtm_open_par:
   \section*{\contentsname}
   \int_gzero_new:N \l__xhtm_toclvl_int
   \@starttoc{toc}
   \int_compare:nT {\l__xhtm_toclvl_int > 0}
   {
-    \prg_replicate:nn {\l__xhtm_toclvl_int} {\endenumerate}
+    \prg_replicate:nn {\l__xhtm_toclvl_int} {\xhtm_end_enumerate:}
   }
+  \xhtm_close_par:
+  \xhtm_close_tag:n {div}
+  \xhtm_open_par:
   \group_end:
 }
 
@@ -801,7 +912,10 @@
 
 \DeclareDocumentCommand \numberline {m}
 {
-  #1. \c_space_token
+  \tl_if_empty:nF {#1}
+  {
+    #1. \c_space_token
+  }
 }
 
 \NewDocumentCommand \l@part {m m}
@@ -838,11 +952,11 @@
   \cs_gset_eq:NN \Hy@tocdestname \Hy@tocdestname
   \int_compare:nT {\l__xhtm_toclvl_int > #1}
   {
-    \prg_replicate:nn {\l__xhtm_toclvl_int - #1} {\endenumerate}
+    \prg_replicate:nn {\l__xhtm_toclvl_int - #1} {\xhtm_end_enumerate:}
   }
   \int_compare:nT {\l__xhtm_toclvl_int < #1}
   {
-    \prg_replicate:nn {#1 - \l__xhtm_toclvl_int} {\enumerate}
+    \prg_replicate:nn {#1 - \l__xhtm_toclvl_int} {\xhtm_enumerate:n{}}
   }
   \item #2
   \int_gset:Nn \l__xhtm_toclvl_int {#1}
@@ -870,6 +984,7 @@
 \RenewDocumentCommand \hspace {m} {}
 \RenewDocumentCommand \\ {o} {}
 
+\tl_new:N \l__xhtm_headtags_tl
 \tl_new:N \l__xhtm_css_tl
 \tl_new:N \l__xhtm_js_tl
 \tl_new:N \l__xhtm_cssfiles_tl
@@ -910,13 +1025,25 @@
   \xhtm_add_js:V \l_tmpa_tl
 }
 
-\NewDocumentCommand \loadcss {m}
+\NewDocumentCommand \loadcss {O {all} m}
 {
-  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1},{#2}}
   \txt_use_hook:nn {xhtm} {load css}
   \tl_gput_right:Nn \l__xhtm_cssfiles_tl
   {
-    \xhtm_empty_tag:nn {link} {href="#1.css"~ media="all"~ rel="stylesheet"~ type="text/css"}
+    \xhtm_linebreak:
+    \xhtm_empty_tag:nn {link} {href="#2.css"~ media="#1"~ rel="stylesheet"~ type="text/css"}
+  }
+}
+
+\NewDocumentCommand \loadfullcss {O {all} m}
+{
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1},{#2}}
+  \txt_use_hook:nn {xhtm} {load css}
+  \tl_gput_right:Nn \l__xhtm_cssfiles_tl
+  {
+    \xhtm_linebreak:
+    \xhtm_empty_tag:nn {link} {href="#2"~ media="#1"~ rel="stylesheet"~ type="text/css"}
   }
 }
 
@@ -926,7 +1053,27 @@
   \txt_use_hook:nn {xhtm} {load js}
   \tl_gput_right:Nn \l__xhtm_jsfiles_tl
   {
+    \xhtm_linebreak:
     \xhtm_empty_tag:nn {script} {src="#1.js"~ type="text/javascript"}
+  }
+}
+
+\NewDocumentCommand \loadfulljs {v}
+{
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
+  \txt_use_hook:nn {xhtm} {load js}
+  \tl_gput_right:Nn \l__xhtm_jsfiles_tl
+  {
+    \xhtm_empty_tag:nn {script} {src="#1"~ type="text/javascript"}
+  }
+}
+
+\NewDocumentCommand \addheadtag {m v}
+{
+  \tl_gput_right:Nn \l__xhtm_headtags_tl
+  {
+    \xhtm_linebreak:
+    \xhtm_empty_tag:nn {#1} {#2}
   }
 }
 
@@ -954,6 +1101,32 @@
 \tl_set_eq:NN \l__xhtm_title_tl \@title
 \tl_new:N \l__xhtm_author_tl
 \tl_set_eq:NN \l__xhtm_author_tl \@author
+\tl_new:N \l__xhtm_licence_tl
+
+\prop_new:N \l__xhtm_cclicences_prop
+\prop_put:Nnn \l__xhtm_cclicences_prop {by} {Attribution}
+\prop_put:Nnn \l__xhtm_cclicences_prop {nc} {NonCommercial}
+\prop_put:Nnn \l__xhtm_cclicences_prop {nd} {NoDerivatives}
+\prop_put:Nnn \l__xhtm_cclicences_prop {sa} {ShareAlike}
+
+\NewDocumentCommand \cclicence { m }
+{
+  \tl_to_lowercase:n {\tl_set:Nn \l_tmpa_tl {#1}}
+  \seq_set_split:NnV \l_tmpa_seq {-} \l_tmpa_tl
+  \seq_clear:N \l_tmpb_seq
+  \seq_map_inline:Nn \l_tmpa_seq
+  {
+    \prop_get:NnNT \l__xhtm_cclicences_prop {##1} \l_tmpb_tl
+    {
+      \seq_put_right:NV \l_tmpb_seq \l_tmpb_tl
+    }
+  }
+  \tl_set:Nx \l__xhtm_licence_tl
+  {
+  <a~ rel="license"~ href="http://creativecommons.org/licenses/\tl_use:N \l_tmpa_tl/4.0/"><img~ alt="Creative~ Commons~ License"~ style="border-width:0"~ src="http://i.creativecommons.org/l/\tl_use:N \l_tmpa_tl/4.0/88x31.png"~ /></a>
+%This~ work~ is~ licensed~ under~ a~ <a~ rel="license"~ href="http://creativecommons.org/licenses/\tl_use:N \l_tmpa_tl/4.0/">Creative~ Commons~ \seq_use:Nn \l_tmpb_seq {-}~ 4.0~ International~ License</a>.
+  }
+}
 
 \xhtm_at_begindocument:n
 {
@@ -969,8 +1142,9 @@
   \tl_if_eq:NNF \@author \l__xhtm_author_tl
   {
     \xhtm_linebreak:
-    \xhtm_empty_tag:nn {meta} {name="Author" content="\@author"}
+    \xhtm_empty_tag:nn {meta} {name="Author"~ content="\@author"}
   }
+  \tl_use:N \l__xhtm_headtags_tl
   \tl_use:N \l__xhtm_cssfiles_tl
   \tl_if_empty:NF \l__xhtm_css_tl
   {
@@ -980,7 +1154,6 @@
     \tl_use:N \l__xhtm_css_tl
     \xhtm_linebreak:
     \xhtm_close_tag:n {style}
-    \xhtm_linebreak:
   }
   \tl_use:N \l__xhtm_jsfiles_tl
   \tl_if_empty:NF \l__xhtm_js_tl
@@ -995,10 +1168,14 @@
         //]]>
     \xhtm_linebreak:
     \xhtm_close_tag:n {script}
-    \xhtm_linebreak:
   }
+  \xhtm_linebreak:
   \xhtm_close_tag:n {head}
+  \xhtm_linebreak:
   \xhtm_open_tag:nn {body} {}
+  \xhtm_open_tag:nn {div} {id="background"}
+  \xhtm_close_tag:n {div}
+  \xhtm_open_tag:nn {div} {id="content"}
   \xhtm_open_par:
   \everypar{\xhtm_reopen_par:}
 }
@@ -1455,6 +1632,7 @@
 % Bibliography ...
 
 \tl_set:Nn \bibname {Bibliography}
+\int_new:N \l__xhtm_bibitem_int
 
 \NewDocumentEnvironment {thebibliography} {m}
 {
@@ -1463,14 +1641,24 @@
   \section*{References}
   \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
   \txt_use_hook:nn {xhtm} {post bibliography header}
-  \use:c{xhtm enumerate}{class="bibliography"}
+  \seq_get_left:NN \l__txt_args_seq \l_tmpa_tl
+  \int_set:Nn \l__xhtm_bibitem_int {2*(2 + \tl_count:V \l_tmpa_tl)/3+1}
+  \xhtm_enumerate:n {class="bibliography"~ style="padding-left:~\int_use:N \l__xhtm_bibitem_int em"}
+  \cs_set_eq:NN \xhtm_list_label:n \xhtm_bibitem_label:n
 }
 {
-  \use:c{end xhtm enumerate}
+  \xhtm_end_enumerate:
 }
 
 \cs_set_eq:NN \newblock \relax
 
+\cs_new:Npn \xhtm_bibitem_label:n #1
+{
+  \xhtm_open_par:
+  \xhtm_open_tag:nn {span} {class="listlabel"~ style="margin-left:~\int_eval:n {-\l__xhtm_bibitem_int - 1} em;~ width:~\int_use:N \l__xhtm_bibitem_int em;"}
+  #1
+  \xhtm_close_tag:n {span}
+}
 
 % Some general user commands
 
@@ -1517,7 +1705,53 @@
   \xhtm_open_par:
 }
 
-\cs_set:Npn \maketitle {}
+\cs_set:Npn \maketitle {
+  \xhtm_close_par:
+  \xhtm_open_tag:nn {div} {id="titlepage"}
+  \tl_if_eq:NNF \@title \l__xhtm_title_tl
+  {
+    \xhtm_linebreak:
+    \xhtm_open_tag:nn {div}{id="title"}
+    \xhtm_open_par:
+    \@title
+    \xhtm_close_par:
+    \xhtm_close_tag:n {div}
+  }
+  \tl_if_eq:NNF \@author \l__xhtm_author_tl
+  {
+    \xhtm_linebreak:
+    \xhtm_open_tag:nn {div}{id="author"}
+    \xhtm_open_par:
+    \@author
+    \xhtm_close_par:
+    \xhtm_close_tag:n {div}
+  }
+  \xhtm_linebreak:
+  \xhtm_open_tag:nn {div}{id="date"}
+  \xhtm_open_par:
+  \@date
+  \xhtm_close_par:
+  \xhtm_close_tag:n {div}
+  \tl_if_empty:NF \l__xhtm_licence_tl
+  {
+    \xhtm_open_tag:nn {div}{id="licence"}
+    \xhtm_open_par:
+    \tl_use:N \l__xhtm_licence_tl
+    \xhtm_close_par:
+    \xhtm_close_tag:n {div}
+  }
+  \xhtm_close_tag:n {div}
+  \xhtm_open_par:
+}
+
+\tl_new:N \l__xhtm_today_tl
+\tl_set:Nx \l__xhtm_today_tl {
+  \the\year-
+  \two@digits{\the\month}-
+  \two@digits{\the\day}
+}
+
+\tl_set_eq:NN \today \l__xhtm_today_tl
 
 \DeclareDocumentEnvironment {center} {}
 {
@@ -1530,6 +1764,9 @@
   \xhtm_close_tag:n {div}
   \xhtm_open_par:
 }
+
+% How can we handle centering?
+\cs_set_eq:NN \centering \relax
 
 % Footnotes, collect together and then typset at the end.
 
@@ -1598,8 +1835,53 @@
 {
   \xhtm_close_par:
   \xhtm_set_footnotes:
+  \xhtm_close_tag:n {div}
   \xhtm_close_tag:n {body}
   \xhtm_close_tag:n {html}
+}
+
+% Margin pars
+
+\int_new:N \l__xhtm_marginpar_int
+
+\RenewDocumentEnvironment {marginpar} {}
+{
+  \int_gincr:N \l__xhtm_marginpar_int
+  \xhtm_open_tag:nx {a}
+  {
+    class="marginpar_src"~
+    id="marginpar_src.\int_use:N \l__xhtm_marginpar_int"~
+    href="\#marginpar_tgt.\int_use:N \l__xhtm_marginpar_int"
+  }
+  \int_use:N \l__xhtm_marginpar_int
+  \xhtm_close_tag:n {a}
+  \xhtm_open_tag:nn {div} {class="marginpar"}
+  \xhtm_open_tag:nn {div} {}
+  \xhtm_open_par:
+  \xhtm_open_tag:nn {a} {
+      class="marginpar_tgt"~
+      id="marginpar_tgt.\int_use:N \l__xhtm_marginpar_int"~
+      href="\#marginpar_src.\int_use:N \l__xhtm_marginpar_int"
+    }
+  \int_use:N \l__xhtm_marginpar_int
+  \xhtm_close_tag:n {a}
+}
+{
+  \xhtm_close_par:
+  \xhtm_close_tag:n {div}
+  \xhtm_close_tag:n {div}
+}
+
+\NewDocumentEnvironment {marginnote} {}
+{
+  \xhtm_open_tag:nn {div} {class="marginpar"}
+  \xhtm_open_tag:nn {div} {}
+  \xhtm_open_par:
+}
+{
+  \xhtm_close_par:
+  \xhtm_close_tag:n {div}
+  \xhtm_close_tag:n {div}
 }
 
 % Figures
@@ -1641,11 +1923,9 @@
 \cs_new:Npn \xhtm_makecaption:nn #1#2
 {
   \xhtm_close_par:
-  \xhtm_open_par:
-  \xhtm_open_tag:nn {span} {class="caption"}
-  #1: #2
-  \xhtm_close_tag:n {span}
-  \xhtm_close_par:
+  \xhtm_open_tag:nn {p} {class="caption"}
+  #1:~ #2
+  \xhtm_close_tag:n {p}
   \xhtm_open_par:
 }
 
