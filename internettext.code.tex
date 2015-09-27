@@ -292,13 +292,16 @@
 {
   \tl_if_single:nT {#1}
   {
-    \bool_if:nT {
-      (\int_compare_p:n {`#1 >= `a} && \int_compare_p:n {`#1 <= `z})
-      ||
-      (\int_compare_p:n {`#1 >= `A} && \int_compare_p:n {`#1 <= `Z})
-    }
+    \token_if_macro:NF #1
     {
-      \tl_put_right:Nn \l__txt_chars_tl {#1}
+      \bool_if:nT {
+        (\int_compare_p:n {`#1 >= `a} && \int_compare_p:n {`#1 <= `z})
+        ||
+        (\int_compare_p:n {`#1 >= `A} && \int_compare_p:n {`#1 <= `Z})
+      }
+      {
+        \tl_put_right:Nn \l__txt_chars_tl {#1}
+      }
     }
   }
 }
@@ -337,50 +340,53 @@
 {
   \tl_if_single:nT #1
   {
-    \tl_if_empty:NTF \l__txt_chars_tl
+    \token_if_cs:NF #1
     {
-      \bool_if:nTF {
-        (\int_compare_p:n {`#1 >= `a} && \int_compare_p:n {`#1 <= `z})
-        ||
-        (\int_compare_p:n {`#1 >= `A} && \int_compare_p:n {`#1 <= `Z})
-        ||
-        (\token_if_eq_charcode_p:NN #1 :)
-      }
+      \tl_if_empty:NTF \l__txt_chars_tl
       {
-        \tl_put_right:Nn \l__txt_chars_tl {#1}
+        \bool_if:nTF {
+          (\int_compare_p:n {`#1 >= `a} && \int_compare_p:n {`#1 <=             `z})
+          ||
+          (\int_compare_p:n {`#1 >= `A} && \int_compare_p:n {`#1 <= `Z})
+          ||
+          (\token_if_eq_charcode_p:NN #1 :)
+        }
+        {
+          \tl_put_right:Nn \l__txt_chars_tl {#1}
+        }
+        {
+          \bool_if:nT {
+            (\token_if_eq_charcode_p:NN #1 _)
+          }
+          {
+          \tl_put_right:Nx \l__txt_chars_tl {\token_to_str:N #1}
+          }
+        }
       }
       {
         \bool_if:nT {
-          (\token_if_eq_charcode_p:NN #1 _)
+          (\int_compare_p:n {`#1 >= `a} && \int_compare_p:n {`#1 <=             `z})
+          ||
+          (\int_compare_p:n {`#1 >= `A} && \int_compare_p:n {`#1 <= `Z})
+          ||
+          (\int_compare_p:n {`#1 >= `0} && \int_compare_p:n {`#1 <= `9})
+          ||
+          (\token_if_eq_charcode_p:NN #1 :)
+          ||
+          (\token_if_eq_charcode_p:NN #1 -)
+          ||
+          (\token_if_eq_charcode_p:NN #1 .)
         }
         {
-          \tl_put_right:Nx \l__txt_chars_tl {\token_to_str:N #1}
-        }
-      }
-    }
-    {
-      \bool_if:nT {
-        (\int_compare_p:n {`#1 >= `a} && \int_compare_p:n {`#1 <= `z})
-        ||
-        (\int_compare_p:n {`#1 >= `A} && \int_compare_p:n {`#1 <= `Z})
-        ||
-        (\int_compare_p:n {`#1 >= `0} && \int_compare_p:n {`#1 <= `9})
-        ||
-        (\token_if_eq_charcode_p:NN #1 :)
-        ||
-        (\token_if_eq_charcode_p:NN #1 -)
-        ||
-        (\token_if_eq_charcode_p:NN #1 .)
-      }
-      {
-        \tl_put_right:Nn \l__txt_chars_tl {#1}
-      }
-      {
-        \bool_if:nT {
-          (\token_if_eq_charcode_p:NN #1 _)
+          \tl_put_right:Nn \l__txt_chars_tl {#1}
         }
         {
-          \tl_put_right:Nx \l__txt_chars_tl {\token_to_str:N #1}
+          \bool_if:nT {
+            (\token_if_eq_charcode_p:NN #1 _)
+          }
+          {
+            \tl_put_right:Nx \l__txt_chars_tl {\token_to_str:N #1}
+          }
         }
       }
     }
@@ -470,7 +476,7 @@
 
 \cs_new_protected_nopar:Npn \html_open_tag:nn #1#2
 {
-  \mbox{}
+%  \mbox{}
   \html_push_tag:n {#1}
   <#1
   \tl_if_empty:nF{#2}
@@ -480,7 +486,7 @@
   }
   >
 }
-\cs_generate_variant:Nn \html_open_tag:nn {x}
+\cs_generate_variant:Nn \html_open_tag:nn {x,nx}
 
 \cs_new_protected_nopar:Npn \html_close_tag:n #1
 {
@@ -502,7 +508,7 @@
 
 \cs_new_protected_nopar:Npn \html_empty_tag:nn #1#2
 {
-  \mbox{}
+%  \mbox{}
   <#1
   \tl_if_empty:nF{#2}
   {

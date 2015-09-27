@@ -13,4 +13,5 @@ function moveEqNums() {
     }
 }
 
-window.onload = moveEqNums;
+window.addEventListener('load', moveEqNums);
+

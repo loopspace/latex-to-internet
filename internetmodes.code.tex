@@ -3,7 +3,8 @@
 
 \DeclareDocumentCommand \imode {}
 {
-  \int_compare:nTF {\char_value_catcode:n {`\<} == 13 }
+  \peek_catcode_ignore_spaces:NTF \c_catcode_active_tl
+%  \int_compare:nTF {\char_value_catcode:n {`\<} == 13 }
   {
     \txt_imode_active:w
   }

@@ -60,8 +60,22 @@
 
 \cs_new:Npn \xhtm_anchorend_onnext: {}
 
+\cs_generate_variant:Nn \seq_set_split:Nnn {Nnx}
 
-\Hy@WrapperDef\hyper@linkfile#1#2#3{#1}%
+\Hy@WrapperDef\hyper@linkfile#1#2#3{%
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1},{#2},{#3}}
+  \txt_use_hook:nn {xhtm} {linkfile}
+  \seq_if_empty:NF \l__txt_args_seq
+  {
+    \tl_set:Nx \l_tmpa_tl
+    {
+      \exp_not:N \xhtm_open_tag:nx {a} {href="\seq_item:Nn \l__txt_args_seq {2}"}
+      \seq_item:Nn \l__txt_args_seq {1}
+      \exp_not:N \xhtm_close_tag:n {a}
+    }
+    \tl_use:N \l_tmpa_tl
+  }
+}%
 
 \Hy@WrapperDef\hyper@link#1#2#3{%
   \seq_set_split:Nnn \l__txt_args_seq {,} {{#1},{#2},{#3}}
@@ -86,12 +100,36 @@
   \xhtm_close_tag:n {a}
 }
 
+\group_begin:
+\char_set_lccode:nn {`;}{`:}
+\tl_to_lowercase:n {
+\group_end:
+  \tl_set:Nn \g__xhtm_colon_tl {;}
+}
+
+\tl_set:Nx \l__xhtm_http_tl {http\g__xhtm_colon_tl//}
+
 \Hy@WrapperDef\hyper@linkstart #1#2
 {
   \seq_set_split:Nnn \l__txt_args_seq {,} {{#1},{#2}}
   \txt_use_hook:nn {xhtm} {#1}
-  \txt_only_chars:Vn \l__xhtm_idtype_tl {#2}
-  \xhtm_open_tag:nx {a} {href="\tl_use:N \l__xhtm_baseurl_tl\#\tl_use:N \l__txt_chars_tl"}
+  \tl_set:Nx \l_tmpa_tl {\seq_item:Nn \l__txt_args_seq {2}}
+  \tl_set:Nx \l_tmpa_tl {\tl_use:N \l_tmpa_tl}
+  \tl_if_begins:VVTF \l_tmpa_tl \l__xhtm_http_tl
+  {
+    \tl_set:Nn \l_tmpa_tl {\seq_item:Nn \l__txt_args_seq {2}}
+  }
+  {
+    \tl_if_begins:VnTF \l_tmpa_tl {/}
+    {
+      \tl_set:Nn \l_tmpa_tl {\seq_item:Nn \l__txt_args_seq {2}}
+    }
+    {
+      \txt_only_chars:Vx \l__xhtm_idtype_tl {\seq_item:Nn \l__txt_args_seq {2}}
+      \tl_set:Nn \l_tmpa_tl {\l__xhtm_baseurl_tl\# \l__txt_chars_tl}
+    }
+  }
+  \xhtm_open_tag:nx {a} {href="\tl_use:N \l_tmpa_tl"}
 }
 
 \cs_new_nopar:Npn \hyper@linkend {\xhtm_close_tag:n {a}}

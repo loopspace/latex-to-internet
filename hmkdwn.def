@@ -5,28 +5,38 @@
   Hyperref driver for Markdown]
 
 \makeatletter
+\ExplSyntaxOn
 
 \Hy@VersionCheck{hmkwn.def}
 
 % Anchor syntax might vary considerably
 \Hy@WrapperDef\hyper@anchor#1{%
-\html[\##1]{a}\endhtml}%
-\Hy@WrapperDef\hyper@anchorstart#1{%
+  \txt_only_chars:nn {name} {#1}
+  \html_open_tag:nx {a} {id="\tl_use:N \l__txt_chars_tl"}
+  \html_close_tag:n {a}
 }
-\Hy@WrapperDef\hyper@anchorend{%
+\Hy@WrapperDef\hyper@anchorstart#1{%
+  \txt_only_chars:nn {name} {#1}
+  \html_open_tag:nx {a} {id="\tl_use:N \l__txt_chars_tl"}
+}
+\def\hyper@anchorend{%
+  \html_close_tag:n {a}
 }
 \Hy@WrapperDef\hyper@linkfile#1#2#3{#1}%
 
 \Hy@WrapperDef\hyper@link#1#2#3{%
-[\##2](#3)}
+[#3](\##2)}
 \Hy@WrapperDef\hyper@linkurl#1#2{%
 [#1](#2)}
 \Hy@WrapperDef\hyper@linkstart#1#2{%
 }
-\Hy@WrapperDef\hyper@linkend{}
+\def\hyper@linkend{}
 
 % Hyperref loads pd1enc which overwrites the accent macros,
 % so we restore them here (if not using unicode)
+\let \mkdn@tilde \~
+\RenewDocumentCommand \textasciitilde {} {\mkdn@tilde{}}
+
 \renewcommand{\"}[1]{\entity{#1uml}}
 \renewcommand{\`}[1]{\entity{#1grave}}
 \renewcommand{\'}[1]{\entity{#1acute}}

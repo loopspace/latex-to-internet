@@ -290,7 +290,7 @@
   \tl_gput_right:Nx \l__epub_files_tl
   {
     \exp_not:N \xhtm_linebreak:
-    \exp_not:N \xhtm_empty_tag:nn {item} {href="\jobname \int_use:N \l__epub_segments_int  .xhtml"~ properties="mathml \tl_if_empty:NF \l__xhtm_js_tl {~ scripted}"~ id="page \int_use:N \l__epub_segments_int "~ media-type="application/xhtml+xml"}
+    \exp_not:N \xhtm_empty_tag:nn {item} {href="\jobname \int_use:N \l__epub_segments_int  .xhtml"~ properties="mathml \bool_if:nF {\tl_if_empty_p:N \l__xhtm_js_tl && \tl_if_empty_p:N  \l__xhtm_jsfiles_tl} {~ scripted}"~ id="page \int_use:N \l__epub_segments_int "~ media-type="application/xhtml+xml"}
   }
   \tl_gput_right:Nx \l__epub_filelist_tl
   {

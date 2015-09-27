@@ -301,6 +301,9 @@
 }
 
 % Are we using unicode?  Can we test for this?
+\cs_set_eq:NN \mkdn_tilde: \~
+\RenewDocumentCommand \textasciitilde {} {\mkdn_tilde: {} }
+
 \RenewDocumentCommand \" {m} {\entity{#1uml}}
 \RenewDocumentCommand \` {m} {\entity{#1grave}}
 \RenewDocumentCommand \' {m} {\entity{#1acute}}
@@ -386,9 +389,16 @@
 
 % Graphics handling (crude for now)
 
+\tl_new:N \mkdn_img_prefix_tl
+
 \NewDocumentCommand \mkdn_includegraphics {o m}
 {
-  ![](#2.png)
+  ![](\tl_use:N \mkdn_img_prefix_tl #2.png)
+}
+
+\NewDocumentCommand \mkdnSetImagePrefix { m }
+{
+  \tl_set:Nn \mkdn_img_prefix_tl { #1 }
 }
 
 \AtBeginDocument{
@@ -408,6 +418,8 @@
   \par
 }
 
+\cs_set_eq:NN \centering \relax
+
 \cs_set_eq:NN \maketitle \relax
 
 \NewDocumentEnvironment {abstract} {}
@@ -416,6 +428,28 @@
 }
 {
 }
+
+\newcounter{figure}
+\tl_set:Nn \ext@figure {lof}
+\tl_set:Nn \fnum@figure{\figurename\nobreakspace\thefigure}
+\tl_set:Nn \figurename {Figure}
+\DeclareDocumentEnvironment {figure} { O{} }
+{
+  \def\@captype{figure}
+}
+{
+}
+
+\cs_new_nopar:Npn \@makecaption #1 #2
+{
+  \emph{#1:~ #2}\par
+}
+
+%\cs_new_nopar:Npn \mkdn_caption:n #1
+%{
+%}
+%\AtBeginDocument{\cs_set_eq:NN \caption \mkdn_caption:n}
+
 
 \endinput
 
