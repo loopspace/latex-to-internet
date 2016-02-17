@@ -594,20 +594,20 @@
     \prop_if_in:NnT #1 {##1}
     {
       \prop_get:NxN \l__epub_fontmedia_prop
-          {\prop_get:Nn #1 {format}} \l_tmpb_tl
+          {\prop_item:Nn #1 {format}} \l_tmpb_tl
       \tl_put_right:Nx \l__epub_files_tl
       {
         \exp_not:N \xhtm_linebreak:
         \exp_not:N \xhtm_empty_tag:nn {item} {
-          id="font. \prop_get:Nn #1 {family}. ##1"~ 
-          href="\prop_get:Nn #1 {##1}"~
+          id="font. \prop_item:Nn #1 {family}. ##1"~ 
+          href="\prop_item:Nn #1 {##1}"~
           media-type="\tl_use:N \l_tmpb_tl"
         }
       }
       \tl_put_right:Nx \l__epub_filelist_tl
       {
         \exp_not:N \xhtm_linebreak:
-        \exp_not:N \xhtm_comment:n {\prop_get:Nn #1 {##1}}
+        \exp_not:N \xhtm_comment:n {\prop_item:Nn #1 {##1}}
       }
       \tl_set:Nn \l_tmpa_tl
       {
@@ -616,10 +616,10 @@
         }
         \tl_put_right:Nx \l_tmpa_tl
         {
-          font-family:~ '\prop_get:Nn #1 {family}';~
-          font-weight:~ \prop_get:Nn \l__epub_fontwt_prop {##1};~
-          font-style:~ \prop_get:Nn \l__epub_fontst_prop {##1};~
-          src:~ url(\prop_get:Nn #1 {##1})~ format('\prop_get:Nn           #1 {format}');~
+          font-family:~ '\prop_item:Nn #1 {family}';~
+          font-weight:~ \prop_item:Nn \l__epub_fontwt_prop {##1};~
+          font-style:~ \prop_item:Nn \l__epub_fontst_prop {##1};~
+          src:~ url(\prop_item:Nn #1 {##1})~ format('\prop_item:Nn           #1 {format}');~
         }
         \tl_put_right:Nn \l_tmpa_tl {\txt_rbrace:
         \xhtm_linebreak:}
