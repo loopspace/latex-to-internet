@@ -41,6 +41,77 @@
 \let\@listiv\@empty
 \let\@listv\@empty
 
+
+% Load the text outputting routine in LuaTeX
+\tl_new:N \l__txt_file_ext_tl
+\tl_set:Nn \l__txt_file_ext_tl {txt}
+
+\NewDocumentCommand \txtSetExtension {m} {
+  \tl_set:Nn \l__txt_file_ext_tl {#1}
+}
+
+\@ifundefined{directlua}{
+  \cs_new_nopar:Npn \txt_insert_whatsit:n #1 {}
+  \cs_new_nopar:Npn \txt_set_ext:n #1 {}
+  \cs_new_nopar:Npn \txt_start_group_logging: {}
+  \cs_new_nopar:Npn \txt_stop_group_logging: {}
+  \cs_new_nopar:Npn \txt_reread:n #1 {#1}
+}{%
+  \usepackage[no-math]{fontspec}
+  \setmainfont{TeX Gyre Cursor}
+  \attributedef\txt_group_attr=0\relax
+  \directlua{require("textoutput")}
+  \newtoks\txt_oldoutput
+  \txt_oldoutput=\output
+  
+  \output={
+%    \directlua{textoutput.text_output()}%
+    \the\txt_oldoutput
+  }
+
+  \cs_new_nopar:Npn \txt_insert_whatsit:n #1
+  {
+    \directlua{textoutput.insert_whatsit(#1)}
+  }
+
+  \cs_new_nopar:Npn \txt_start_group_logging:
+  {
+    \directlua{textoutput.startgroups()}
+  }
+  
+  \cs_new_nopar:Npn \txt_stop_group_logging:
+  {
+    \directlua{textoutput.stopgroups()}
+  }
+  
+  \cs_new_nopar:Npn \txt_set_ext:n #1
+  {
+    \directlua{textoutput.initialise("#1")}
+  }
+
+  \tl_new:N \l__txt_lua_tl
+
+  \cs_new_protected_nopar:Npn \txt_reread:n #1
+  {
+    \tl_clear:N \l__txt_lua_tl
+    \tl_set:Nx \l__txt_lua_tl {\tl_to_str:n {#1}}
+    \tl_set:Nx \l__txt_lua_tl {\lua_escape_x:n {\l__txt_lua_tl}}
+    \directlua{
+      tex.print("\l__txt_lua_tl")
+    }
+  }
+
+}
+
+\cs_generate_variant:Nn \txt_insert_whatsit:n {V}
+\cs_generate_variant:Nn \txt_set_ext:n {V}
+\cs_generate_variant:Nn \txt_reread:n {V}
+  
+\AtBeginDocument{
+  \txt_set_ext:V \l__txt_file_ext_tl
+}
+
+
 % Don't want any errors
 \raggedbottom
 \frenchspacing
@@ -576,6 +647,8 @@
   \tl_set:cn {txt_hook_#1_#2_tl} {#3}
 }
 
+\cs_generate_variant:Nn \txt_set_hook:nnn {Vnn}
+
 \cs_new:Npn \txt_use_hook:nn #1#2
 {
   \tl_if_exist:cT {txt_hook_#1_#2_tl}
@@ -633,7 +706,7 @@
 \DeclareDocumentCommand \SetHook {m m m}
 {
   
-  \itex_set_hook:nnn {#1} {#2} {#3}
+  \txt_set_hook:nnn {#1} {#2} {#3}
 }
 
 
