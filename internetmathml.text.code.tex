@@ -1,0 +1,3856 @@
+% MathML, prefix: mml
+
+% We need to know our document type
+\tl_new:N \l__mml_container_tl
+
+% Define the options for the mathml module
+\keys_define:nn {mathml options}
+{
+  container .tl_set:N = \l__mml_container_tl
+}
+
+% Get and set the options for the mathml module
+\prop_get:NnNT  \l__txt_popts_prop {mathml} \l_tmpa_tl
+{
+  \keys_set:nV {mathml options} \l_tmpa_tl
+}
+
+\tl_set:Nn \l__txt_file_ext_tl {html}
+\tl_set:Nn \l__maths_type_tl {mml}
+
+\clist_map_inline:nn {
+  open_tag:nn,
+  open_tag:nV,
+  open_tag:xx,
+  open_tag:n,
+  open_tag:V,
+  open_tag:x,
+  close_tag:n,
+  close_tag:x,
+  empty_tag:nn,
+  empty_tag:nx,
+  open_tag_no_stack:nn,
+  close_tag_no_stack:n,
+  reopen_par:
+}
+{
+  \cs_set_eq:cc {mml _ #1} {\tl_use:N \l__mml_container_tl _ #1}
+}
+
+%% \cs_set_eq:Nc \mml_open_tag:nn {\tl_use:N \l__mml_container_tl _open_tag:nn}
+%% \cs_set_eq:Nc \mml_open_tag:nV {\tl_use:N \l__mml_container_tl _open_tag:nV}
+%% \cs_set_eq:Nc \mml_open_tag:xx {\tl_use:N \l__mml_container_tl _open_tag:xx}
+%% \cs_set_eq:Nc \mml_open_tag:n {\tl_use:N \l__mml_container_tl _open_tag:n}
+%% \cs_set_eq:Nc \mml_open_tag:V {\tl_use:N \l__mml_container_tl _open_tag:V}
+%% \cs_set_eq:Nc \mml_open_tag:x {\tl_use:N \l__mml_container_tl _open_tag:x}
+%% \cs_set_eq:Nc \mml_close_tag:n {\tl_use:N \l__mml_container_tl _close_tag:n}
+%% \cs_set_eq:Nc \mml_close_tag:x {\tl_use:N \l__mml_container_tl _close_tag:x}
+%% \cs_set_eq:Nc \mml_empty_tag:nn {\tl_use:N \l__mml_container_tl _empty_tag:nn}
+%% \cs_set_eq:Nc \mml_empty_tag:nx {\tl_use:N \l__mml_container_tl _empty_tag:nx}
+%% \cs_set_eq:Nc \mml_open_tag_no_stack:nn {\tl_use:N \l__mml_container_tl _open_tag_no_stack:nn}
+%% \cs_set_eq:Nc \mml_close_tag_no_stack:n {\tl_use:N \l__mml_container_tl _close_tag_no_stack:n}
+
+\cs_new:Npn \mml_activate_dollar:
+{
+  \char_set_catcode_active:N \$%$
+}
+\mml_activate_dollar:
+
+\AtBeginDocument{
+  \mml_activate_dollar:
+}
+
+\int_new:N \l__mml_scriptlevel_int
+\int_zero:N \l__mml_scriptlevel_int
+
+\cs_new_nopar:Npn \mml_superscript:n #1
+{
+  \txt_insert_whatsit:n {7}
+  \mml_open_tag:nn {msup} {}
+  \int_incr:N \l__mml_scriptlevel_int
+  \tl_if_single:nTF {#1}
+  {
+    #1
+  }
+  {
+    {
+      #1
+    } \c_space_token
+  }
+  \int_decr:N \l__mml_scriptlevel_int
+  \mml_close_tag:n {msup}
+}
+
+\cs_new_nopar:Npn \mml_subscript:n #1
+{
+  \txt_insert_whatsit:n {8}
+  \mml_open_tag:nn {msub} {}
+  \int_incr:N \l__mml_scriptlevel_int
+  \tl_if_single:nTF {#1}
+  {
+    #1
+  }
+  {
+    {
+      #1
+    } \c_space_token
+  }
+  \int_decr:N \l__mml_scriptlevel_int
+  \mml_close_tag:n {msub}
+}
+
+\cs_new_nopar:Npn \mml_percent:
+{
+  \@backslashchar \@percentchar
+}
+
+\group_begin:
+\char_set_catcode_other:N \&
+\cs_new_nopar:Npn \mml_amp: {&}
+\group_end:
+
+
+\bool_new:N \l__mml_display_bool
+\bool_new:N \l__mml_maths_bool
+\bool_new:N \l__mml_numbered_bool
+\bool_new:N \l__mml_text_bool
+
+\cs_new_nopar:Npn \mml_maths_start:
+{
+  \txt_use_hook:nn {mathml} {begin maths}
+  \bool_if:NTF \l__mml_display_bool
+  {
+    \bool_if:NT \l__mml_numbered_bool
+    {
+      \refstepcounter{equation}
+    }
+    \mml_reopen_par:
+    \txt_use_hook:nn {mathml} {begin display}
+%    \txt_newline:
+    \mml_open_tag:nn {math} {xmlns='http://www.w3.org/1998/Math/MathML'~ display='block'}
+  }
+  {
+    \txt_use_hook:nn {mathml} {begin inline}
+    \mml_open_tag:nn {math} {xmlns='http://www.w3.org/1998/Math/MathML'~ display='inline'}
+  }
+  \txt_start_group_logging:
+  \txt_insert_whatsit:n {3}
+}
+
+\cs_new_nopar:Npn \mml_maths_end:
+{
+  \txt_insert_whatsit:n {3}
+  \txt_stop_group_logging:
+  \mml_close_tag:n {math}
+  \bool_if:NTF \l__mml_display_bool
+  {
+%    \txt_newline:
+    \txt_use_hook:nn {mathml} {end display}
+    \mml_reopen_par:
+  }
+  {
+    \txt_use_hook:nn {mathml} {end inline}
+  }
+  \txt_use_hook:nn {mathml} {end maths}
+  \group_end:
+}
+
+\cs_new_nopar:Npn \mml_set_catcodes:
+{
+  \cs_set:Npx \mml_unset_catcodes:
+  {
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \^} {\char_value_catcode:n {`\^}}
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \_} {\char_value_catcode:n {`\_}}
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \>} {\char_value_catcode:n {`\>}}
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \<} {\char_value_catcode:n {`\<}}
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \&} {\char_value_catcode:n {`\_}}
+  }
+
+  \char_set_catcode_active:N \^
+  \char_set_catcode_active:N \_
+  \char_set_catcode_active:N \>
+  \char_set_catcode_active:N \<
+  \char_set_catcode_active:N \&
+}
+
+\cs_new_nopar:Npn \mml_set_all_catcodes:
+{
+  \cs_set:Npx \mml_unset_catcodes:
+  {
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \^} {\char_value_catcode:n {`\^}}
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \$} {\char_value_catcode:n {`\$}}
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \_} {\char_value_catcode:n {`\_}}
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \>} {\char_value_catcode:n {`\>}}
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \<} {\char_value_catcode:n {`\<}}
+    \exp_not:N \char_set_catcode:nn {`\exp_not:N \&} {\char_value_catcode:n {`\_}}
+  }
+
+  \char_set_catcode_active:N \$%$
+  \char_set_catcode_active:N \^
+  \char_set_catcode_active:N \_
+  \char_set_catcode_active:N \>
+  \char_set_catcode_active:N \<
+  \char_set_catcode_active:N \&
+}
+
+\NewDocumentCommand \MathMLSetCatcodes {}
+{
+  \mml_set_catcodes:
+}
+
+\NewDocumentCommand \MathMLSetAllCatcodes {}
+{
+  \mml_set_all_catcodes:
+}
+
+\NewDocumentCommand \MathMLRestoreCatcodes {}
+{
+  \mml_unset_catcodes:
+}
+
+\cs_if_exist:NT \epub_math_in_toc:
+{
+  \cs_set_eq:NN \mml_math_in_toc: \epub_math_in_toc:
+  \cs_set:Npn \epub_math_in_toc:
+  {
+    \mml_math_in_toc:
+    \AtBeginDocument{
+      \@writefile{toc}{\mmlSetAllCatcodes}
+    }
+  }
+}
+
+\group_begin:
+\char_set_catcode_active:N \^
+\char_set_catcode_active:N \>
+\char_set_catcode_active:N \<
+\char_set_catcode_active:N \&
+\char_set_catcode_active:N \;
+\char_set_lccode:nn {`;}{`_}
+\tl_to_lowercase:n {
+\group_end:
+  \cs_new_nopar:Npn \mml_set_actives:
+  {
+    \cs_set_eq:NN ^ \mml_superscript:n
+    \cs_set_eq:NN ; \mml_subscript:n
+    \cs_set_eq:NN > \gt
+    \cs_set_eq:NN < \lt
+    \cs_set_eq:NN & \mml_amp:
+  }
+}
+
+\tl_new:N \l__mml_char_tl
+
+\group_begin:
+\tl_set:Nn \l__mml_char_tl {^}
+\char_set_catcode_active:N \^
+\cs_gset:Npx \mml_text_caret: {\l__mml_char_tl}
+\cs_gset:Npx ^ {\l__mml_char_tl}
+
+\tl_set:Nn \l__mml_char_tl {>}
+\char_set_catcode_active:N \>
+\cs_gset:Npx \mml_text_rangle: {\l__mml_char_tl}
+\exp_last_unbraced:NNo \cs_gset_eq:NN > \l__mml_char_tl
+
+\tl_set:Nn \l__mml_char_tl {<}
+\char_set_catcode_active:N \<
+\cs_gset:Npx \mml_text_langle: {\l__mml_char_tl}
+\exp_last_unbraced:NNo \cs_gset_eq:NN < \l__mml_char_tl
+
+\tl_set:Nn \l__mml_char_tl {&}
+\char_set_catcode_active:N \&
+\cs_gset:Npx \mml_text_amp: {\l__mml_char_tl}
+\exp_last_unbraced:NNo \cs_gset_eq:NN & \l__mml_char_tl
+
+\char_set_catcode_math_subscript:N \;
+\char_set_lccode:nn {`;}{`_}
+\tl_to_lowercase:n
+{
+  \tl_set:Nn \l__mml_char_tl {;}
+}
+\cs_gset:Npx \mml_text_underscore: {\l__mml_char_tl}
+\char_set_catcode_active:N \;
+\tl_to_lowercase:n
+{
+  \cs_gset:Npx ; {\l__mml_char_tl}
+}
+\tl_to_lowercase:n
+{
+  \group_end:
+  \cs_new_nopar:Npn \mml_set_text_actives:
+  {
+    \cs_set_eq:NN ^ \mml_text_caret:
+    \cs_set_eq:NN ; \mml_text_underscore:
+    \cs_set_eq:NN > \mml_text_rangle:
+    \cs_set_eq:NN < \mml_text_langle:
+    \cs_set_eq:NN & \mml_text_amp:
+  }
+}
+
+
+
+\cs_new_nopar:Npn \mml_maths_init:
+{
+  \mathfont
+  \mml_set_catcodes:
+  \mml_set_actives:
+  \cs_set_eq:NN \% \mml_percent:
+  \cs_set_eq:NN \\ \mmlnl
+  \cs_set_eq:NN \align \mml_align:
+  \cs_set_eq:NN \mbox \mml_text_or_mbox:
+  \bool_set_true:N \l__mml_maths_bool
+}
+
+\RenewDocumentCommand \( {} {${}}%$
+\RenewDocumentCommand \) {} {${}}%$
+\RenewDocumentCommand \[ {} {$$}%$
+\RenewDocumentCommand \] {} {$$}%$
+
+\cs_new_protected_nopar:Npn \mml_dollar:
+{
+  \bool_if:NTF \l__mml_maths_bool
+  {
+    \mml_maths_end:
+  }
+  {
+    \group_begin:
+    \mml_maths_init:
+  }
+  \peek_meaning:NTF $%$
+  {
+    \mml_double_dollar:w
+  }
+  {
+    \mml_single_dollar:
+  }
+}
+
+\cs_new:Npn \mml_double_dollar:w $%$
+{
+  \bool_if:NT \l__mml_maths_bool
+  {
+    \bool_set_true:N \l__mml_display_bool
+    \mml_maths_start:
+  }
+}
+
+\cs_new:Npn \mml_single_dollar:
+{
+  \bool_if:NT \l__mml_maths_bool
+  {
+    \mml_maths_start:
+  }
+}
+
+\cs_set_eq:NN $ \mml_dollar: %$
+
+\NewDocumentCommand \mmlmathscommand {m o o}
+{
+  \cs_if_exist:NT #1
+  {
+    \cs_set_eq:cN {mml_text_\cs_to_str:N #1:} #1
+  }
+  \IfNoValueTF {#2}
+  {
+    \newtextcommand #1
+  }
+  {
+    \IfNoValueTF {#3}
+    {
+      \newtextcommand #1 [#2]
+    }
+    {
+      \newtextcommand #1 [#2] [{#3}]
+    }
+  }
+  \cs_set_eq:cN {mml_maths_\cs_to_str:N #1:} #1
+  \cs_set_nopar:Npn #1
+  {
+    \bool_if:NTF \l__mml_maths_bool
+    {
+      \use:c {mml_maths_\cs_to_str:N #1:}
+    }
+    {
+      \use:c {mml_text_\cs_to_str:N #1:}
+    }
+  }
+}
+
+\cs_new_nopar:Npn \mml_label:n #1
+{
+  \txt_only_chars:nn {alpha} {#1}
+  \string\label \txt_lbrace:\tl_use:N \l__txt_chars_tl \txt_rbrace:
+}
+
+\NewDocumentEnvironment {mathml equation} {}
+{
+  \bool_set_true:N \l__mml_numbered_bool
+  \[
+}
+{
+  \]
+}
+
+\cs_new_nopar:Npn \mml_restore_equation:
+{
+  \cs_set_eq:Nc \equation {mathml equation}
+  \cs_set_eq:Nc \endequation {end mathml equation}
+}
+
+% hyperref redefines equation
+\AtBeginDocument{
+  \mml_restore_equation:
+}
+
+\DeclareDocumentCommand \ensuremath {}
+{
+  \mml_ensuremaths:
+}
+
+\cs_new_nopar:Npn \mml_ensuremaths:
+{
+  \bool_if:NTF \l__mml_maths_bool
+  {
+    \use:n
+  }
+  {
+    $ \mml_ensuremaths_end:n %$
+  }
+}
+
+\cs_new_nopar:Npn \mml_ensuremaths_end:n #1
+{
+  #1$%$
+}
+
+\NewDocumentEnvironment {align*} {}
+{
+  \bool_set_false:N \l__mml_numbered_bool
+  \txt_use_hook:nn {mathml} {begin align}
+  $$
+  \begin{aligned}
+%  \txt_newline:
+}
+{
+%  \txt_newline:
+  \end{aligned}
+  $$
+  \txt_use_hook:nn {mathml} {end align}
+}
+
+\NewDocumentEnvironment {align} {}
+{
+  \bool_set_true:N \l__mml_numbered_bool
+  \txt_use_hook:nn {mathml} {begin align}
+  \[
+  \begin{aligned}
+%  \txt_newline:
+}
+{
+%  \txt_newline:
+  \end{aligned}
+  \]
+  \txt_use_hook:nn {mathml} {end align}
+}
+
+\NewDocumentEnvironment {gather*} {}
+{
+  \bool_set_false:N \l__mml_numbered_bool
+  \txt_use_hook:nn {mathml} {begin gather}
+  $$
+  \begin{gathered}
+%  \txt_newline:
+}
+{
+%  \txt_newline:
+  \end{gathered}
+  $$
+  \txt_use_hook:nn {mathml} {end gather}
+}
+
+\NewDocumentEnvironment {gather} {}
+{
+  \bool_set_true:N \l__mml_numbered_bool
+  \txt_use_hook:nn {mathml} {begin gather}
+  $$
+  \begin{gathered}
+%  \txt_newline:
+}
+{
+%  \txt_newline:
+  \end{gathered}
+  $$
+  \txt_use_hook:nn {matml} {end gather}
+}
+
+\NewDocumentEnvironment {multline*} {}
+{
+  \bool_set_false:N \l__mml_numbered_bool
+  \txt_use_hook:nn {mathml} {begin multline}
+  $$
+  \begin{aligned}
+%  \txt_newline:
+}
+{
+%  \txt_newline:
+  \end{aligned}
+  $$
+  \txt_use_hook:nn {mathml} {end multline}
+}
+
+\NewDocumentEnvironment {multline} {}
+{
+  \bool_set_true:N \l__mml_numbered_bool
+  \txt_use_hook:nn {mathml} {begin multline}
+  \[
+  \begin{aligned}
+%  \txt_newline:
+}
+{
+%  \txt_newline:
+  \end{aligned}
+  \]
+  \txt_use_hook:nn {mathml} {end multline}
+}
+
+\NewDocumentEnvironment {equation*} {}
+{
+  \bool_set_false:N \l__mml_numbered_bool
+  \txt_use_hook:nn {mathml} {begin equation}
+  $$
+}
+{
+  $$
+  \txt_use_hook:nn {mathml} {end equation}
+}
+
+\RenewDocumentCommand \textrm {m}
+{
+  \text{#1}
+}
+
+\NewDocumentCommand \intertext {m}
+{
+  \\
+  \text{#1}
+  \\
+}
+
+\NewDocumentCommand \DeclareMathOperator {m m}
+{
+  \NewDocumentCommand #1 {} {
+    \mml_open_tag:nn {mo} {lspace="0em"~ rspace="thinmathspace"}
+    #2
+    \mml_close_tag:n {mo}
+  }
+}
+
+% The `\not` command is quite complicated, this attempts to emulate it
+
+\RenewDocumentCommand \not {}
+{
+  \peek_after:Nw \mml_if_not:
+}
+
+\cs_new:Npn \mml_if_not:
+{
+  \token_if_macro:NTF \l_peek_token
+  {
+    \mml_test_not:n
+  }
+  {
+    \mml_orig_not:
+  }
+}
+
+\cs_new:Npn \mml_test_not:n #1
+{
+  \cs_if_exist_use:cF {not \cs_to_str:N #1}
+  {
+    \cs_if_exist_use:cF {n \cs_to_str:N #1}
+    {
+      \mml_orig_not: #1
+    }
+  }
+}
+
+% Avoid nesting maths inside the `\text` command
+
+%% \tl_new:N \l__mml_endtext_tl
+%% \tl_set:Nn \l__mml_endtext_tl {
+%% \bool_set_false:N
+%% \l__mml_text_bool
+%%   \mml_text_closetags:
+%%   \txt_rbrace:
+%% \mml_set_actives:
+%% }
+
+%% \DeclareDocumentCommand \text {}
+%% {
+%%   \peek_meaning_ignore_spaces:NTF \c_group_begin_token
+%%   {
+%%     \mml_text_group:
+%%   }
+%%   {
+%%     \mml_text:n
+%%   }
+%% }
+
+%% \cs_new_nopar:Npn \mml_text:n #1
+%% {
+%%   \mmltext \mmlgroup {#1}
+%% }
+
+%% \seq_new:N \l__mml_tag_seq
+
+%% \cs_new_nopar:Npn \mml_text_pushtag:
+%% {
+%%   \tl_set:Nx \l_tmpa_tl {
+%%     {\seq_item:Nn \l__txt_args_seq {1}}
+%%     {\seq_item:Nn \l__txt_args_seq {2}}
+%%   }
+%%   \seq_gpush:NV \l__mml_tag_seq \l_tmpa_tl
+%% }
+
+%% \cs_generate_variant:Nn \msg_warning:nnnn {nnVV}
+
+%% \cs_new:Npn \mml_text_poptag:
+%% {
+%%   \seq_gpop:NN \l__mml_tag_seq \l_tmpa_tl
+%% }
+
+%% \seq_new:N \l__mml_texttags_seq
+%% \cs_new:Npn \mml_text_closetags:
+%% {
+%%   \seq_gset_eq:NN \l__mml_texttags_seq \l__mml_tag_seq
+%%   \seq_map_inline:Nn \l__mml_tag_seq
+%%   {
+%%     \mml_close_tag:x {\tl_item:nn {##1} {1}}
+%%   }
+%%   \seq_gclear:N \l__mml_tag_seq
+%% }
+%% \cs_new:Npn \mml_text_opentags:
+%% {
+%%   \seq_reverse:N \l__mml_texttags_seq
+%%   \seq_map_inline:Nn \l__mml_texttags_seq
+%%   {
+%%     \mml_open_tag:xx {\tl_item:nn {##1} {1}} {\tl_item:nn {##1} {2}}
+%%   }
+%%   \seq_gclear:N \l__mml_texttags_seq
+%% }
+
+%% \cs_new_nopar:Npn \mml_text_group:
+%% {
+%%   \bool_set_true:N \l__mml_text_bool
+%%   \c_group_begin_token
+%%   \cs_set_eq:NN $ \mml_text_dollar: %$
+%%   \bool_set_false:N \l__mml_maths_bool
+%%   \group_insert_after:N \l__mml_endtext_tl
+%%   \txt_set_hook:Vnn \l__mml_container_tl {pre open tag}
+%%   {
+%%     \mml_text_pushtag:
+%%   }
+%%   \txt_set_hook:Vnn \l__mml_container_tl {pre close tag}
+%%   {
+%%     \mml_text_poptag:
+%%   }
+%%   \mmltext
+%%   \txt_lbrace:
+%%     \mml_set_text_actives:
+%%     \tfont
+%%     \peek_meaning_remove_ignore_spaces:NF \c_group_begin_token {}
+%% }
+
+%% \cs_new_nopar:Npn \mml_text_dollar:
+%% {
+%%   \bool_if:NTF \l__mml_maths_bool
+%%   {
+%%     \mmltext\txt_lbrace:
+%%       \bool_set_false:N \l__mml_maths_bool
+%%       \tfont
+%%       \mml_set_text_actives:
+%%       \mml_text_opentags:
+%%   }
+%%     {
+%%       \mml_text_closetags:
+%%       \txt_rbrace:
+%%     \mml_set_actives:
+%%     \bool_set_true:N \l__mml_maths_bool
+%%     \mathfont
+%%   }
+%% }
+
+%% % Inside maths, the box commands get out of maths mode
+
+%% \cs_set_eq:NN \mml_orig_mbox:n \mbox
+
+%% \cs_new:Npn \mml_text_or_mbox:
+%% {
+%%   \peek_meaning_ignore_spaces:NTF \c_group_begin_token
+%%   {
+%%     \peek_meaning_remove_ignore_spaces:NT \c_group_begin_token
+%%     {
+%%       \mml_text_or_mbox_aux:
+%%     }
+%%   }
+%%   {
+%%     \mml_text:n
+%%   }
+%% }
+
+%% \cs_new:Npn \mml_text_or_mbox_aux:
+%% {
+%%   \peek_meaning_ignore_spaces:NTF \c_group_end_token
+%%   {
+%%     % No argument, issue an ordinary mbox
+%%     \mml_orig_mbox:n {}
+%%   }
+%%   {
+%%     % Argument, revert to `\text`
+%%     \mml_text_group: \c_group_begin_token
+%%   }
+%% }
+
+% Here followeth the list of mathml commands,
+% modulo a few clashes
+
+\tl_new:N \l__mml_close_mstyle_tl
+\tl_set:Nn \l__mml_close_mstyle_tl {\mml_close_tag:n {mstyle}}
+
+\cs_set_nopar:Npn \infty {
+  \mml_open_tag:nn {mn} {}
+  \entity{infin}
+  \mml_close_tag:n {mn}
+}
+\cs_set_nopar:Npn \infinity {
+  \mml_open_tag:nn {mn} {}
+  \entity{infin}
+  \mml_close_tag:n {mn}
+}
+\cs_set_nopar:Npn \lbrace {
+  \mml_open_tag:nn {mo} {stretchy="false"}
+  \txt_lbrace:
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \rbrace {
+  \mml_open_tag:nn {mo} {stretchy="false"}
+  \txt_rbrace:
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \vert {
+  \mml_open_tag:nn {mo} {stretchy="false"}
+  \entity{VerticalBar}
+  \mml_close_tag:n {mo}
+}
+\cs_set_eq:NN \lvert \vert
+\cs_set_eq:NN \rvert \vert
+\cs_set_nopar:Npn \Vert {
+  \mml_open_tag:nn {mo} {stretchy="false"}
+  \entity{DoubleVerticalBar}
+  \mml_close_tag:n {mo}
+}
+\cs_set_eq:NN \lVert \Vert
+\cs_set_eq:NN \rVert \Vert
+\cs_set_nopar:Npn \left #1
+{
+  \mml_open_tag:n {mo}
+  #1
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \right #1
+{
+  \mml_open_tag:n {mo}
+  #1
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \big #1
+{
+  \mml_open_tag:nn {mo} {maxsize="1.2em"~ minsize="1.2em"}
+  #1
+  \mml_close_tag:n {mo}
+}
+
+\cs_set_nopar:Npn \Big #1
+{
+  \mml_open_tag:nn {mo} {maxsize="1.8em"~ minsize="1.8em"}
+  #1
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \bigg #1
+{
+  \mml_open_tag:nn {mo} {maxsize="2.4em"~ minsize="2.4em"}
+  #1
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Bigg #1
+{
+  \mml_open_tag:nn {mo} {maxsize="3em"~ minsize="3em"}
+  #1
+  \mml_close_tag:n {mo}
+}
+\cs_set_eq:NN \bigr \big
+\cs_set_eq:NN \bigl \big
+\cs_set_eq:NN \Bigr \Big
+\cs_set_eq:NN \Bigl \Big
+\cs_set_eq:NN \biggr \bigg
+\cs_set_eq:NN \biggl \bigg
+\cs_set_eq:NN \Biggr \Bigg
+\cs_set_eq:NN \Biggl \Bigg
+
+\cs_set_nopar:Npn \setminus {
+  \mml_open_tag:nn {mo} {}
+  \entity{setminus}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \backslash {
+  \mml_open_tag:nn {mo} {}
+  \entity{bsol}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \smallsetminus {
+  \mml_open_tag:nn {mo} {stretchy="false"}
+  \hexentity{FE68}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \sslash {
+  \mml_open_tag:nn {mo} {}
+  \entity{parsl}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \lfloor {
+  \mml_open_tag:nn {mo} {stretchy="false"}
+  \entity{lfloor}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \lceil {
+  \mml_open_tag:nn {mo} {stretchy="false"}
+  \entity{lceil}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \lang {
+  \mml_open_tag:nn {mo} {stretchy="false"}
+  \entity{lang}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \langle {
+  \mml_open_tag:nn {mo} {stretchy="false"}
+  \entity{langle}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \rfloor {
+  \mml_open_tag:nn {mo} {stretchy="false"}
+  \entity{rfloor}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \rceil {
+  \mml_open_tag:nn {mo} {stretchy="false"}
+  \entity{rceil}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \rang {
+  \mml_open_tag:nn {mo} {stretchy="false"}
+  \entity{rang}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \rangle {
+  \mml_open_tag:nn {mo} {stretchy="false"}
+  \entity{rangle}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \uparrow {
+  \mml_open_tag:nn {mo} {stretchy="false"}
+  \entity{uparrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \downarrow {
+  \mml_open_tag:nn {mo} {stretchy="false"}
+  \entity{downarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \updownarrow {
+  \mml_open_tag:nn {mo} {stretchy="false"}
+  \entity{updownarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \prime {
+  \mml_open_tag:nn {mstyle} {scriptlevel="0"}
+  \mml_open_tag:nn {mo} {}
+  \entity{prime}
+  \mml_close_tag:n {mo}
+  \mml_close_tag:n {mstyle}
+}
+\cs_set_nopar:Npn \alpha {
+  \mml_open_tag:nn {mi} {}
+  \entity{alpha}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \beta {
+  \mml_open_tag:nn {mi} {}
+  \entity{beta}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \gamma {
+  \mml_open_tag:nn {mi} {}
+  \entity{gamma}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \delta {
+  \mml_open_tag:nn {mi} {}
+  \entity{delta}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \zeta {
+  \mml_open_tag:nn {mi} {}
+  \entity{zeta}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \eta {
+  \mml_open_tag:nn {mi} {}
+  \entity{eta}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \theta {
+  \mml_open_tag:nn {mi} {}
+  \entity{theta}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \iota {
+  \mml_open_tag:nn {mi} {}
+  \entity{iota}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \kappa {
+  \mml_open_tag:nn {mi} {}
+  \entity{kappa}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \lambda {
+  \mml_open_tag:nn {mi} {}
+  \entity{lambda}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \mu {
+  \mml_open_tag:nn {mi} {}
+  \entity{mu}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \nu {
+  \mml_open_tag:nn {mi} {}
+  \entity{nu}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \xi {
+  \mml_open_tag:nn {mi} {}
+  \entity{xi}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \pi {
+  \mml_open_tag:nn {mi} {}
+  \entity{pi}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \rho {
+  \mml_open_tag:nn {mi} {}
+  \entity{rho}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \sigma {
+  \mml_open_tag:nn {mi} {}
+  \entity{sigma}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \tau {
+  \mml_open_tag:nn {mi} {}
+  \entity{tau}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \upsilon {
+  \mml_open_tag:nn {mi} {}
+  \entity{upsilon}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \chi {
+  \mml_open_tag:nn {mi} {}
+  \entity{chi}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \psi {
+  \mml_open_tag:nn {mi} {}
+  \entity{psi}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \omega {
+  \mml_open_tag:nn {mi} {}
+  \entity{omega}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \backepsilon {
+  \mml_open_tag:nn {mi} {}
+  \entity{backepsilon}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \varkappa {
+  \mml_open_tag:nn {mi} {}
+  \entity{varkappa}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \varpi {
+  \mml_open_tag:nn {mi} {}
+  \entity{varpi}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \varrho {
+  \mml_open_tag:nn {mi} {}
+  \entity{varrho}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \varsigma {
+  \mml_open_tag:nn {mi} {}
+  \entity{varsigma}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \vartheta {
+  \mml_open_tag:nn {mi} {}
+  \entity{vartheta}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \varepsilon {
+  \mml_open_tag:nn {mi} {}
+  \hexentity{03B5}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \phi {
+  \mml_open_tag:nn {mi} {}
+  \hexentity{03D5}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \varphi {
+  \mml_open_tag:nn {mi} {}
+  \hexentity{03C6}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \arccos {
+  \mml_open_tag:nn {mi} {}
+  arccos
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \arcsin {
+  \mml_open_tag:nn {mi} {}
+  arcsin
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \arctan {
+  \mml_open_tag:nn {mi} {}
+  arctan
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \arg {
+  \mml_open_tag:nn {mi} {}
+  arg
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \cos {
+  \mml_open_tag:nn {mi} {}
+  cos
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \cosh {
+  \mml_open_tag:nn {mi} {}
+  cosh
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \cot {
+  \mml_open_tag:nn {mi} {}
+  cot
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \coth {
+  \mml_open_tag:nn {mi} {}
+  coth
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \csc {
+  \mml_open_tag:nn {mi} {}
+  csc
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \deg {
+  \mml_open_tag:nn {mi} {}
+  deg
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \dim {
+  \mml_open_tag:nn {mi} {}
+  dim
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \exp {
+  \mml_open_tag:nn {mi} {}
+  exp
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \hom {
+  \mml_open_tag:nn {mi} {}
+  hom
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \ker {
+  \mml_open_tag:nn {mi} {}
+  ker
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \lg {
+  \mml_open_tag:nn {mi} {}
+  lg
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \ln {
+  \mml_open_tag:nn {mi} {}
+  ln
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \log {
+  \mml_open_tag:nn {mi} {}
+  log
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \sec {
+  \mml_open_tag:nn {mi} {}
+  sec
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \sin {
+  \mml_open_tag:nn {mi} {}
+  sin
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \sinh {
+  \mml_open_tag:nn {mi} {}
+  sinh
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \tan {
+  \mml_open_tag:nn {mi} {}
+  tan
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \tanh {
+  \mml_open_tag:nn {mi} {}
+  tanh
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \det {
+  \mml_open_tag:nn {mi} {}
+  det
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \gcd {
+  \mml_open_tag:nn {mi} {}
+  gcd
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \inf {
+  \mml_open_tag:nn {mi} {}
+  inf
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \lim {
+  \mml_open_tag:nn {mi} {}
+  lim
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \liminf {
+  \mml_open_tag:nn {mi} {}
+  liminf
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \limsup {
+  \mml_open_tag:nn {mi} {}
+  limsup
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \max {
+  \mml_open_tag:nn {mi} {}
+  max
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \min {
+  \mml_open_tag:nn {mi} {}
+  min
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Pr {
+  \mml_open_tag:nn {mi} {}
+  Pr
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \sup {
+  \mml_open_tag:nn {mi} {}
+  sup
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \omicron {
+  \mml_open_tag:nn {mi} {}
+  \entity{oscr}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \epsilon {
+  \mml_open_tag:nn {mi} {}
+  \entity{epsi}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \cdot {
+  \mml_open_tag:nn {mo} {}
+  \entity{sdot}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Alpha {
+  \mml_open_tag:nn {mi} {}
+  \entity{Alpha}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Beta {
+  \mml_open_tag:nn {mi} {}
+  \entity{Beta}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Delta {
+  \mml_open_tag:nn {mi} {}
+  \entity{Delta}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Gamma {
+  \mml_open_tag:nn {mi} {}
+  \entity{Gamma}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \digamma {
+  \mml_open_tag:nn {mi} {}
+  \entity{digamma}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Lambda {
+  \mml_open_tag:nn {mi} {}
+  \entity{Lambda}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Pi {
+  \mml_open_tag:nn {mi} {}
+  \entity{Pi}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Phi {
+  \mml_open_tag:nn {mi} {}
+  \entity{Phi}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Psi {
+  \mml_open_tag:nn {mi} {}
+  \entity{Psi}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Sigma {
+  \mml_open_tag:nn {mi} {}
+  \entity{Sigma}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Theta {
+  \mml_open_tag:nn {mi} {}
+  \entity{Theta}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Xi {
+  \mml_open_tag:nn {mi} {}
+  \entity{Xi}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Zeta {
+  \mml_open_tag:nn {mi} {}
+  \entity{Zeta}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Eta {
+  \mml_open_tag:nn {mi} {}
+  \entity{Eta}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Iota {
+  \mml_open_tag:nn {mi} {}
+  \entity{Iota}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Kappa {
+  \mml_open_tag:nn {mi} {}
+  \entity{Kappa}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Mu {
+  \mml_open_tag:nn {mi} {}
+  \entity{Mu}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Nu {
+  \mml_open_tag:nn {mi} {}
+  \entity{Nu}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Rho {
+  \mml_open_tag:nn {mi} {}
+  \entity{Rho}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Tau {
+  \mml_open_tag:nn {mi} {}
+  \entity{Tau}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \mho {
+  \mml_open_tag:nn {mi} {}
+  \entity{mho}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Omega {
+  \mml_open_tag:nn {mi} {}
+  \entity{Omega}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Upsilon {
+  \mml_open_tag:nn {mi} {}
+  \entity{Upsi}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Upsi {
+  \mml_open_tag:nn {mi} {}
+  \entity{Upsi}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \iff {
+  \mml_open_tag:nn {mo} {}
+  \entity{iff}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Longleftrightarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{iff}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Leftrightarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{Leftrightarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \impliedby {
+  \mml_open_tag:nn {mo} {}
+  \entity{Leftarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Leftarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{Leftarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \implies {
+  \mml_open_tag:nn {mo} {}
+  \entity{Rightarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Rightarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{Rightarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \hookleftarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{hookleftarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \embedsin {
+  \mml_open_tag:nn {mo} {}
+  \entity{hookrightarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \hookrightarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{hookrightarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \longleftarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{longleftarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \longrightarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{longrightarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \leftarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{leftarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \to {
+  \mml_open_tag:nn {mo} {}
+  \entity{rightarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \rightarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{rightarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \leftrightarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{leftrightarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \mapsto {
+  \mml_open_tag:nn {mo} {}
+  \entity{map}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \map {
+  \mml_open_tag:nn {mo} {}
+  \entity{map}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nearrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{nearr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nearr {
+  \mml_open_tag:nn {mo} {}
+  \entity{nearr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nwarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{nwarr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nwarr {
+  \mml_open_tag:nn {mo} {}
+  \entity{nwarr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \searrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{searr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \searr {
+  \mml_open_tag:nn {mo} {}
+  \entity{searr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \swarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{swarr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \swarr {
+  \mml_open_tag:nn {mo} {}
+  \entity{swarr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \neArrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{neArr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \neArr {
+  \mml_open_tag:nn {mo} {}
+  \entity{neArr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nwArrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{nwArr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nwArr {
+  \mml_open_tag:nn {mo} {}
+  \entity{nwArr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \seArrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{seArr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \seArr {
+  \mml_open_tag:nn {mo} {}
+  \entity{seArr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \swArrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{swArr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \swArr {
+  \mml_open_tag:nn {mo} {}
+  \entity{swArr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \darr {
+  \mml_open_tag:nn {mo} {}
+  \entity{darr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Downarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{dArr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \uparr {
+  \mml_open_tag:nn {mo} {}
+  \entity{uarr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Uparrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{uArr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \downuparrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{updownarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \duparr {
+  \mml_open_tag:nn {mo} {}
+  \entity{updownarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \updarr {
+  \mml_open_tag:nn {mo} {}
+  \entity{updownarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Updownarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{Updownarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \leftsquigarrow {
+  \mml_open_tag:nn {mo} {}
+  \hexentity{21DC}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \rightsquigarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{zigrarr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \dashleftarrow {
+  \mml_open_tag:nn {mo} {}
+  \hexentity{290E}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \dashrightarrow {
+  \mml_open_tag:nn {mo} {}
+  \hexentity{290F}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \curvearrowbotright {
+  \mml_open_tag:nn {mo} {}
+  \hexentity{293B}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \righttoleftarrow {
+  \mml_open_tag:nn {mo} {}
+  \hexentity{27F2}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \lefttorightarrow {
+  \mml_open_tag:nn {mo} {}
+  \hexentity{27F3}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \leftrightsquigarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{leftrightsquigarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \upuparrows {
+  \mml_open_tag:nn {mo} {}
+  \entity{upuparrows}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \rightleftarrows {
+  \mml_open_tag:nn {mo} {}
+  \entity{rightleftarrows}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \rightrightarrows {
+  \mml_open_tag:nn {mo} {}
+  \entity{rightrightarrows}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \curvearrowleft {
+  \mml_open_tag:nn {mo} {}
+  \entity{curvearrowleft}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \curvearrowright {
+  \mml_open_tag:nn {mo} {}
+  \entity{curvearrowright}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \downdownarrows {
+  \mml_open_tag:nn {mo} {}
+  \entity{downdownarrows}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \leftarrowtail {
+  \mml_open_tag:nn {mo} {}
+  \entity{leftarrowtail}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \rightarrowtail {
+  \mml_open_tag:nn {mo} {}
+  \entity{rightarrowtail}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \leftleftarrows {
+  \mml_open_tag:nn {mo} {}
+  \entity{leftleftarrows}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \leftrightarrows {
+  \mml_open_tag:nn {mo} {}
+  \entity{leftrightarrows}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Lleftarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{Lleftarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Rrightarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{Rrightarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \looparrowleft {
+  \mml_open_tag:nn {mo} {}
+  \entity{looparrowleft}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \looparrowright {
+  \mml_open_tag:nn {mo} {}
+  \entity{looparrowright}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Lsh {
+  \mml_open_tag:nn {mo} {}
+  \entity{Lsh}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Rsh {
+  \mml_open_tag:nn {mo} {}
+  \entity{Rsh}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \circlearrowleft {
+  \mml_open_tag:nn {mo} {}
+  \entity{circlearrowleft}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \circlearrowright {
+  \mml_open_tag:nn {mo} {}
+  \entity{circlearrowright}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \twoheadleftarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{twoheadleftarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \twoheadrightarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{twoheadrightarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nLeftarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{nLeftarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nleftarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{nleftarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nLeftrightarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{nLeftrightarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nleftrightarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{nleftrightarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nRightarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{nRightarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nrightarrow {
+  \mml_open_tag:nn {mo} {}
+  \entity{nrightarrow}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \downharpoonleft {
+  \mml_open_tag:nn {mo} {}
+  \entity{downharpoonleft}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \downharpoonright {
+  \mml_open_tag:nn {mo} {}
+  \entity{downharpoonright}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \leftrightharpoons {
+  \mml_open_tag:nn {mo} {}
+  \entity{leftrightharpoons}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \rightleftharpoons {
+  \mml_open_tag:nn {mo} {}
+  \entity{rightleftharpoons}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \upharpoonleft {
+  \mml_open_tag:nn {mo} {}
+  \entity{upharpoonleft}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \upharpoonright {
+  \mml_open_tag:nn {mo} {}
+  \entity{upharpoonright}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \cdots {
+  \mml_open_tag:nn {mi} {}
+  \entity{ctdot}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \ddots {
+  \mml_open_tag:nn {mi} {}
+  \entity{dtdot}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \udots {
+  \mml_open_tag:nn {mi} {}
+  \entity{utdot}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \vdots {
+  \mml_open_tag:nn {mi} {}
+  \entity{vellip}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \colon {
+  \mml_open_tag:nn {mo} {lspace="verythinmathspace"}
+  \entity{colon}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \cup {
+  \mml_open_tag:nn {mo} {}
+  \entity{cup}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \union {
+  \mml_open_tag:nn {mo} {}
+  \entity{cup}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \bigcup {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \entity{Union}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Union {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \entity{Union}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \cap {
+  \mml_open_tag:nn {mo} {}
+  \entity{cap}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \intersection {
+  \mml_open_tag:nn {mo} {}
+  \entity{cap}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \bigcap {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \entity{Intersection}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Intersection {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \entity{Intersection}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \in {
+  \mml_open_tag:nn {mo} {}
+  \entity{Element}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \coloneqq {
+  \mml_open_tag:nn {mo} {}
+  \entity{colone}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Coloneqq {
+  \mml_open_tag:nn {mo} {lspace="mediummathspace"~ rspace="mediummathspace"}
+  \entity{Colone}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \coloneq {
+  \mml_open_tag:nn {mo} {lspace="mediummathspace"~ rspace="mediummathspace"}
+  \hexentity{2236}\hexentity{2212}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Coloneq {
+  \mml_open_tag:nn {mo} {lspace="mediummathspace"~ rspace="mediummathspace"}
+  \hexentity{2237}\hexentity{2212}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \eqqcolon {
+  \mml_open_tag:nn {mo} {lspace="mediummathspace"~ rspace="mediummathspace"}
+  \entity{ecolon}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Eqqcolon {
+  \mml_open_tag:nn {mo} {lspace="mediummathspace"~ rspace="mediummathspace"}
+  \hexentity{003d}\hexentity{2237}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \eqcolon {
+  \mml_open_tag:nn {mo} {lspace="mediummathspace"~ rspace="mediummathspace"}
+  \hexentity{2239}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Eqcolon {
+  \mml_open_tag:nn {mo} {lspace="mediummathspace"~ rspace="mediummathspace"}
+  \hexentity{2212}\hexentity{2237}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \colonapprox {
+  \mml_open_tag:nn {mo} {lspace="mediummathspace"~ rspace="mediummathspace"}
+  \hexentity{2236}\hexentity{2248}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Colonapprox {
+  \mml_open_tag:nn {mo} {lspace="mediummathspace"~ rspace="mediummathspace"}
+  \hexentity{2237}\hexentity{2248}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \colonsim {
+  \mml_open_tag:nn {mo} {lspace="mediummathspace"~ rspace="mediummathspace"}
+  \hexentity{2236}\hexentity{223C}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Colonsim {
+  \mml_open_tag:nn {mo} {lspace="mediummathspace"~ rspace="mediummathspace"}
+  \hexentity{2237}\hexentity{223C}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \dblcolon {
+  \mml_open_tag:nn {mo} {}
+  \entity{Colon}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \ast {
+  \mml_open_tag:nn {mo} {}
+  \entity{ast}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Cap {
+  \mml_open_tag:nn {mo} {}
+  \entity{Cap}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Cup {
+  \mml_open_tag:nn {mo} {}
+  \entity{Cup}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \circledast {
+  \mml_open_tag:nn {mo} {}
+  \entity{circledast}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \circledcirc {
+  \mml_open_tag:nn {mo} {}
+  \entity{circledcirc}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \curlyvee {
+  \mml_open_tag:nn {mo} {}
+  \entity{curlyvee}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \curlywedge {
+  \mml_open_tag:nn {mo} {}
+  \entity{curlywedge}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \divideontimes {
+  \mml_open_tag:nn {mo} {}
+  \entity{divideontimes}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \dotplus {
+  \mml_open_tag:nn {mo} {}
+  \entity{dotplus}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \leftthreetimes {
+  \mml_open_tag:nn {mo} {}
+  \entity{leftthreetimes}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \rightthreetimes {
+  \mml_open_tag:nn {mo} {}
+  \entity{rightthreetimes}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \veebar {
+  \mml_open_tag:nn {mo} {}
+  \entity{veebar}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \gt {
+  \mml_open_tag:nn {mo} {}
+  \entity{gt}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \lt {
+  \mml_open_tag:nn {mo} {}
+  \entity{lt}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \approxeq {
+  \mml_open_tag:nn {mo} {}
+  \entity{approxeq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \backsim {
+  \mml_open_tag:nn {mo} {}
+  \entity{backsim}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \backsimeq {
+  \mml_open_tag:nn {mo} {}
+  \entity{backsimeq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \barwedge {
+  \mml_open_tag:nn {mo} {}
+  \entity{barwedge}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \doublebarwedge {
+  \mml_open_tag:nn {mo} {}
+  \entity{doublebarwedge}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \subset {
+  \mml_open_tag:nn {mo} {}
+  \entity{subset}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \subseteq {
+  \mml_open_tag:nn {mo} {}
+  \entity{subseteq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \subseteqq {
+  \mml_open_tag:nn {mo} {}
+  \entity{subseteqq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \subsetneq {
+  \mml_open_tag:nn {mo} {}
+  \entity{subsetneq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \subsetneqq {
+  \mml_open_tag:nn {mo} {}
+  \entity{subsetneqq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \varsubsetneq {
+  \mml_open_tag:nn {mo} {}
+  \entity{varsubsetneq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \varsubsetneqq {
+  \mml_open_tag:nn {mo} {}
+  \entity{varsubsetneqq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \prec {
+  \mml_open_tag:nn {mo} {}
+  \entity{prec}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \parallel {
+  \mml_open_tag:nn {mo} {}
+  \entity{parallel}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nparallel {
+  \mml_open_tag:nn {mo} {}
+  \entity{nparallel}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \shortparallel {
+  \mml_open_tag:nn {mo} {}
+  \entity{shortparallel}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nshortparallel {
+  \mml_open_tag:nn {mo} {}
+  \entity{nshortparallel}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \perp {
+  \mml_open_tag:nn {mo} {}
+  \entity{perp}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \eqslantgtr {
+  \mml_open_tag:nn {mo} {}
+  \entity{eqslantgtr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \eqslantless {
+  \mml_open_tag:nn {mo} {}
+  \entity{eqslantless}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \gg {
+  \mml_open_tag:nn {mo} {}
+  \entity{gg}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \ggg {
+  \mml_open_tag:nn {mo} {}
+  \entity{ggg}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \geq {
+  \mml_open_tag:nn {mo} {}
+  \entity{geq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \geqq {
+  \mml_open_tag:nn {mo} {}
+  \entity{geqq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \geqslant {
+  \mml_open_tag:nn {mo} {}
+  \entity{geqslant}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \gneq {
+  \mml_open_tag:nn {mo} {}
+  \entity{gneq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \gneqq {
+  \mml_open_tag:nn {mo} {}
+  \entity{gneqq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \gnapprox {
+  \mml_open_tag:nn {mo} {}
+  \entity{gnapprox}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \gnsim {
+  \mml_open_tag:nn {mo} {}
+  \entity{gnsim}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \gtrapprox {
+  \mml_open_tag:nn {mo} {}
+  \entity{gtrapprox}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \ge {
+  \mml_open_tag:nn {mo} {}
+  \entity{ge}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \le {
+  \mml_open_tag:nn {mo} {}
+  \entity{le}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \leq {
+  \mml_open_tag:nn {mo} {}
+  \entity{leq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \leqq {
+  \mml_open_tag:nn {mo} {}
+  \entity{leqq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \leqslant {
+  \mml_open_tag:nn {mo} {}
+  \entity{leqslant}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \lessapprox {
+  \mml_open_tag:nn {mo} {}
+  \entity{lessapprox}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \lessdot {
+  \mml_open_tag:nn {mo} {}
+  \entity{lessdot}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \lesseqgtr {
+  \mml_open_tag:nn {mo} {}
+  \entity{lesseqgtr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \lesseqqgtr {
+  \mml_open_tag:nn {mo} {}
+  \entity{lesseqqgtr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \lessgtr {
+  \mml_open_tag:nn {mo} {}
+  \entity{lessgtr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \lneq {
+  \mml_open_tag:nn {mo} {}
+  \entity{lneq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \lneqq {
+  \mml_open_tag:nn {mo} {}
+  \entity{lneqq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \lnsim {
+  \mml_open_tag:nn {mo} {}
+  \entity{lnsim}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \lvertneqq {
+  \mml_open_tag:nn {mo} {}
+  \entity{lvertneqq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \gtrsim {
+  \mml_open_tag:nn {mo} {}
+  \entity{gtrsim}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \gtrdot {
+  \mml_open_tag:nn {mo} {}
+  \entity{gtrdot}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \gtreqless {
+  \mml_open_tag:nn {mo} {}
+  \entity{gtreqless}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \gtreqqless {
+  \mml_open_tag:nn {mo} {}
+  \entity{gtreqqless}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \gtrless {
+  \mml_open_tag:nn {mo} {}
+  \entity{gtrless}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \gvertneqq {
+  \mml_open_tag:nn {mo} {}
+  \entity{gvertneqq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \lesssim {
+  \mml_open_tag:nn {mo} {}
+  \entity{lesssim}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \lnapprox {
+  \mml_open_tag:nn {mo} {}
+  \entity{lnapprox}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nsubset {
+  \mml_open_tag:nn {mo} {}
+  \entity{nsubset}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nsubseteq {
+  \mml_open_tag:nn {mo} {}
+  \entity{nsubseteq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nsubseteqq {
+  \mml_open_tag:nn {mo} {}
+  \entity{nsubseteqq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \notin {
+  \mml_open_tag:nn {mo} {}
+  \entity{notin}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \ni {
+  \mml_open_tag:nn {mo} {}
+  \entity{ni}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \notni {
+  \mml_open_tag:nn {mo} {}
+  \entity{notni}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nmid {
+  \mml_open_tag:nn {mo} {}
+  \entity{nmid}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nshortmid {
+  \mml_open_tag:nn {mo} {}
+  \entity{nshortmid}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \preceq {
+  \mml_open_tag:nn {mo} {}
+  \entity{preceq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \npreceq {
+  \mml_open_tag:nn {mo} {}
+  \entity{npreceq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \ll {
+  \mml_open_tag:nn {mo} {}
+  \entity{ll}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \ngeq {
+  \mml_open_tag:nn {mo} {}
+  \entity{ngeq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \ngeqq {
+  \mml_open_tag:nn {mo} {}
+  \entity{ngeqq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \ngeqslant {
+  \mml_open_tag:nn {mo} {}
+  \entity{ngeqslant}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nleq {
+  \mml_open_tag:nn {mo} {}
+  \entity{nleq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nleqq {
+  \mml_open_tag:nn {mo} {}
+  \entity{nleqq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nleqslant {
+  \mml_open_tag:nn {mo} {}
+  \entity{nleqslant}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nless {
+  \mml_open_tag:nn {mo} {}
+  \entity{nless}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \supset {
+  \mml_open_tag:nn {mo} {}
+  \entity{supset}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \supseteq {
+  \mml_open_tag:nn {mo} {}
+  \entity{supseteq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \supseteqq {
+  \mml_open_tag:nn {mo} {}
+  \entity{supseteqq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \supsetneq {
+  \mml_open_tag:nn {mo} {}
+  \entity{supsetneq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \supsetneqq {
+  \mml_open_tag:nn {mo} {}
+  \entity{supsetneqq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \varsupsetneq {
+  \mml_open_tag:nn {mo} {}
+  \entity{varsupsetneq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \varsupsetneqq {
+  \mml_open_tag:nn {mo} {}
+  \entity{varsupsetneqq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \approx {
+  \mml_open_tag:nn {mo} {}
+  \entity{approx}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \asymp {
+  \mml_open_tag:nn {mo} {}
+  \entity{asymp}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \bowtie {
+  \mml_open_tag:nn {mo} {}
+  \entity{bowtie}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \dashv {
+  \mml_open_tag:nn {mo} {}
+  \entity{dashv}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Vdash {
+  \mml_open_tag:nn {mo} {}
+  \entity{Vdash}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \vDash {
+  \mml_open_tag:nn {mo} {}
+  \entity{vDash}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \VDash {
+  \mml_open_tag:nn {mo} {}
+  \entity{VDash}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \vdash {
+  \mml_open_tag:nn {mo} {}
+  \entity{vdash}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Vvdash {
+  \mml_open_tag:nn {mo} {}
+  \entity{Vvdash}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \models {
+  \mml_open_tag:nn {mo} {}
+  \entity{models}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \sim {
+  \mml_open_tag:nn {mo} {}
+  \entity{sim}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \simeq {
+  \mml_open_tag:nn {mo} {}
+  \entity{simeq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nsim {
+  \mml_open_tag:nn {mo} {}
+  \entity{nsim}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \smile {
+  \mml_open_tag:nn {mo} {}
+  \entity{smile}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \triangle {
+  \mml_open_tag:nn {mo} {}
+  \entity{triangle}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \triangledown {
+  \mml_open_tag:nn {mo} {}
+  \entity{triangledown}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \triangleleft {
+  \mml_open_tag:nn {mo} {}
+  \entity{triangleleft}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \cong {
+  \mml_open_tag:nn {mo} {}
+  \entity{cong}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \succ {
+  \mml_open_tag:nn {mo} {}
+  \entity{succ}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nsucc {
+  \mml_open_tag:nn {mo} {}
+  \entity{nsucc}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \ngtr {
+  \mml_open_tag:nn {mo} {}
+  \entity{ngtr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nsupset {
+  \mml_open_tag:nn {mo} {}
+  \entity{nsupset}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nsupseteq {
+  \mml_open_tag:nn {mo} {}
+  \entity{nsupseteq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \propto {
+  \mml_open_tag:nn {mo} {}
+  \entity{propto}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \equiv {
+  \mml_open_tag:nn {mo} {}
+  \entity{equiv}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nequiv {
+  \mml_open_tag:nn {mo} {}
+  \entity{nequiv}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \frown {
+  \mml_open_tag:nn {mo} {}
+  \entity{frown}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \triangleright {
+  \mml_open_tag:nn {mo} {}
+  \entity{triangleright}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \ncong {
+  \mml_open_tag:nn {mo} {}
+  \entity{ncong}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \succeq {
+  \mml_open_tag:nn {mo} {}
+  \entity{succeq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \succapprox {
+  \mml_open_tag:nn {mo} {}
+  \entity{succapprox}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \succnapprox {
+  \mml_open_tag:nn {mo} {}
+  \entity{succnapprox}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \succcurlyeq {
+  \mml_open_tag:nn {mo} {}
+  \entity{succcurlyeq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \succsim {
+  \mml_open_tag:nn {mo} {}
+  \entity{succsim}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \succnsim {
+  \mml_open_tag:nn {mo} {}
+  \entity{succnsim}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nsucceq {
+  \mml_open_tag:nn {mo} {}
+  \entity{nsucceq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nvDash {
+  \mml_open_tag:nn {mo} {}
+  \entity{nvDash}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nvdash {
+  \mml_open_tag:nn {mo} {}
+  \entity{nvdash}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nVDash {
+  \mml_open_tag:nn {mo} {}
+  \entity{nVDash}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \amalg {
+  \mml_open_tag:nn {mo} {}
+  \entity{amalg}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \pm {
+  \mml_open_tag:nn {mo} {}
+  \entity{pm}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \mp {
+  \mml_open_tag:nn {mo} {}
+  \entity{mp}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \bigcirc {
+  \mml_open_tag:nn {mo} {}
+  \entity{bigcirc}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \wr {
+  \mml_open_tag:nn {mo} {}
+  \entity{wr}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \odot {
+  \mml_open_tag:nn {mo} {}
+  \entity{odot}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \uplus {
+  \mml_open_tag:nn {mo} {}
+  \entity{uplus}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \clubsuit {
+  \mml_open_tag:nn {mo} {}
+  \entity{clubsuit}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \spadesuit {
+  \mml_open_tag:nn {mo} {}
+  \entity{spadesuit}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Diamond {
+  \mml_open_tag:nn {mo} {}
+  \entity{Diamond}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \diamond {
+  \mml_open_tag:nn {mo} {}
+  \entity{diamond}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \sqcup {
+  \mml_open_tag:nn {mo} {}
+  \entity{sqcup}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \sqcap {
+  \mml_open_tag:nn {mo} {}
+  \entity{sqcap}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \sqsubset {
+  \mml_open_tag:nn {mo} {}
+  \entity{sqsubset}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \sqsubseteq {
+  \mml_open_tag:nn {mo} {}
+  \entity{sqsubseteq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \sqsupset {
+  \mml_open_tag:nn {mo} {}
+  \entity{sqsupset}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \sqsupseteq {
+  \mml_open_tag:nn {mo} {}
+  \entity{sqsupseteq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Subset {
+  \mml_open_tag:nn {mo} {}
+  \entity{Subset}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Supset {
+  \mml_open_tag:nn {mo} {}
+  \entity{Supset}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \ltimes {
+  \mml_open_tag:nn {mo} {}
+  \entity{ltimes}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \div {
+  \mml_open_tag:nn {mo} {}
+  \entity{div}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \rtimes {
+  \mml_open_tag:nn {mo} {}
+  \entity{rtimes}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \bot {
+  \mml_open_tag:nn {mo} {}
+  \entity{bot}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \therefore {
+  \mml_open_tag:nn {mo} {}
+  \entity{therefore}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \thickapprox {
+  \mml_open_tag:nn {mo} {}
+  \entity{thickapprox}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \thicksim {
+  \mml_open_tag:nn {mo} {}
+  \entity{thicksim}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \varpropto {
+  \mml_open_tag:nn {mo} {}
+  \entity{varpropto}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \varnothing {
+  \mml_open_tag:nn {mo} {}
+  \entity{varnothing}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \flat {
+  \mml_open_tag:nn {mo} {}
+  \entity{flat}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \vee {
+  \mml_open_tag:nn {mo} {}
+  \entity{vee}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \because {
+  \mml_open_tag:nn {mo} {}
+  \entity{because}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \between {
+  \mml_open_tag:nn {mo} {}
+  \entity{between}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Bumpeq {
+  \mml_open_tag:nn {mo} {}
+  \entity{Bumpeq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \bumpeq {
+  \mml_open_tag:nn {mo} {}
+  \entity{bumpeq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \circeq {
+  \mml_open_tag:nn {mo} {}
+  \entity{circeq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \curlyeqprec {
+  \mml_open_tag:nn {mo} {}
+  \entity{curlyeqprec}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \curlyeqsucc {
+  \mml_open_tag:nn {mo} {}
+  \entity{curlyeqsucc}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \doteq {
+  \mml_open_tag:nn {mo} {}
+  \entity{doteq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \doteqdot {
+  \mml_open_tag:nn {mo} {}
+  \entity{doteqdot}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \eqcirc {
+  \mml_open_tag:nn {mo} {}
+  \entity{eqcirc}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \fallingdotseq {
+  \mml_open_tag:nn {mo} {}
+  \entity{fallingdotseq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \multimap {
+  \mml_open_tag:nn {mo} {}
+  \entity{multimap}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \pitchfork {
+  \mml_open_tag:nn {mo} {}
+  \entity{pitchfork}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \precapprox {
+  \mml_open_tag:nn {mo} {}
+  \entity{precapprox}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \precnapprox {
+  \mml_open_tag:nn {mo} {}
+  \entity{precnapprox}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \preccurlyeq {
+  \mml_open_tag:nn {mo} {}
+  \entity{preccurlyeq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \precsim {
+  \mml_open_tag:nn {mo} {}
+  \entity{precsim}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \precnsim {
+  \mml_open_tag:nn {mo} {}
+  \entity{precnsim}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \risingdotseq {
+  \mml_open_tag:nn {mo} {}
+  \entity{risingdotseq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \sharp {
+  \mml_open_tag:nn {mo} {}
+  \entity{sharp}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \bullet {
+  \mml_open_tag:nn {mo} {}
+  \entity{bullet}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nexists {
+  \mml_open_tag:nn {mo} {}
+  \entity{nexists}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \dagger {
+  \mml_open_tag:nn {mo} {}
+  \entity{dagger}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \ddagger {
+  \mml_open_tag:nn {mo} {}
+  \entity{ddagger}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \top {
+  \mml_open_tag:nn {mo} {}
+  \entity{top}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \natural {
+  \mml_open_tag:nn {mo} {}
+  \entity{natural}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \angle {
+  \mml_open_tag:nn {mo} {}
+  \entity{angle}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \measuredangle {
+  \mml_open_tag:nn {mo} {}
+  \entity{measuredangle}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \backprime {
+  \mml_open_tag:nn {mo} {}
+  \entity{backprime}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \bigstar {
+  \mml_open_tag:nn {mo} {}
+  \entity{bigstar}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \blacklozenge {
+  \mml_open_tag:nn {mo} {}
+  \entity{blacklozenge}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \lozenge {
+  \mml_open_tag:nn {mo} {}
+  \entity{lozenge}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \blacksquare {
+  \mml_open_tag:nn {mo} {}
+  \entity{blacksquare}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \blacktriangle {
+  \mml_open_tag:nn {mo} {}
+  \entity{blacktriangle}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \blacktriangleleft {
+  \mml_open_tag:nn {mo} {}
+  \entity{blacktriangleleft}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \blacktriangleright {
+  \mml_open_tag:nn {mo} {}
+  \entity{blacktriangleright}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \blacktriangledown {
+  \mml_open_tag:nn {mo} {}
+  \entity{blacktriangledown}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \ntriangleleft {
+  \mml_open_tag:nn {mo} {}
+  \entity{ntriangleleft}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \ntriangleright {
+  \mml_open_tag:nn {mo} {}
+  \entity{ntriangleright}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \ntrianglelefteq {
+  \mml_open_tag:nn {mo} {}
+  \entity{ntrianglelefteq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \ntrianglerighteq {
+  \mml_open_tag:nn {mo} {}
+  \entity{ntrianglerighteq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \trianglelefteq {
+  \mml_open_tag:nn {mo} {}
+  \entity{trianglelefteq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \trianglerighteq {
+  \mml_open_tag:nn {mo} {}
+  \entity{trianglerighteq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \triangleq {
+  \mml_open_tag:nn {mo} {}
+  \entity{triangleq}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \vartriangleleft {
+  \mml_open_tag:nn {mo} {}
+  \entity{vartriangleleft}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \vartriangleright {
+  \mml_open_tag:nn {mo} {}
+  \entity{vartriangleright}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \forall {
+  \mml_open_tag:nn {mo} {}
+  \entity{forall}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \bigtriangleup {
+  \mml_open_tag:nn {mo} {}
+  \entity{bigtriangleup}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \bigtriangledown {
+  \mml_open_tag:nn {mo} {}
+  \entity{bigtriangledown}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nprec {
+  \mml_open_tag:nn {mo} {}
+  \entity{nprec}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \aleph {
+  \mml_open_tag:nn {mi} {}
+  \entity{aleph}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \beth {
+  \mml_open_tag:nn {mi} {}
+  \entity{beth}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \eth {
+  \mml_open_tag:nn {mi} {}
+  \entity{eth}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \ell {
+  \mml_open_tag:nn {mi} {}
+  \entity{ell}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \hbar {
+  \mml_open_tag:nn {mi} {}
+  \entity{hbar}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Im {
+  \mml_open_tag:nn {mi} {}
+  \entity{Im}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \imath {
+  \mml_open_tag:nn {mi} {}
+  \entity{imath}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \jmath {
+  \mml_open_tag:nn {mi} {}
+  \entity{jmath}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \wp {
+  \mml_open_tag:nn {mi} {}
+  \entity{wp}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Re {
+  \mml_open_tag:nn {mi} {}
+  \entity{Re}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \Perp {
+  \mml_open_tag:nn {mo} {}
+  \entity{Vbar}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Vbar {
+  \mml_open_tag:nn {mo} {}
+  \entity{Vbar}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \boxdot {
+  \mml_open_tag:nn {mo} {}
+  \entity{sdotb}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Box {
+  \mml_open_tag:nn {mo} {}
+  \entity{square}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \square {
+  \mml_open_tag:nn {mo} {}
+  \entity{square}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \emptyset {
+  \mml_open_tag:nn {mi} {}
+  \entity{emptyv}
+  \mml_close_tag:n {mi}
+}
+\cs_set_nopar:Npn \exists {
+  \mml_open_tag:nn {mo} {}
+  \entity{Exists}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \circ {
+  \mml_open_tag:nn {mo} {}
+  \entity{SmallCircle}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \rhd {
+  \mml_open_tag:nn {mo} {}
+  \entity{RightTriangle}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \lhd {
+  \mml_open_tag:nn {mo} {}
+  \entity{LeftTriangle}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \lll {
+  \mml_open_tag:nn {mo} {}
+  \entity{Ll}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \unrhd {
+  \mml_open_tag:nn {mo} {}
+  \entity{RightTriangleEqual}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \unlhd {
+  \mml_open_tag:nn {mo} {}
+  \entity{LeftTriangleEqual}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Del {
+  \mml_open_tag:nn {mo} {}
+  \entity{Del}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \nabla {
+  \mml_open_tag:nn {mo} {}
+  \entity{Del}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \sphericalangle {
+  \mml_open_tag:nn {mo} {}
+  \entity{angsph}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \heartsuit {
+  \mml_open_tag:nn {mo} {}
+  \hexentity{2661}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \diamondsuit {
+  \mml_open_tag:nn {mo} {}
+  \hexentity{2662}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \partial {
+  \mml_open_tag:nn {mo} {}
+  \entity{PartialD}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \qed {
+  \mml_open_tag:nn {mo} {}
+  \entity{squf}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \mod {
+  \mml_open_tag:nn {mo} {lspace="mediummathspace"~ rspace="mediummathspace"}
+  mod
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \bottom {
+  \mml_open_tag:nn {mo} {}
+  \entity{perp}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \neg {
+  \mml_open_tag:nn {mo} {}
+  \entity{not}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \neq {
+  \mml_open_tag:nn {mo} {}
+  \entity{ne}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \ne {
+  \mml_open_tag:nn {mo} {}
+  \entity{ne}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \shortmid {
+  \mml_open_tag:nn {mo} {lspace="mediummathspace"~ rspace="mediummathspace"}
+  \entity{VerticalBar}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \mid {
+  \mml_open_tag:nn {mo} {lspace="mediummathspace"~ rspace="mediummathspace"}
+  \entity{VerticalBar}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \int {
+  \mml_open_tag:nn {mo} {}
+  \entity{Integral}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \integral {
+  \mml_open_tag:nn {mo} {}
+  \entity{Integral}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \iint {
+  \mml_open_tag:nn {mo} {}
+  \entity{Int}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \doubleintegral {
+  \mml_open_tag:nn {mo} {}
+  \entity{Int}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \iiint {
+  \mml_open_tag:nn {mo} {}
+  \entity{tint}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \tripleintegral {
+  \mml_open_tag:nn {mo} {}
+  \entity{tint}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \iiiint {
+  \mml_open_tag:nn {mo} {}
+  \entity{qint}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \quadrupleintegral {
+  \mml_open_tag:nn {mo} {}
+  \entity{qint}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \oint {
+  \mml_open_tag:nn {mo} {}
+  \entity{conint}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \conint {
+  \mml_open_tag:nn {mo} {}
+  \entity{conint}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \contourintegral {
+  \mml_open_tag:nn {mo} {}
+  \entity{conint}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \times {
+  \mml_open_tag:nn {mo} {}
+  \entity{times}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \star {
+  \mml_open_tag:nn {mo} {}
+  \entity{sstarf}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \circleddash {
+  \mml_open_tag:nn {mo} {}
+  \entity{odash}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \odash {
+  \mml_open_tag:nn {mo} {}
+  \entity{odash}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \intercal {
+  \mml_open_tag:nn {mo} {}
+  \entity{intcal}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \smallfrown {
+  \mml_open_tag:nn {mo} {}
+  \entity{sfrown}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \smallsmile {
+  \mml_open_tag:nn {mo} {}
+  \entity{ssmile}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \boxminus {
+  \mml_open_tag:nn {mo} {}
+  \entity{boxminus}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \minusb {
+  \mml_open_tag:nn {mo} {}
+  \entity{boxminus}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \boxplus {
+  \mml_open_tag:nn {mo} {}
+  \entity{boxplus}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \plusb {
+  \mml_open_tag:nn {mo} {}
+  \entity{boxplus}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \boxtimes {
+  \mml_open_tag:nn {mo} {}
+  \entity{boxtimes}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \timesb {
+  \mml_open_tag:nn {mo} {}
+  \entity{boxtimes}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \sum {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \entity{Sum}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \prod {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \entity{prod}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \product {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \entity{prod}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \coprod {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \entity{coprod}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \coproduct {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \entity{coprod}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \otimes {
+  \mml_open_tag:nn {mo} {}
+  \entity{otimes}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Otimes {
+  \mml_open_tag:nn {mo} {}
+  \entity{Otimes}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \bigotimes {
+  \mml_open_tag:nn {mo} {}
+  \entity{bigotimes}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \ominus {
+  \mml_open_tag:nn {mo} {}
+  \entity{ominus}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \oslash {
+  \mml_open_tag:nn {mo} {}
+  \entity{osol}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \oplus {
+  \mml_open_tag:nn {mo} {}
+  \entity{oplus}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Oplus {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \entity{bigoplus}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \bigoplus {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \entity{bigoplus}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \bigodot {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \entity{bigodot}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \bigsqcap {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \hexentity{2A05}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \bigsqcup {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \entity{bigsqcup}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \biguplus {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \entity{biguplus}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \biginterleave {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \hexentity{2AFC}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \wedge {
+  \mml_open_tag:nn {mo} {}
+  \entity{wedge}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Wedge {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \entity{xwedge}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \bigwedge {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \entity{xwedge}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \Vee {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \entity{bigvee}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \bigvee {
+  \mml_open_tag:nn {mo} {lspace="thinmathspace"~ rspace="thinmathspace"}
+  \entity{bigvee}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \invamp {
+  \mml_open_tag:nn {mo} {}
+  \entity{8523}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \parr {
+  \mml_open_tag:nn {mo} {}
+  \entity{8523}
+  \mml_close_tag:n {mo}
+}
+\cs_set_nopar:Npn \displaystyle {
+  \mml_open_tag_no_stack:nn {mstyle} {displaystyle="true"}
+%  \group_insert_after:N \l__mml_close_mstyle_tl
+}
+\cs_set_nopar:Npn \textstyle {
+  \mml_open_tag_no_stack:nn {mstyle} {displaystyle="false"}
+%  \group_insert_after:N \l__mml_close_mstyle_tl
+}
+\cs_set_nopar:Npn \textsize {
+  \mml_open_tag_no_stack:nn {mstyle} {scriptlevel="0"}
+%  \group_insert_after:N \l__mml_close_mstyle_tl
+}
+\cs_set_nopar:Npn \scriptsize {
+  \mml_open_tag_no_stack:nn {mstyle} {scriptlevel="1"}
+%  \group_insert_after:N \l__mml_close_mstyle_tl
+}
+\cs_set_nopar:Npn \scriptscriptsize {
+  \mml_open_tag_no_stack:nn {mstyle} {scriptlevel="2"}
+%  \group_insert_after:N \l__mml_close_mstyle_tl
+}
+\cs_set_nopar:Npn \boldsymbol #1 {
+  \mml_open_tag:nn {mstyle} {mathvariant="bold"}
+  #1
+  \mml_close_tag:n {mstyle}
+}
+\cs_set_nopar:Npn \thinspace {
+  \mml_empty_tag:nn {mspace} {width="thinmathspace"}
+}
+\cs_set_nopar:Npn \medspace {
+  \mml_empty_tag:nn {mspace} {width="mediummathspace"}
+}
+\cs_set_nopar:Npn \thickspace {
+  \mml_empty_tag:nn {mspace} {width="thickmathspace"}
+}
+\cs_set_nopar:Npn \negspace {
+  \mml_empty_tag:nn {mspace} {width="-0.1667em"}
+}
+\cs_set_nopar:Npn \dots {
+  \bool_if:NTF \l__mml_maths_bool
+  {
+    \mml_open_tag:n {mi}
+    \entity{hellip}
+    \mml_close_tag:n {mi}
+  }
+  {
+    \entity{hellip}
+  }
+}
+
+\cs_set_nopar:Npn \frac #1#2
+{
+  \mml_open_tag:nn {mfrac} {}
+  \tl_if_single:nTF {#1}
+  {
+    #1
+  }
+  {
+    {
+      #1
+    }
+  }
+  \c_space_token
+  \tl_if_single:nTF {#2}
+  {
+    #2
+  }
+  {
+    {
+      #2
+    }
+  }
+  \mml_close_tag:n {mfrac}
+}
+
+% alignment support
+
+\tl_new:N \l__mml_tablerow_tl
+\tl_new:N \l__mml_tablecell_tl
+
+
+\cs_new_nopar:Npn \mml_aligned:n #1
+{
+  \mml_open_tag:nn {mtable} {#1}
+  \cs_set_eq:NN \\ \mml_table_rowsep:
+  \char_set_catcode_active:N &
+  \mml_table_setamp:
+  \mml_table_startrow:
+}
+
+\cs_new_nopar:Npn \mml_end_aligned:
+{
+  \mml_close_tag:n {mtd}
+  \mml_close_tag:n {mtr}
+  \mml_close_tag:n {mtable}
+}
+
+\group_begin:
+\char_set_catcode_active:N &
+\cs_new:Npn \mml_table_setamp:
+{
+  \cs_set_eq:NN & \mml_table_cellsep:
+}
+\group_end:
+
+\cs_new:Npn \mml_table_cellsep:
+{
+  \mml_close_tag:n {mtd}
+  \mml_table_startcell:
+}
+
+\cs_new:Npn \mml_table_rowsep:
+{
+  \mml_close_tag:n {mtd}
+  \mml_close_tag:n {mtr}
+  \tl_clear:N \l__mml_tablerow_tl
+  \mml_table_startrow:
+}
+
+\cs_new:Npn \mml_table_addlinespace:
+{
+  \peek_charcode_ignore_spaces:NTF [%]
+    {
+      \mml_table_addlinespace_aux:w
+    }
+    {
+      \mml_table_addlinespace_aux:w []
+    }
+}
+
+\cs_new:Npn \mml_table_addlinespace_aux:w [#1]
+{
+  \tl_if_empty:nF {#1}
+  {
+    \tl_if_empty:NF \l__mml_tablerow_tl
+    {
+      \tl_put_right:Nn \l__mml_tablerow_tl {~}
+    }
+    \tl_put_right:Nn \l__mml_tablerow_tl {style="padding-bottom:~ #1;"}
+  }
+  \mml_table_startrow:
+}
+
+\cs_new:Npn \mml_table_startrow:
+{
+  \mml_open_tag:nV {mtr} \l__mml_tablerow_tl
+  \mml_table_startcell:
+}
+
+\cs_new:Npn \mml_table_startcell:
+{
+  \mml_open_tag:nV {mtd} \l__mml_tablecell_tl
+}
+
+\cs_new_nopar:Npn \mml_matrix:n #1
+{
+  \tl_if_empty:nF {#1}
+  {
+    \mml_open_tag:nn {mo} {}
+    #1
+    \mml_close_tag:n {mo}
+    \mml_open_tag:nn {mrow} {}
+  }
+  \mml_aligned:n {rowspacing="0.5ex"}
+}
+
+\cs_new_nopar:Npn \mml_end_matrix:n #1
+{
+  \mml_end_aligned:
+  \tl_if_empty:nF {#1}
+  {
+    \mml_close_tag:n {mrow}
+    \mml_open_tag:nn {mo} {}
+    #1
+    \mml_close_tag:n {mo}
+  }
+}
+
+\DeclareDocumentEnvironment{matrix} {}
+{
+  \mml_matrix:n {}
+}
+{
+  \mml_end_matrix:n {}
+}
+
+\DeclareDocumentEnvironment{pmatrix} {}
+{
+  \mml_matrix:n {(}
+}
+{
+  \mml_end_matrix:n {)}
+}
+
+\DeclareDocumentEnvironment{bmatrix} {}
+{
+  \mml_matrix:n {[}
+}
+{
+  \mml_end_matrix:n {]}
+}
+
+\DeclareDocumentEnvironment{Bmatrix} {}
+{
+  \mml_matrix:n {\txt_lbrace:}
+}
+{
+  \mml_end_matrix:n {\txt_rbrace:}
+}
+
+\DeclareDocumentEnvironment{vmatrix} {}
+{
+  \mml_matrix:n {\entity{VerticalBar}}
+}
+{
+  \mml_end_matrix:n {\entity{VerticalBar}}
+}
+
+\DeclareDocumentEnvironment{Vmatrix} {}
+{
+  \mml_matrix:n {\entity{DoubleVerticalBar}}
+}
+{
+  \mml_end_matrix:n {\entity{DoubleVerticalBar}}
+}
+
+\DeclareDocumentEnvironment{smallmatrix} {}
+{
+  \mml_open_tag:nn {mstyle} {scriptlevel="2"}
+  \mml_open_tag:n {mrow}
+  \mml_matrix:n {}
+}
+{
+  \mml_end_matrix:n {}
+  \mml_close_tag:n {mrow}
+  \mml_close_tag:n {mstyle}
+}
+
+\DeclareDocumentEnvironment{aligned} {}
+{
+  \mml_aligned:n {columnalign="right~ left~ right~ left~ right~ left~ right~ left~ right~ left"~ columnspacing="0em"}
+}
+{
+  \mml_end_aligned:
+}
+
+\DeclareDocumentEnvironment{gathered} {}
+{
+  \mml_aligned:n {rowspacing="1.0ex"}
+}
+{
+  \mml_end_aligned:
+}
+
+\DeclareDocumentEnvironment{split} {}
+{
+  \mml_aligned:n {columnalign="right~ left~ right~ left~ right~ left~ right~ left~ right~ left"~ columnspacing="0em"}
+}
+{
+  \mml_end_aligned:
+}
+
+\DeclareDocumentEnvironment{cases} {}
+{
+  \mml_open_tag:nn {mo} {}
+  \txt_lbrace:
+  \mml_close_tag:n {mo}
+  \mml_open_tag:nn {mrow} {}
+  \mml_aligned:n {columnalign="left~ left}
+}
+{
+  \mml_end_aligned:
+  \mml_close_tag:n {mrow}
+}
+
+\seq_new:N \l__mml_array_spec_seq
+
+\DeclareDocumentEnvironment{array} {m}
+{
+  \seq_clear:N \l__mml_array_spec_seq
+  \tl_map_inline:nn {#1} {
+    \tl_if_eq:nnTF {##1} {l}
+    {
+      \seq_put_right:Nn \l__mml_array_spec_seq {left}
+    }
+    {
+      \tl_if_eq:nnTF {##1} {c}
+      {
+        \seq_put_right:Nn \l__mml_array_spec_seq {center}
+      }
+      {
+        \tl_if_eq:nnT {##1} {r}
+        {
+          \seq_put_right:Nn \l__mml_array_spec_seq {right}
+        }
+      }
+    }
+  }
+  \mml_aligned:n {rowspacing="0.5ex"~ columnalign="\seq_use:Nn \l__mml_array_spec_seq {~} "}
+}
+{
+  \mml_end_aligned:
+}
+
+\cs_set_eq:NN \! \negspace
+\cs_set_eq:NN \| \vert
+\cs_set_eq:NN \: \medspace
+\cs_set_eq:NN \; \thickspace
+\cs_set_eq:NN \, \thinspace
+
+\cs_set:Npn \quad
+{
+  \mml_empty_tag:nn {mspace} {width="1em"}
+}
+
+\cs_set:Npn \qquad
+{
+  \mml_empty_tag:nn {mspace} {width="2em"}
+}
+
+\cs_set_eq:NN \dotsc \dots
+\cs_set_eq:NN \dotsb \dots
+\cs_set_eq:NN \land \wedge
+\cs_set_eq:NN \lor \vee
+
+
+% Should probably try to expand #1 first
+\cs_set_nopar:Npn \mml_math_font:nn #1#2
+{
+  \mml_open_tag:n {mi}
+  \tl_map_inline:nn {#1}
+  {
+    \entity{##1#2}
+  }
+  \mml_close_tag:n {mi}
+}
+
+\DeclareDocumentCommand \mathbb {m}
+{
+  \mml_math_font:nn {#1} {opf}
+}
+
+\DeclareDocumentCommand \mathcal {m}
+{
+  \mml_math_font:nn {#1} {scr}
+}
+
+\DeclareDocumentCommand \mathscr {m}
+{
+  \mml_math_font:nn {#1} {scr}
+}
+
+\DeclareDocumentCommand \mathfr {m}
+{
+  \mml_math_font:nn {#1} {fr}
+}
+
+\DeclareDocumentCommand \mathfrak {m}
+{
+  \mml_math_font:nn {#1} {fr}
+}
+
+\DeclareDocumentCommand \mathsf {m}
+{
+  \mml_open_tag:nn {mstyle} {mathvariant="sans-serif"}
+  #1
+  \mml_close_tag:n {mstyle}
+}
+
+\DeclareDocumentCommand \mathrm {m}
+{
+  \mml_open_tag:nn {mstyle} {mathvariant="normal"}
+  #1
+  \mml_close_tag:n {mstyle}
+}
+
+\DeclareDocumentCommand \mathit {m}
+{
+  \mml_open_tag:nn {mstyle} {mathvariant="italic"}
+  #1
+  \mml_close_tag:n {mstyle}
+}
+
+\DeclareDocumentCommand \mathbf {m}
+{
+  \mml_open_tag:nn {mstyle} {mathvariant="bold"}
+  #1
+  \mml_close_tag:n {mstyle}
+}
+
+\DeclareDocumentCommand \mathtt {m}
+{
+  \mml_open_tag:nn {mstyle} {mathvariant="monospace"}
+  #1
+  \mml_close_tag:n {mstyle}
+}
+
+\cs_set_nopar:Npn \sqrt #1
+{
+  \mml_open_tag:n {msqrt}
+  #1
+  \mml_close_tag:n {msqrt}
+}
+
+\cs_set_nopar:Npn \mml_two_args:nnn #1#2#3
+{
+  \mml_open_tag:nn {m #1} {}
+  #2
+  #3
+  \mml_close_tag:n {m #1}
+}
+
+\cs_set_nopar:Npn \mml_group_if_not_single:n #1
+{
+  \tl_if_single:nTF {#1}
+  {
+    #1
+  }
+  {
+    {
+      #1
+    } \c_space_token
+  }
+}
+
+\cs_set_nopar:Npn \root #1#2
+{
+  \mml_two_args:nnn {root} {
+    \mml_group_if_not_single:n {#1}
+  } {
+    \mml_group_if_not_single:n {#2}
+  }
+}
+
+\cs_set_nopar:Npn \vec #1
+{
+  \mml_two_args:nnn {over} {
+    \mml_group_if_not_single:n {#1}
+  } {
+    \mml_open_tag:nn {mo} {stretchy="false"}
+    \entity{RightVector}
+    \mml_close_tag:n {mo}
+  }
+}
+
+\cs_set_nopar:Npn \hat #1
+{
+  \mml_two_args:nnn {over} {
+    \mml_group_if_not_single:n {#1}
+  } {
+    \mml_open_tag:nn {mo} {stretchy="false"}
+    \hexentity{5E}
+    \mml_close_tag:n {mo}
+  }
+}
+
+\cs_set_nopar:Npn \overline #1
+{
+  \mml_two_args:nnn {over} {
+    \mml_group_if_not_single:n {#1}
+  } {
+    \mml_open_tag:n {mo}
+    \hexentity{000AF}
+    \mml_close_tag:n {mo}
+  }
+}
+
+\cs_set_nopar:Npn \text #1
+{
+  \mml_open_tag:nn {mtext} {lspace="thickmathspace"~ rspace="thickmathspace"}
+  #1
+  \mml_close_tag:n {mtext}
+}
+
+\cs_set:Npn \mathopen #1 {#1}
+\cs_set:Npn \mathclose #1 {#1}
+\cs_set:Npn \mathord #1 {#1}
+
+\RenewDocumentCommand \mathchoice {m m m m}
+{
+  \bool_if:NTF \l__mml_display_bool
+  {
+    #1
+  }
+  {
+    \int_compare:nTF {\l__mml_scriptlevel_int > 1}
+    {
+      #4
+    }
+    {
+      \int_compare:nTF {\l__mml_scriptlevel_int > 0}
+      {
+        #3
+      }
+      {
+        #2
+      }
+    }
+  }
+}
+
+\endinput
+
+% Local Variables:
+% mode: latex3
+% End:

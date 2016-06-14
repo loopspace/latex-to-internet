@@ -1,0 +1,191 @@
+% Hyperref driver for HTML5-style links
+
+\ProvidesFile{hhtmlv.def}
+  [2016/04/14 v6.83m %
+  Hyperref driver for HTML5]
+
+\makeatletter
+\ExplSyntaxOn
+
+\Hy@VersionCheck{hhtmlv.def}
+
+% Anchor syntax might vary considerably
+% It depends on *where* we are in the document
+
+\Hy@WrapperDef\hyper@anchor#1{%
+  \cs_if_exist:cTF {htmv_anchor_\tl_use:N \l__htmv_anchor_tl :n}
+    {
+      \use:c {htmv_anchor_\tl_use:N \l__htmv_anchor_tl :n}{#1}
+    }
+    {
+      \txt_only_chars:Vn \l__htmv_idtype_tl {#1}
+      \htmv_open_tag:nx {a} {id="\tl_use:N \l__txt_chars_tl"}
+      \htmv_close_tag:n {a}
+    }
+}
+
+  \Hy@WrapperDef\hyper@anchorstart#1{%
+  \cs_if_exist:cTF {htmv_anchorstart_\tl_use:N \l__htmv_anchor_tl :n}
+    {
+      \use:c {htmv_anchorstart_\tl_use:N \l__htmv_anchor_tl :n}{#1}
+    }
+    {
+      \txt_only_chars:Vn \l__htmv_idtype_tl {#1}
+      \htmv_open_tag:nx {a} {id="\tl_use:N \l__txt_chars_tl"}
+    }
+}
+
+\def\hyper@anchorend{%
+    \cs_if_exist:cTF {htmv_anchorend_\tl_use:N \l__htmv_anchor_tl :}
+    {
+      \use:c {htmv_anchorend_\tl_use:N \l__htmv_anchor_tl :}
+    }
+    {
+      \htmv_close_tag:n {a}
+    }
+}
+
+
+\cs_new:Npn \htmv_anchor_onnext:n #1
+{
+  \txt_only_chars:Vn \l__htmv_idtype_tl {#1}
+  \tl_gset_eq:NN \l__htmv_nextid_tl \l__txt_chars_tl
+}
+
+\cs_new:Npn \htmv_anchorstart_onnext:n #1
+{
+  \txt_only_chars:Vn \l__htmv_idtype_tl {#1}
+  \tl_gset_eq:NN \l__htmv_nextid_tl \l__txt_chars_tl
+}
+
+\cs_new:Npn \htmv_anchorend_onnext: {}
+
+\cs_generate_variant:Nn \seq_set_split:Nnn {Nnx}
+
+\Hy@WrapperDef\hyper@linkfile#1#2#3{%
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1},{#2},{#3}}
+  \txt_use_hook:nn {htmv} {linkfile}
+  \seq_if_empty:NF \l__txt_args_seq
+  {
+    \tl_set:Nx \l_tmpa_tl
+    {
+      \exp_not:N \htmv_open_tag:nx {a} {href="\seq_item:Nn \l__txt_args_seq {2}"}
+      \seq_item:Nn \l__txt_args_seq {1}
+      \exp_not:N \htmv_close_tag:n {a}
+    }
+    \tl_use:N \l_tmpa_tl
+  }
+}%
+
+\Hy@WrapperDef\hyper@link#1#2#3{%
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1},{#2},{#3}}
+  \txt_use_hook:nn {htmv} {#1}
+  \txt_only_chars:Vn \l__htmv_idtype_tl {\seq_item:Nn \l__txt_args_seq {2}}
+  \seq_if_empty:NF \l__txt_args_seq
+  {
+    \tl_set:Nx \l_tmpa_tl
+    {
+      \exp_not:N \htmv_open_tag:nx {a} {href="\tl_use:N         \l__htmv_baseurl_tl\#\tl_use:N \l__txt_chars_tl"}
+      \seq_item:Nn \l__txt_args_seq {3}
+      \exp_not:N \htmv_close_tag:n {a}
+    }
+    \tl_use:N \l_tmpa_tl
+  }
+}
+%\Hy@WrapperDef
+\cs_new_nopar:Npn \hyper@linkurl #1#2
+{
+  \cs_if_exist:cTF {htmv_link_\tl_use:N \l__htmv_link_tl :nn}
+  {
+    \use:c {htmv_link_\tl_use:N \l__htmv_link_tl :nn} {#1}{#2}
+  }
+  {
+    \htmv_open_tag:nn {a}{href="#2"}
+    #1
+    \htmv_close_tag:n {a}
+  }
+}
+
+\cs_new_nopar:Npn \htmv_link_targetblank:nn #1#2
+{
+  \htmv_open_tag:nn {a}{href="#2"~ target="_blank"}
+  #1
+  \htmv_close_tag:n {a}
+}
+
+\group_begin:
+\char_set_lccode:nn {`;}{`:}
+\tl_to_lowercase:n {
+\group_end:
+  \tl_set:Nn \g__htmv_colon_tl {;}
+}
+
+\tl_set:Nx \l__htmv_http_tl {http\g__htmv_colon_tl//}
+
+\Hy@WrapperDef\hyper@linkstart #1#2
+{
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1},{#2}}
+  \txt_use_hook:nn {htmv} {#1}
+  \tl_set:Nx \l_tmpa_tl {\seq_item:Nn \l__txt_args_seq {2}}
+  \tl_set:Nx \l_tmpa_tl {\tl_use:N \l_tmpa_tl}
+  \tl_if_begins:VVTF \l_tmpa_tl \l__htmv_http_tl
+  {
+    \tl_set:Nn \l_tmpa_tl {\seq_item:Nn \l__txt_args_seq {2}}
+  }
+  {
+    \tl_if_begins:VnTF \l_tmpa_tl {/}
+    {
+      \tl_set:Nn \l_tmpa_tl {\seq_item:Nn \l__txt_args_seq {2}}
+    }
+    {
+      \txt_only_chars:Vx \l__htmv_idtype_tl {\seq_item:Nn \l__txt_args_seq {2}}
+      \tl_set:Nn \l_tmpa_tl {\l__htmv_baseurl_tl\# \l__txt_chars_tl}
+    }
+  }
+  \cs_if_exist:cTF {htmv_link_\tl_use:N \l__htmv_link_tl :V}
+    {
+      \use:c {htmv_link_\tl_use:N \l__htmv_link_tl :V} \l_tmpa_tl
+    }
+    {
+      \htmv_open_tag:nx {a} {href="\tl_use:N \l_tmpa_tl"}
+    }
+}
+
+\cs_new_nopar:Npn \htmv_link_targetblank:n #1
+{
+  \htmv_open_tag:nx {a} {href="\tl_use:N \l_tmpa_tl"~ target="_blank"}
+}
+\cs_generate_variant:Nn \htmv_link_targetblank:n {V}
+
+
+\cs_new_nopar:Npn \hyper@linkend {\htmv_close_tag:n {a}}
+
+% Hyperref loads pd1enc which overwrites the accent macros,
+% so we restore them here (if not using unicode)
+\renewcommand{\"}[1]{\entity{#1uml}}
+\renewcommand{\`}[1]{\entity{#1grave}}
+\renewcommand{\'}[1]{\entity{#1acute}}
+\renewcommand{\^}[1]{\entity{#1circ}}
+\renewcommand{\~}[1]{\entity{#1tilde}}
+\renewcommand{\c}[1]{\entity{#1cedil}}
+\renewcommand{\v}[1]{\entity{#1caron}}
+\renewcommand{\.}[1]{\entity{#1dot}}
+\renewcommand{\ae}{\entity{aelig}}
+\renewcommand{\AE}{\entity{AElig}}
+\renewcommand{\oe}{\entity{oelig}}
+\renewcommand{\OE}{\entity{OElig}}
+\renewcommand{\aa}{\entity{aring}}
+\renewcommand{\AA}{\entity{Aring}}
+\renewcommand{\o}{\entity{oslash}}
+\renewcommand{\O}{\entity{Oslash}}
+\renewcommand{\ss}{\entity{szlig}}
+\renewcommand{\P}{\entity{\#182}}
+
+\ExplSyntaxOff
+\makeatother
+
+\endinput
+
+% Local Variables:
+% mode: latex3
+% End:

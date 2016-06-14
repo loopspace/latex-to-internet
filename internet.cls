@@ -51,8 +51,22 @@
   \exp_last_unbraced:NV \tl_split_at_aux:w #1 \q_stop
 }
 
+\cs_new:Npn \txt_add_option:nn #1#2
+{
+  \prop_get:NnNTF \l__txt_popts_prop {#1} \l_tmpa_clist
+  {
+    \clist_put_right:Nn \l_tmpa_clist {#2}
+    \prop_put:NnV \l__txt_popts_prop {#1} \l_tmpa_clist
+  }
+  {
+    \prop_put:Nnn \l__txt_popts_prop {#1} {#2}
+  }
+}
+
+
 \cs_generate_variant:Nn \tl_split_at:NnNN {NVNN}
 \cs_generate_variant:Nn \tl_if_in:NnTF {NV}
+\cs_generate_variant:Nn \keys_if_exist:nnT {nV}
 
   \keys_define:nn {internet options} {
     text .bool_set:N = \l__txt_text_bool,
@@ -77,7 +91,7 @@
           \bool_set_false:N \l_tmpa_bool
         }
       }
-      \keys_if_exist:nnT {internet options} {\l_tmpb_tl}
+      \keys_if_exist:nVT {internet options} \l_tmpb_tl
       {
         \keys_set:nV {internet options} \l_tmpb_tl
       }
@@ -96,6 +110,13 @@
       output mode = xhtml,
       files to load = xhtml,
       options = {xhtml}{#1},
+      options = {mathml}{container=xhtm},
+    },
+    html5 .meta:n = {
+      output mode = html5,
+      files to load = html5,
+      options = {html5}{#1},
+      options = {mathml}{container=htmv},
     },
     itex .meta:n ={
       maths to load = itex,
@@ -104,6 +125,10 @@
     basic maths .meta:n ={
       maths to load = basicmaths,
       options = {basicmaths}{#1},
+    },
+    mathml .meta:n ={
+      maths to load = mathml,
+      options = {mathml}{#1},
     },
     instiki .meta:n = {
       output mode = instiki,
@@ -132,7 +157,7 @@
       options = {markdownextra}{#1},
     },
     options .code:n = {
-      \prop_put:Nnn \l__txt_popts_prop #1
+      \txt_add_option:nn #1
     },
     unknown .code:n = {
       \tl_if_empty:nTF {#1} 

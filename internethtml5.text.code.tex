@@ -1,0 +1,2476 @@
+% HTML5, prefix: htmv
+
+\parskip0pt
+
+% We do a lot of redefining
+
+\msg_redirect_module:nnn { LaTeX / xparse } { info }    { none }
+\msg_redirect_module:nnn { LaTeX / xparse } { warning } { none }
+
+% Sets the top level for sections (and other headings)
+\int_new:N \l__htmv_sec_int
+\int_set:Nn \l__htmv_sec_int {1}
+
+\tl_new:N \l__htmv_tmpa_tl
+
+% Define the options for the html5 module
+\keys_define:nn {html5 options}
+{
+  section~ level .int_set:N = \l__htmv_sec_int
+}
+
+% Get and set the options for the html5 module
+\prop_get:NnNT  \l__txt_popts_prop {html5} \l_tmpa_tl
+{
+  \keys_set:nV {html5 options} \l_tmpa_tl
+}
+
+% Set the default output extension to html
+\tl_set:Nn \l__txt_file_ext_tl {html}
+
+% Set the maths processing type
+\tl_set:Nn \l__maths_type_tl {mml}
+
+% Interface to LaTeX2e conditionals from @egreg at
+% http://tex.stackexchange.com/a/119826/86
+
+\prg_new_conditional:Npnn \latex_if:n #1 {p,T,F,TF}
+ {
+  \use:c{if#1} \prg_return_true: \else: \prg_return_false: \fi:
+ }
+
+% Hyperref options
+\PassOptionsToPackage{customdriver=hhtmlv}{hyperref}
+\PassOptionsToPackage{pageanchor=false}{hyperref}
+\PassOptionsToPackage{raiselinks=false}{hyperref}
+\PassOptionsToPackage{localanchorname=true}{hyperref}
+
+\tl_new:N \l__htmv_anchor_tl
+\tl_new:N \l__htmv_anchor_tmp_tl
+\tl_new:N \l__htmv_link_tl
+\tl_new:N \l__htmv_idtype_tl
+\tl_new:N \l__htmv_nextid_tl
+\tl_new:N \l__htmv_baseurl_tl
+ \tl_set:Nn \l__htmv_anchor_tl {plain}
+ \tl_set:Nn \l__htmv_idtype_tl {name}
+
+ \cs_new_nopar:Npn \htmv_set_anchor_type:n #1
+ {
+   \tl_set:Nn \l__htmv_anchor_tl {#1}
+ }
+
+ \DeclareDocumentCommand \SetAnchorType { m }
+ {
+   \htmv_set_anchor_type:n {#1}
+ }
+ 
+ \cs_new_nopar:Npn \htmv_set_link_type:n #1
+ {
+   \tl_set:Nn \l__htmv_link_tl {#1}
+ }
+
+ \DeclareDocumentCommand \SetLinkType { m }
+ {
+   \htmv_set_link_type:n {#1}
+ }
+ 
+\cs_new_protected_nopar:Npn \tl_if_begins:NnT  { \exp_args:No \tl_if_begins:nnT  }
+\cs_new_protected_nopar:Npn \tl_if_begins:NnF  { \exp_args:No \tl_if_begins:nnF  }
+\cs_new_protected_nopar:Npn \tl_if_begins:NnTF { \exp_args:No \tl_if_begins:nnTF }
+\cs_generate_variant:Nn \tl_if_begins:NnT { c }
+\cs_generate_variant:Nn \tl_if_begins:NnF  { c }
+\cs_generate_variant:Nn \tl_if_begins:NnTF { c }
+\prg_new_protected_conditional:Npnn \tl_if_begins:nn #1#2 { T  , F , TF }
+  {
+    \cs_set:Npn \__tl_tmp:w ##1 \q_stop #2 { }
+    \tl_if_empty:oTF { \__tl_tmp:w \q_stop #1 {} {} \q_stop #2 }
+      { \prg_return_false: } { \prg_return_true: }
+  }
+\cs_generate_variant:Nn \tl_if_begins:nnT  { V , o , no, VV }
+\cs_generate_variant:Nn \tl_if_begins:nnF  { V , o , no, VV }
+\cs_generate_variant:Nn \tl_if_begins:nnTF { V , o , no, VV }
+
+
+% Tags
+\seq_new:N \l__htmv_tag_seq
+
+\cs_new:Npn \htmv_push_tag:n #1
+{
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
+  \txt_use_hook:nn {html5} {pre push tag}
+  \seq_gpush:Nn \l__htmv_tag_seq {#1}
+}
+\cs_generate_variant:Nn \htmv_push_tag:n {V}
+
+
+\msg_new:nnnn {HTML5} {no~ tag} {No~ tag~ available~ to~ close~ '#1'~ at~ line~ \msg_line_context:} {}
+\msg_new:nnnn {HTML5} {wrong~ tag} {Tried~ to~ close~ tag~ '#1'~ with~  '#2'~ at~ line~ \msg_line_context:} {}
+\cs_generate_variant:Nn \msg_warning:nnnn {nnVn}
+\cs_new:Npn \htmv_pop_tag:n #1
+{
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
+  \txt_use_hook:nn {html5} {pre pop tag}
+  \seq_get:NNTF \l__htmv_tag_seq \l_tmpa_tl
+  {
+    \tl_if_eq:VnTF \l_tmpa_tl {#1}
+    {
+      \seq_gpop:NN \l__htmv_tag_seq \l_tmpa_tl
+    }
+    {
+      \msg_warning:nnVn {HTML5} {wrong~ tag} \l_tmpa_tl {#1}
+    }
+  }
+  {
+    \msg_warning:nnn {HTML5} {no~ tag} {#1}
+  }
+}
+
+\cs_set_eq:NN \htmv_mbox:n \mbox
+
+\cs_new_protected_nopar:Npn \htmv_open_tag:nn #1#2
+{
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1},{#2}}
+  \txt_use_hook:nn {html5} {pre open tag}
+  \htmv_mbox:n {}
+  \htmv_push_tag:n {#1}
+  <#1
+  \tl_if_empty:nF{#2}
+  {
+    \c_space_token
+    #2
+  }
+  >
+}
+\cs_new_protected_nopar:Npn \htmv_open_tag:n #1
+{
+  \htmv_open_tag:nn {#1} {}
+}
+
+\cs_generate_variant:Nn \htmv_open_tag:nn {x,V,xx,nx,nV}
+\cs_generate_variant:Nn \htmv_open_tag:n {x,V}
+
+\cs_new_protected_nopar:Npn \htmv_close_tag:n #1
+{
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
+  \txt_use_hook:nn {html5} {pre close tag}
+  \htmv_pop_tag:n {#1}
+  </#1>
+}
+\cs_generate_variant:Nn \htmv_close_tag:n {x,V}
+
+\cs_new_protected_nopar:Npn \htmv_empty_tag:nn #1#2
+{
+  \htmv_mbox:n {}
+  <#1
+  \tl_if_empty:nF{#2}
+  {
+    \c_space_token
+    #2
+  }
+  >
+}
+
+\cs_generate_variant:Nn \htmv_empty_tag:nn {nx}
+
+\cs_new_protected_nopar:Npn \htmv_open_tag_no_stack:nn #1#2
+{
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1},{#2}}
+  \txt_use_hook:nn {html5} {pre open tag}
+  \htmv_mbox:n {}
+  <#1
+  \tl_if_empty:nF{#2}
+  {
+    \c_space_token
+    #2
+  }
+  >
+}
+
+\cs_new_protected_nopar:Npn \htmv_close_tag_no_stack:n #1
+{
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
+  \txt_use_hook:nn {html5} {pre close tag}
+  </#1>
+}
+
+\prg_new_protected_conditional:Npnn \htmv_if_current_tag_is:n #1 {T,F,TF}
+{
+  \seq_get:NNTF \l__htmv_tag_seq \l_tmpa_tl
+  {
+    \tl_if_eq:VnTF \l_tmpa_tl {#1}
+    {
+      \prg_return_true:
+    }
+    {
+      \prg_return_false:
+    }
+  }
+  {
+    \prg_return_false:
+  }
+}
+
+\prg_new_protected_conditional:Npnn \htmv_if_current_tag_is_par: {T,F,TF}
+{
+  \seq_get:NNTF \l__htmv_tag_seq \l_tmpa_tl
+  {
+    \tl_if_eq:VnTF \l_tmpa_tl {p}
+    {
+      \prg_return_true:
+    }
+    {
+      \prg_return_false:
+    }
+  }
+  {
+    \prg_return_false:
+  }
+}
+
+\RenewDocumentCommand \emph {m}
+{
+  \htmv_open_tag:nn {em} {}
+  #1
+  \htmv_close_tag:n {em}
+}
+
+\RenewDocumentCommand \textit {m}
+{
+  \htmv_open_tag:nn {em} {}
+  #1
+  \htmv_close_tag:n {em}
+}
+
+\RenewDocumentCommand \textsc {m}
+{
+  \htmv_open_tag:nn {span} {style="font-variant: small-caps;"}
+  #1
+  \htmv_close_tag:n {span}
+}
+
+\RenewDocumentCommand \textup {m}
+{
+  \htmv_open_tag:nn {span} {style="font-style: normal;"}
+  #1
+  \htmv_close_tag:n {span}
+}
+
+\RenewDocumentCommand \textbf {m}
+{
+  \htmv_open_tag:nn {strong} {}
+  #1
+  \htmv_close_tag:n {strong}
+}
+
+% Highly experimental ...
+
+\tl_new:N \l__htmv_closebf_tl
+\tl_set:Nn \l__htmv_closebf_tl {\htmv_close_tag:n {strong}}
+\NewDocumentCommand \bf {}
+{
+  \htmv_open_tag:nn {strong} {}
+  \group_insert_after:N \l__htmv_closebf_tl
+}
+
+\tl_new:N \l__htmv_closeem_tl
+\tl_set:Nn \l__htmv_closeem_tl {\htmv_close_tag:n {em}}
+
+\RenewDocumentCommand \em {}
+{
+  \htmv_open_tag:nn {em} {}
+  \group_insert_after:N \l__htmv_closeem_tl
+}
+
+% Section commands
+
+% If the class defines a `\chapter` and/or `\part` command, we need to
+% do so also.  Otherwise, all the section commands step up one on the
+% level
+
+\clist_if_in:nVTF {book} \l__txt_class_tl
+{
+  \newcounter{part}
+  \renewcommand\thepart{\@arabic\c@part}
+  \NewDocumentCommand \part {s m}
+  {
+    \IfBooleanTF {#1}
+    {
+      \htmv_section:nn {0}{#2}
+    }
+    {
+      \htmv_num_section:nnn {part} {0}{#2}
+    }
+  }
+}
+{
+  \int_decr:N \l__htmv_sec_int
+}
+
+\clist_if_in:nVTF {report,book} \l__txt_class_tl
+{
+  \newcounter{chapter}
+  \renewcommand\thechapter{\@arabic\c@chapter}
+  \newcounter{section}[chapter]
+  \renewcommand\thesection{\thechapter.\@arabic\c@section}
+  \NewDocumentCommand \chapter {s m}
+  {
+    \IfBooleanTF {#1}
+    {
+      \htmv_section:nn {1}{#2}
+    }
+    {
+      \htmv_num_section:nnn {chapter} {1}{#2}
+    }
+  }
+}
+{
+  \int_decr:N \l__htmv_sec_int
+  \newcounter{section}
+  \renewcommand\thesection{\@arabic\c@section}
+}
+
+\newcounter{subsection}[section]
+\newcounter{subsubsection}[subsection]
+\newcounter{paragraph}[subsubsection]
+\newcounter{subparagraph}[paragraph]
+\renewcommand\thesubsection{\thesection.\@arabic\c@subsection}
+
+\NewDocumentCommand \section {s m}
+{
+  \IfBooleanTF {#1}
+  {
+    \htmv_section:nn {2}{#2}
+  }
+  {
+    \htmv_num_section:nnn {section} {2}{#2}
+  }
+}
+
+\NewDocumentCommand \subsection {s m}
+{
+  \IfBooleanTF {#1}
+  {
+    \htmv_section:nn {3}{#2}
+  }
+  {
+    \htmv_num_section:nnn {subsection} {3}{#2}
+  }
+}
+
+\NewDocumentCommand \subsubsection {s m}
+{
+  \IfBooleanTF {#1}
+  {
+    \htmv_section:nn {4}{#2}
+  }
+  {
+    \htmv_num_section:nnn {subsubsection} {4}{#2}
+  }
+}
+
+\NewDocumentCommand \paragraph {s m}
+{
+  \IfBooleanTF {#1}
+  {
+    \htmv_section:nn {5}{#2}
+  }
+  {
+    \htmv_num_section:nnn {paragraph} {5}{#2}
+  }
+}
+
+\NewDocumentCommand \subparagraph {s m}
+{
+  \IfBooleanTF {#1}
+  {
+    \htmv_section:nn {6}{#2}
+  }
+  {
+    \htmv_num_section:nnn {subparagraph} {6}{#2}
+  }
+}
+
+\cs_new_nopar:Npn \htmv_section:nn #1#2
+{
+  \htmv_close_par:
+  \txt_newline:
+  \htmv_section_header:nnn {#1}{#2}{}
+  \txt_newline:
+  \htmv_open_par:
+}
+
+\cs_new_nopar:Npn \htmv_section_header:nnn #1#2#3
+{
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1},{#2},{#3}}
+  \txt_use_hook:nn {html5} {pre section header}
+  \htmv_open_tag:xn {h \int_eval:n {\l__htmv_sec_int + #1}}{#3}
+  #2
+  \htmv_close_tag:x {h \int_eval:n {\l__htmv_sec_int + #1}}
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1},{#2},{#3}}
+  \txt_use_hook:nn {html5} {post section header}
+}
+
+\cs_new_nopar:Npn \htmv_num_section:nnn #1#2#3
+{
+  \htmv_close_par:
+  \txt_newline:
+  \tl_set_eq:NN \l__htmv_anchor_tmp_tl \l__htmv_anchor_tl
+  \tl_set:Nn \l__htmv_anchor_tl {on next}
+  \refstepcounter{#1}
+  \tl_set_eq:NN \l__htmv_anchor_tl \l__htmv_anchor_tmp_tl
+  \htmv_section_header:nnn {#2} {\use:c {the#1} \c_space_token #3} {id="\tl_use:N \l__htmv_nextid_tl"}
+\tl_gclear:N \l__htmv_nextid_tl
+  \addcontentsline{toc}{#1}{\protect\numberline{\use:c{the#1}}#3}
+  \txt_newline:
+  \htmv_open_par:
+}
+
+\newcommand\appendix{\par
+  \setcounter{section}{0}%
+  \setcounter{subsection}{0}%
+  \gdef\thesection{\@Alph\c@section}}
+
+
+\cs_new_nopar:Npn \htmv_linebreak:
+{
+  {
+    \everypar{}
+    \par
+    \htmv_mbox:n {}
+  }
+}
+
+\cs_new_nopar:Npn \htmv_close_par:
+{
+  \htmv_if_current_tag_is_par:T
+  {
+    \htmv_close_tag:n {p}
+    \htmv_linebreak:
+  }
+  \htmv_insert_marginpars:
+}
+
+\cs_new_nopar:Npn \htmv_open_par:
+{
+  \htmv_if_current_tag_is_par:F
+  {
+    \htmv_linebreak:
+    \htmv_open_tag:nn {p}{}
+  }
+}
+
+\seq_new:N \l__htmv_par_classes_seq
+
+\cs_new_nopar:Npn \htmv_reopen_par:
+{
+  \htmv_if_current_tag_is_par:T
+  {
+    \htmv_close_tag:n {p}
+    \htmv_linebreak:
+    \htmv_insert_marginpars:
+    \tl_clear:N \l__htmv_tmpa_tl
+    \seq_if_empty:NF  \l__htmv_par_classes_seq
+    {
+      \tl_set:Nx \l__htmv_tmpa_tl {class="\seq_use:Nn \l__htmv_par_classes_seq {\c_space_token}"}
+    }
+    \htmv_open_tag:nn {p}{\tl_use:N \l__htmv_tmpa_tl}
+  }
+}
+
+\clist_map_inline:nn 
+{
+  Huge,huge,LARGE,Large,large,tiny,scriptsize
+}
+{
+  \exp_args:Nc \DeclareDocumentCommand {#1} {}
+  {
+    \seq_push:Nn \l__htmv_par_classes_seq {#1}
+  }
+}
+
+\DeclareDocumentEnvironment {abstract} {}
+{
+  \htmv_close_par:
+  \txt_use_hook:nn {html5} {pre abstract}
+  \htmv_open_tag:nn {div} {class="abstract"}
+  \section*{Abstract}
+  \htmv_open_par:
+}
+{
+  \htmv_close_par:
+  \htmv_close_tag:n {div}
+  \txt_use_hook:nn {html5} {post abstract}
+  \htmv_open_par:
+}
+
+
+\bool_new:N \l__htmv_reopen_par_bool
+
+\cs_new_nopar:Npn \htmv_open_par:nn #1#2
+{
+  \htmv_if_current_tag_is_par:TF
+  {
+    \bool_set_true:N \l__htmv_reopen_par_bool
+  }
+  {
+    \bool_set_false:N \l__htmv_reopen_par_bool
+  }
+  \htmv_close_par:
+  \htmv_open_tag:nn {#1}{#2}
+  \group_begin:
+}
+
+\cs_new_nopar:Npn \htmv_close_par:n #1
+{
+  \group_end:
+  \htmv_close_tag:n {#1}
+  \bool_if:NT \l__htmv_reopen_par_bool
+  {
+    \htmv_open_par:
+  }
+}
+
+\NewDocumentEnvironment {quote} {}
+{
+  \htmv_open_par:
+  \htmv_open_par:nn {blockquote}{}
+}
+{
+  \htmv_close_par:n {blockquote}
+}
+
+\NewDocumentEnvironment {quotation} {}
+{
+  \htmv_open_par:nn {blockquote}{}
+  \htmv_open_par:
+}
+{
+  \htmv_close_par:
+  \htmv_close_par:n {blockquote}
+}
+
+\cs_set_eq:NN \htmv_orig_item:w \@item
+\tl_new:N \l__htmv_listitem_tl
+\cs_new:Npn \htmv_list_label:n #1 {#1}
+
+\cs_new:Npn \htmv_item_label:n #1
+{
+  \htmv_open_par:
+  \htmv_open_tag:nn {span} {class="listlabel"}
+  #1
+  \htmv_close_tag:n {span}
+}
+
+\NewDocumentEnvironment {html5 itemize} {m}
+{
+  \htmv_close_par:
+  \htmv_open_tag:nn {ul} {#1}
+  \tl_set:Nn \l__htmv_listitem_tl {li}
+  \cs_set_eq:NN \htmv_list_label:n \htmv_item_label:n
+  \cs_set_eq:NN \@item \htmv_first_item:w
+}
+{
+  \htmv_close_par:
+  \htmv_close_tag:n {li}
+  \htmv_close_tag:n {ul}
+  \htmv_open_par:
+}
+
+\RenewDocumentEnvironment {itemize} {}
+{
+  \use:c {html5 itemize}{}
+}
+{
+  \use:c {end html5 itemize}
+}
+
+\int_new:N \l__htmv_enum_int
+\cs_new_nopar:Npn \htmv_enumerate:n #1
+{
+  \htmv_close_par:
+  \int_compare:nF {\l__htmv_enum_int > 3}
+  {
+    \int_incr:N \l__htmv_enum_int
+    \exp_args:Nx \usecounter {enum \int_to_roman:n {\l__htmv_enum_int}     }
+  }
+  \htmv_open_tag:nn {ol} {#1}
+  \tl_set:Nn \l__htmv_listitem_tl {li}
+  \cs_set_eq:NN \htmv_list_label:n \htmv_item_label:n
+  \cs_set_eq:NN \@item \htmv_first_item:w
+}
+
+\cs_new_nopar:Npn \htmv_end_enumerate:
+{
+  \htmv_close_par:
+  \htmv_close_tag:n {li}
+  \htmv_close_tag:n {ol}
+  \htmv_open_par:
+}
+
+\RenewDocumentEnvironment {enumerate} {o}
+{
+  \htmv_enumerate:n {}
+}
+{
+  \htmv_end_enumerate:
+}
+
+\cs_new:Npn \htmv_desc_label:n #1
+{
+  \htmv_open_tag:nn {dt} {class="listlabel"}
+  #1
+  \htmv_close_tag:n {dt}
+  \htmv_open_tag:nn {dd} {}
+  \htmv_open_par:
+}
+
+\NewDocumentEnvironment {html5 description} {m}
+{
+  \htmv_close_par:
+  \htmv_open_tag:nn {dl} {}
+  \txt_set_hook:nnn {html5} {after list item} {\htmv_close_tag:n {dd}}
+  \tl_set:Nn \l__htmv_listitem_tl {di}
+  \cs_set_eq:NN \htmv_list_label:n \htmv_desc_label:n
+  \cs_set_eq:NN \@item \htmv_first_item:w
+}
+{
+  \htmv_close_par:
+  \htmv_close_tag:n {dd}
+  \htmv_close_tag:n {di}
+  \htmv_close_tag:n {dl}
+  \htmv_open_par:
+}
+
+\DeclareDocumentEnvironment {description} {}
+{
+  \use:c {html5 description}{}
+}
+{
+  \use:c {end html5 description}
+}
+
+
+\cs_new_nopar:Npn \htmv_first_item:w [#1]
+{
+  \latex_if:nTF {@noitemarg}
+  {
+    \@noitemargfalse
+    \latex_if:nTF {@nmbrlist}
+    {
+      \tl_set_eq:NN \l__htmv_anchor_tmp_tl \l__htmv_anchor_tl
+      \tl_set:Nn \l__htmv_anchor_tl {on next}
+      \refstepcounter\@listctr
+      \htmv_open_tag:Vn \l__htmv_listitem_tl {id="\tl_use:N \l__htmv_nextid_tl"}
+      \tl_gclear:N \l__htmv_nextid_tl
+      \htmv_open_par:
+      \tl_set_eq:NN \l__htmv_anchor_tl \l__htmv_anchor_tmp_tl
+    }
+    {
+      \htmv_open_tag:Vn \l__htmv_listitem_tl {}
+      \htmv_open_par:
+    }
+  }
+  {
+    \htmv_open_tag:Vn \l__htmv_listitem_tl {class="listlabel"}
+    \htmv_list_label:n {#1}
+  }
+  \cs_set_eq:NN \@item \htmv_main_item:w
+}
+
+\cs_new_nopar:Npn \htmv_main_item:w [#1]
+{
+  \htmv_close_par:
+  {
+    \txt_use_hook:nn {html5} {after list item}
+  }
+  \htmv_close_tag:V \l__htmv_listitem_tl
+  \latex_if:nTF {@noitemarg}
+  {
+    \@noitemargfalse
+    \latex_if:nTF {@nmbrlist}
+    {
+      \tl_set_eq:NN \l__htmv_anchor_tmp_tl \l__htmv_anchor_tl
+      \tl_set:Nn \l__htmv_anchor_tl {on next}
+      \refstepcounter\@listctr
+      \htmv_open_tag:Vn \l__htmv_listitem_tl {id="\tl_use:N \l__htmv_nextid_tl"}
+      \tl_gclear:N \l__htmv_nextid_tl
+      \tl_set_eq:NN \l__htmv_anchor_tl \l__htmv_anchor_tmp_tl
+      \htmv_open_par:
+    }
+    {
+      \htmv_open_tag:Vn \l__htmv_listitem_tl {}
+      \htmv_open_par:
+    }
+  }
+  {
+    \htmv_open_tag:Vn \l__htmv_listitem_tl {class="listlabel"}
+    \htmv_list_label:n {#1}
+  }
+}
+
+% Entity handling
+\NewDocumentCommand \entity {m}
+{
+  \&#1;
+}
+
+\NewDocumentCommand \hexentity {m}
+{
+  \entity{\#x#1}
+}
+
+% Are we using unicode?  Can we test for this?
+\RenewDocumentCommand \" {m} {\entity{#1uml}}
+\RenewDocumentCommand \` {m} {\entity{#1grave}}
+\RenewDocumentCommand \' {m} {\entity{#1acute}}
+\RenewDocumentCommand \^ {m} {\entity{#1circ}}
+\RenewDocumentCommand \~ {m} {\entity{#1tilde}}
+\RenewDocumentCommand \c {m} {\entity{#1cedil}}
+\RenewDocumentCommand \v {m} {\entity{#1caron}}
+\RenewDocumentCommand \. {m} {\entity{#1dot}}
+\RenewDocumentCommand \ae {} {\entity{aelig}}
+\RenewDocumentCommand \AE {} {\entity{AElig}}
+\RenewDocumentCommand \oe {} {\entity{oelig}}
+\RenewDocumentCommand \OE {} {\entity{OElig}}
+\RenewDocumentCommand \aa {} {\entity{aring}}
+\RenewDocumentCommand \AA {} {\entity{Aring}}
+\RenewDocumentCommand \o {} {\entity{oslash}}
+\RenewDocumentCommand \O {} {\entity{Oslash}}
+\RenewDocumentCommand \ss {} {\entity{szlig}}
+\RenewDocumentCommand \P {} {\entity{\#182}}
+
+\RenewDocumentCommand \TeX {} {TeX}
+\RenewDocumentCommand \LaTeX {} {La\TeX}
+
+% Should we set `\nobreakspace` directly?
+\group_begin:
+\char_set_catcode_active:n {126}
+\AtBeginDocument{\cs_set:Npn ~ {\entity{nbsp}}}
+\group_end:
+
+% Verbatim handling ...
+
+\cs_generate_variant:Nn \tl_replace_all:Nnn {NnV}
+\RenewDocumentCommand \verb {v}
+{
+  \htmv_verb:n {#1}
+}
+
+\cs_new:Npn \htmv_replace_verb_chars_a:
+{
+  \tl_replace_all:NnV \l__htmv_tmpa_tl {&} \htmv_amp:
+  \tl_replace_all:NnV \l__htmv_tmpa_tl {<} \htmv_lt:
+  \tl_replace_all:NnV \l__htmv_tmpa_tl {>} \htmv_gt:
+  \tl_replace_all:NnV \l__htmv_tmpa_tl {$} \htmv_dollar:%$
+}
+
+\group_begin:
+\char_set_catcode_other:N <
+\char_set_catcode_other:N >
+\char_set_catcode_other:N &
+\char_set_catcode_other:N $%$
+\cs_new:Npn \htmv_replace_verb_chars_o:
+{
+  \tl_replace_all:NnV \l__htmv_tmpa_tl {&} \htmv_amp:
+  \tl_replace_all:NnV \l__htmv_tmpa_tl {<} \htmv_lt:
+  \tl_replace_all:NnV \l__htmv_tmpa_tl {>} \htmv_gt:
+  \tl_replace_all:NnV \l__htmv_tmpa_tl {$} \htmv_dollar:%$
+}
+\group_end:
+
+\cs_new:Npn \htmv_replace_verb_chars:Nn #1#2
+{
+  \tl_set:Nn \l__htmv_tmpa_tl {#2}
+  \htmv_replace_verb_chars_a:
+  \htmv_replace_verb_chars_o:
+  \tl_set_eq:NN #1 \l__htmv_tmpa_tl
+}
+
+\cs_generate_variant:Nn \htmv_replace_verb_chars:Nn {NV}
+
+\cs_new:Npn \htmv_verb:n #1
+{
+  \htmv_replace_verb_chars:Nn \l__htmv_tmpa_tl {#1}
+  \htmv_open_tag:nn {code}{}
+  \tl_use:N \l__htmv_tmpa_tl
+  \htmv_close_tag:n {code}
+}
+
+\cs_generate_variant:Nn \htmv_verb:n {V,N}
+
+\DeclareDocumentCommand \DisplayAsVerb {m}
+{
+  \htmv_verb:n {#1}
+}
+
+\DeclareDocumentCommand \verb {v}
+{
+  \htmv_verb:n {#1}
+}
+
+\cs_new:Npn \htmv_lt:
+{
+  \hexentity {3C}
+}
+
+\cs_new:Npn \htmv_gt:
+{
+  \hexentity {3E}
+}
+
+\cs_new:Npn \htmv_amp:
+{
+  \hexentity {26}
+}
+
+\cs_new:Npn \htmv_dollar:
+{
+  \hexentity {24}
+}
+
+\group_begin:
+\char_set_catcode_active:N <
+\char_set_catcode_active:N >
+\char_set_catcode_active:N &
+\char_set_catcode_active:N $%$
+\cs_new:Npn \htmv_verb_entities:
+{
+  \char_set_catcode_active:N <
+  \char_set_catcode_active:N >
+  \char_set_catcode_active:N &
+  \char_set_catcode_active:N $%$ should just check for itex
+  \cs_set_eq:NN < \htmv_lt:
+  \cs_set_eq:NN > \htmv_gt:
+  \cs_set_eq:NN & \htmv_amp:
+  \cs_set_eq:NN $ \htmv_dollar:%$
+}
+\cs_new:Npn \htmv_set_lt:
+{
+  \cs_set_eq:NN < \htmv_lt:
+}
+
+\cs_new:Npn \htmv_set_gt:
+{
+  \cs_set_eq:NN > \htmv_gt:
+}
+\cs_new:Npn \htmv_set_amp:
+{
+  \cs_set_eq:NN & \htmv_amp:
+}
+
+\cs_gset_eq:NN > \htmv_gt:
+\cs_gset_eq:NN < \htmv_lt:
+\cs_gset_eq:NN & \htmv_amp:
+
+\group_end:
+
+\cs_set_eq:NN \htmv_orig_endverbatim: \endverbatim
+
+\tl_new:N \l__htmv_code_tl
+
+\cs_set:Npn \verbatim
+{
+  \htmv_open_code_block:
+  \group_begin:
+  \cs_set_eq:NN \@item \htmv_orig_item:w
+  \@verbatim
+  \frenchspacing
+  \@vobeyspaces
+  \htmv_verb_entities:
+  \@xverbatim
+}
+
+\cs_set:Npn \endverbatim
+{
+  \htmv_orig_endverbatim:
+  \group_end:
+  \htmv_close_code_block:
+}
+
+\cs_set:Npn \htmv_open_code_block:
+{
+  \htmv_close_par:
+  \txt_use_hook:nn {html5} {pre verbatim}
+  \htmv_open_tag:nn {pre} {}
+  \htmv_open_tag:nV {code} \l__htmv_code_tl
+}
+
+\cs_set:Npn \htmv_close_code_block:
+{
+  \htmv_close_tag:n {code}
+  \htmv_close_tag:n {pre}
+  \txt_use_hook:nn {html5} {post verbatim}
+  \htmv_open_par:
+}
+
+\DeclareDocumentEnvironment {code block} {}
+{
+  \htmv_open_code_block:
+}
+{
+  \htmv_close_code_block:
+}
+
+\cs_set:Npn \htmv_make_verbatim:n #1
+{
+  \tl_put_right:Nn \l_tmpa_tl {\cs_new:cpn {htm5 verbatim #1} ##1}
+  \tl_set:Nx \l_tmpb_tl {\token_to_str:N \\}
+  \tl_set:Nx \l_tmpb_tl {\tl_head:N \l_tmpb_tl}
+  \tl_put_right:Nx \l_tmpa_tl {\l_tmpb_tl end \token_to_str:N {
+      #1 \token_to_str:N }}
+  \tl_put_right:Nn \l_tmpa_tl {{##1\end{#1}}}
+  \l_tmpa_tl
+}
+
+\DeclareDocumentCommand \newverbatim {m o o} {
+  \htmv_make_verbatim:n {#1}
+  \IfNoValueTF {#2}
+  {
+    \cs_new:cpn {#1}
+    {
+      \cs_set_eq:Nc \@xverbatim {htm5 verbatim #1}
+      \verbatim
+    }
+  }
+  {
+    \IfNoValueTF {#3}
+    {
+      \cs_new:cpn {#1} ##1
+      {
+        \cs_set_eq:Nc \@xverbatim {htm5 verbatim #1}
+        \verbatim
+      }
+    }
+    {
+      \cs_new:cpn {#1}
+      {
+        \peek_meaning:NTF [%]
+          {
+            \use:c {#1 aux}
+          }
+          {
+            \use:c {#1 aux} []
+          }            
+        }
+        \cs_new:cpn {#1 aux} [##1]
+        {
+          \cs_set_eq:Nc \@xverbatim {htm5 verbatim #1}
+          \verbatim
+        }
+      }
+    }
+  \cs_set_eq:cN {end #1} \endverbatim
+}
+
+
+
+% Floats
+\DeclareDocumentEnvironment {float} {m}
+{
+  \htmv_open_tag:nn {div} {style="float: #1; display: inline; position: relative; width=50\@percentchar;"}
+}
+{
+  \htmv_close_tag:n {div}
+}
+
+% Graphics handling
+% List of known image extensions:
+\clist_new:N \l__htmv_grext_clist
+\clist_set:Nn \l__htmv_grext_clist {png,PNG,jpg,JPG,jpeg,JPEG,gif,GIF}
+\cs_generate_variant:Nn \file_if_exist:nF {VF,xF}
+% Need to figure out a good way to get the caption into the alt text.
+\DeclareDocumentCommand \htmv_includegraphics {o m}
+{
+  \tl_set:Nn \l_tmpa_tl {#2}
+  \file_if_exist:nF {#2}
+  {
+    \clist_map_inline:Nn \l__htmv_grext_clist
+    {
+      \file_if_exist:nT {#2.##1}
+      {
+        \tl_set:Nn \l_tmpa_tl {#2.##1}
+        \clist_map_break:
+      }
+    }
+  }
+  \tl_set:Nx \l_tmpb_tl
+  {
+    \exp_not:N \htmv_pre_graphics:n {\l_tmpa_tl}
+    \exp_not:N \htmv_empty_tag:nn {img} {src="\l_tmpa_tl"~ class="includegraphics"~ alt=""}
+    \exp_not:N \htmv_post_graphics:n {\l_tmpa_tl}
+  }
+  \tl_use:N \l_tmpb_tl
+}
+
+\cs_new_nopar:Npn \htmv_pre_graphics:n #1 {}
+\cs_new_nopar:Npn \htmv_post_graphics:n #1 {}
+
+
+
+\AtBeginDocument{
+  \cs_if_exist:NT \includegraphics
+  {
+    \cs_set_eq:NN \includegraphics \htmv_includegraphics
+  }
+}
+
+% Table of contents
+\usepackage{trace}
+\NewDocumentCommand \tableofcontents {}
+{
+  \group_begin:
+  \everypar{}
+  \htmv_close_par:
+  \htmv_open_tag:nn {div} {id="toc"}
+  \htmv_open_par:
+  \section*{\contentsname}
+  \int_gzero_new:N \l__htmv_toclvl_int
+  \@starttoc{toc}
+  \int_compare:nT {\l__htmv_toclvl_int > 0}
+  {
+    \prg_replicate:nn {\l__htmv_toclvl_int} {\htmv_end_enumerate:}
+  }
+  \htmv_close_par:
+  \htmv_close_tag:n {div}
+  \htmv_open_par:
+  \group_end:
+}
+
+\tl_set:Nn \contentsname {Contents}
+
+\DeclareDocumentCommand \numberline {m}
+{
+  \tl_if_empty:nF {#1}
+  {
+    #1. \c_space_token
+  }
+}
+
+\NewDocumentCommand \l@part {m m}
+{
+  \htmv_tocline:nnn {1} {#1} {#2}
+}
+
+
+\NewDocumentCommand \l@chapter {m m}
+{
+  \htmv_tocline:nnn {1} {#1} {#2}
+}
+
+\NewDocumentCommand \l@section {m m}
+{
+  \htmv_tocline:nnn {1} {#1} {#2}
+}
+
+\NewDocumentCommand \l@subsection {m m}
+{
+  \htmv_tocline:nnn {2} {#1} {#2}
+}
+
+\NewDocumentCommand \l@subsubsection {m m}
+{
+  \htmv_tocline:nnn {3} {#1} {#2}
+}
+
+\NewDocumentCommand \l@paragraph {m m m} {}
+\NewDocumentCommand \l@subparagraph {m m m} {}
+
+\cs_new_nopar:Npn \htmv_tocline:nnn #1#2#3
+{
+  \cs_gset_eq:NN \Hy@tocdestname \Hy@tocdestname
+  \int_compare:nT {\l__htmv_toclvl_int > #1}
+  {
+    \prg_replicate:nn {\l__htmv_toclvl_int - #1} {\htmv_end_enumerate:}
+  }
+  \int_compare:nT {\l__htmv_toclvl_int < #1}
+  {
+    \prg_replicate:nn {#1 - \l__htmv_toclvl_int} {\htmv_enumerate:n{}}
+  }
+  \item #2
+  \int_gset:Nn \l__htmv_toclvl_int {#1}
+}
+
+% Minipage and parbox need thinking about
+
+\cs_set:Npn \@iiiminipage #1#2[#3]#4
+{
+  \htmv_close_par:
+  \htmv_open_tag:nn {div}{class="minipage"}
+  \htmv_open_par:
+}
+\cs_set:Npn \endminipage
+{
+  \htmv_close_par:
+  \htmv_close_tag:n {div}
+  \htmv_close_par:
+}
+
+\cs_set:Npn \thepage {}
+\cs_set:Npn \indexname {Index}
+\cs_set:Npn \hfill {}
+
+\RenewDocumentCommand \hspace {m} {}
+\RenewDocumentCommand \\ {o} {}
+
+\tl_new:N \l__htmv_headtags_tl
+\tl_new:N \l__htmv_css_tl
+\tl_new:N \l__htmv_js_tl
+\tl_new:N \l__htmv_cssfiles_tl
+\tl_new:N \l__htmv_jsfiles_tl
+
+\cs_new:Npn \htmv_add_css:n #1
+{
+  \tl_gput_right:Nn \l__htmv_css_tl {#1}
+}
+
+\cs_generate_variant:Nn \htmv_add_css:n {V,x}
+
+\NewDocumentCommand \addcss {+v}
+{
+  \tl_set:Nn \l_tmpa_tl {#1}
+  \tl_replace_all:NVn \l_tmpa_tl \g__htmv_newline_tl {\htmv_linebreak:}%
+  \htmv_add_css:V \l_tmpa_tl
+% Make this a test on the last token
+  \htmv_add_css:n {\txt_newline:}
+}
+
+\cs_new:Npn \htmv_add_js:n #1
+{
+  \tl_gput_right:Nn \l__htmv_js_tl {#1}
+}
+
+\cs_generate_variant:Nn \htmv_add_js:n {V,x}
+
+\cs_generate_variant:Nn \tl_replace_all:Nnn {NVn}
+
+\tl_new:N \g__htmv_newline_tl
+\tl_set:Nx \g__htmv_newline_tl { \cs_to_str:N \^^M }
+
+\NewDocumentCommand \addjavascript {+v}
+{
+  \tl_set:Nn \l_tmpa_tl {#1}
+  \tl_replace_all:NVn \l_tmpa_tl \g__htmv_newline_tl {\htmv_linebreak:}%
+  \htmv_add_js:V \l_tmpa_tl
+}
+
+\NewDocumentCommand \loadcss {O {all} m}
+{
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1},{#2}}
+  \txt_use_hook:nn {html5} {load css}
+  \tl_gput_right:Nn \l__htmv_cssfiles_tl
+  {
+    \htmv_linebreak:
+    \htmv_empty_tag:nn {link} {href="#2.css"~ media="#1"~ rel="stylesheet"~ type="text/css"}
+  }
+}
+
+\NewDocumentCommand \loadfullcss {O {all} m}
+{
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1},{#2}}
+  \txt_use_hook:nn {html5} {load css}
+  \tl_gput_right:Nn \l__htmv_cssfiles_tl
+  {
+    \htmv_linebreak:
+    \htmv_empty_tag:nn {link} {href="#2"~ media="#1"~ rel="stylesheet"~ type="text/css"}
+  }
+}
+
+\NewDocumentCommand \loadjs {m}
+{
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
+  \txt_use_hook:nn {html5} {load js}
+  \tl_gput_right:Nn \l__htmv_jsfiles_tl
+  {
+    \htmv_linebreak:
+    \htmv_open_tag:nn {script} {src="#1.js"~ type="text/javascript"}
+    \htmv_close_tag:n {script}
+  }
+}
+
+\NewDocumentCommand \loadfulljs {v}
+{
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
+  \txt_use_hook:nn {html5} {load js}
+  \tl_gput_right:Nn \l__htmv_jsfiles_tl
+  {
+    \htmv_open_tag:nn {script} {src="#1"~ type="text/javascript"}
+    \htmv_close_tag:n {script}
+  }
+}
+
+\NewDocumentCommand \addheadtag {m v}
+{
+  \tl_gput_right:Nn \l__htmv_headtags_tl
+  {
+    \htmv_linebreak:
+    \htmv_empty_tag:nn {#1} {#2}
+  }
+}
+
+\tl_new:N \l__htmv_declaration_tl
+\tl_set:Nn \l__htmv_declaration_tl
+{
+  <!DOCTYPE~ html>
+  \htmv_linebreak:
+  \htmv_open_tag:nn {html} {lang="en"}
+  \htmv_empty_tag:nn {meta} {charset="utf-8"}
+  \htmv_linebreak:
+}
+
+\tl_new:N \l__htmv_begindoc_tl
+
+\AtBeginDocument{
+  \tl_use:N \l__htmv_begindoc_tl
+}
+
+\cs_new_nopar:Npn \htmv_at_begindocument:n #1
+{
+  \tl_put_right:Nn \l__htmv_begindoc_tl {#1}
+}
+
+\tl_new:N \l__htmv_title_tl
+\tl_set_eq:NN \l__htmv_title_tl \@title
+\tl_new:N \l__htmv_author_tl
+\tl_set_eq:NN \l__htmv_author_tl \@author
+\tl_new:N \l__htmv_licence_tl
+
+\prop_new:N \l__htmv_cclicences_prop
+\prop_put:Nnn \l__htmv_cclicences_prop {by} {Attribution}
+\prop_put:Nnn \l__htmv_cclicences_prop {nc} {NonCommercial}
+\prop_put:Nnn \l__htmv_cclicences_prop {nd} {NoDerivatives}
+\prop_put:Nnn \l__htmv_cclicences_prop {sa} {ShareAlike}
+
+\NewDocumentCommand \cclicence { m }
+{
+  \tl_to_lowercase:n {\tl_set:Nn \l_tmpa_tl {#1}}
+  \seq_set_split:NnV \l_tmpa_seq {-} \l_tmpa_tl
+  \seq_clear:N \l_tmpb_seq
+  \seq_map_inline:Nn \l_tmpa_seq
+  {
+    \prop_get:NnNT \l__htmv_cclicences_prop {##1} \l_tmpb_tl
+    {
+      \seq_put_right:NV \l_tmpb_seq \l_tmpb_tl
+    }
+  }
+  \tl_set:Nx \l__htmv_licence_tl
+  {
+  <a~ rel="license"~ href="http://creativecommons.org/licenses/\tl_use:N \l_tmpa_tl/4.0/"><img~ alt="Creative~ Commons~ License"~ style="border-width:0"~ src="http://i.creativecommons.org/l/\tl_use:N \l_tmpa_tl/4.0/88x31.png"~ /></a>
+%This~ work~ is~ licensed~ under~ a~ <a~ rel="license"~ href="http://creativecommons.org/licenses/\tl_use:N \l_tmpa_tl/4.0/">Creative~ Commons~ \seq_use:Nn \l_tmpb_seq {-}~ 4.0~ International~ License</a>.
+  }
+}
+
+\htmv_at_begindocument:n
+{
+  \tl_use:N \l__htmv_declaration_tl
+  \htmv_open_tag:nn {head}{}
+  \tl_if_eq:NNF \@title \l__htmv_title_tl
+  {
+    \htmv_linebreak:
+    \htmv_open_tag:nn {title}{}
+    \@title
+    \htmv_close_tag:n {title}
+  }
+  \tl_if_eq:NNF \@author \l__htmv_author_tl
+  {
+    \htmv_linebreak:
+    \htmv_empty_tag:nn {meta} {name="Author"~ content="\@author"}
+  }
+  \tl_use:N \l__htmv_headtags_tl
+  \tl_use:N \l__htmv_cssfiles_tl
+  \tl_if_empty:NF \l__htmv_css_tl
+  {
+    \htmv_linebreak:
+    \htmv_open_tag:nn {style} {type="text/css"}
+    \htmv_linebreak:
+    \tl_use:N \l__htmv_css_tl
+    \htmv_linebreak:
+    \htmv_close_tag:n {style}
+  }
+  \tl_use:N \l__htmv_jsfiles_tl
+  \tl_if_empty:NF \l__htmv_js_tl
+  {
+    \htmv_linebreak:
+    \htmv_open_tag:nn {script} {type="text/javascript"}
+    \htmv_linebreak:
+    //<![CDATA[
+        \htmv_linebreak:
+        \tl_use:N \l__htmv_js_tl
+        \htmv_linebreak:
+        //]]>
+    \htmv_linebreak:
+    \htmv_close_tag:n {script}
+  }
+  \htmv_linebreak:
+  \htmv_close_tag:n {head}
+  \htmv_linebreak:
+  \htmv_open_tag:nn {body} {}
+  \htmv_open_tag:nn {div} {id="background"}
+  \htmv_close_tag:n {div}
+  \htmv_open_tag:nn {div} {id="content"}
+  \htmv_open_par:
+  \everypar{\htmv_reopen_par:}
+}
+
+\cs_set:Npn \@doendpe
+{
+  \@endpetrue
+  \cs_set:Npn \par
+  {
+    \@restorepar
+    \everypar{\htmv_reopen_par:}
+    \par
+    \@endpefalse
+  }
+  \everypar{{\setbox\z@\lastbox}\everypar{}\@endpefalse}
+}
+
+\tl_new:N \l__htmv_enddoc_tl
+
+\tl_put_left:Nn \@enddocumenthook
+{
+  \tl_use:N \l__htmv_enddoc_tl
+}
+
+\cs_new_nopar:Npn \htmv_at_enddocument:n #1
+{
+  \tl_put_right:Nn \l__htmv_enddoc_tl {#1}
+}
+
+% Theorems ...
+
+\RenewDocumentCommand \newtheorem {s m o m o}
+{
+  \IfBooleanTF {#1}
+  {
+    % Starred form, so no numbers
+    \htmv_define_theorem:nnn {#2} {#4} {}
+  }
+  {
+    % Non-starred form, so numbered
+    % Was there a third argument?
+    \IfValueTF {#3}
+    {
+      % Yes, so we reuse this counter
+      \htmv_define_theorem:nnn {#2} {#4} {#3}
+    }
+    {
+      % No, so define a new counter
+      % Did we get a fifth argument?
+      \IfValueTF {#5}
+      {
+        % Yes, so the new counter steps with the fifth
+        \newcounter{#2}[#5]
+        \cs_set:cpx {the #2} {\exp_not:c {the #5} \@thmcountersep \@thmcounter{#2}}
+      }
+      {
+        % No, just a new counter
+        \newcounter{#2}
+      }
+      \htmv_define_theorem:nnn {#2} {#4} {#2}
+    }
+  }
+}
+
+\tl_new:N \l__htmv_theoremstyle_tl
+\tl_new:N \l__htmv_ctheoremstyle_tl
+\tl_set:Nn \l__htmv_theoremstyle_tl {plain}
+\bool_new:N \l__htmv_swaphead_bool
+
+\cs_generate_variant:Nn \cs_set_nopar:Nn {NV}
+% Theorem definer
+\cs_new_nopar:Npn \htmv_define_theorem:nnn #1#2#3
+{
+  \tl_clear:N \l_tmpa_tl
+  \tl_put_right:Nx \l_tmpa_tl
+  {
+    \exp_not:c {html5 theorem}
+    { \exp_not:N \tl_set:Nn \exp_not:N \l__htmv_ctheoremstyle_tl
+      {\l__htmv_theoremstyle_tl}
+      \bool_if:NTF \l__htmv_swaphead_bool
+      {
+        \exp_not:N \bool_set_true:N
+      }
+      {
+        \exp_not:N \bool_set_false:N
+      }
+      \exp_not:N \l__htmv_swaphead_bool
+    }
+  }
+  \tl_put_right:Nn \l_tmpa_tl {{#2}{#3}}
+  \cs_set_nopar:NV \htmv_tmp_thm: \l_tmpa_tl
+  \cs_set_eq:cN {#1} \htmv_tmp_thm:
+  \cs_set_eq:cc {end #1} {end html5 theorem}
+}
+
+\DeclareDocumentEnvironment {html5 theorem} {m m m O{}}
+{
+  #1
+  \tl_gclear:N \l__htmv_anchor_tl
+  \tl_gclear:N \l__htmv_nextid_tl
+  \tl_if_empty:nF {#3}
+  {
+    \tl_set_eq:NN \l__htmv_anchor_tmp_tl \l__htmv_anchor_tl
+    \tl_set:Nn \l__htmv_anchor_tl {on next}
+    \refstepcounter{#3}
+    \tl_set_eq:NN \l__htmv_anchor_tl \l__htmv_anchor_tmp_tl
+  }
+  \htmv_close_par:
+  \tl_if_empty:NTF \l__htmv_nextid_tl
+  {
+    \htmv_open_tag:nn {div} {class="gentheorem~ \tl_use:N \l__htmv_ctheoremstyle_tl"}
+  }
+  {
+    \htmv_open_tag:nn {div} {class="gentheorem~ \tl_use:N \l__htmv_ctheoremstyle_tl"~ id="\tl_use:N \l__htmv_nextid_tl"}
+    \tl_gclear:N \l__htmv_nextid_tl
+  }
+  \htmv_open_tag:nn {span} {class="title"}
+  \tl_if_empty:nTF {#3}
+  {
+    \bool_if:NTF \l__htmv_swaphead_bool
+    {
+      \htmv_theorem_swaphead:nnn {#2} {} {#4}
+    }
+    {
+      \htmv_theorem_plainhead:nnn {#2} {} {#4}
+    }
+  }
+  {
+    \bool_if:NTF \l__htmv_swaphead_bool
+    {
+      \htmv_theorem_swaphead:nnn {#2} {\use:c{the #3}} {#4}
+    }
+    {
+      \htmv_theorem_plainhead:nnn {#2} {\use:c{the #3}} {#4}
+    }
+  }
+  \htmv_close_tag:n {span}
+  \htmv_open_par:
+}
+{
+  \htmv_close_par:
+  \htmv_close_tag:n {div}
+  \htmv_open_par:
+}
+
+\cs_new_nopar:Npn \htmv_theorem_plainhead:nnn #1#2#3
+{
+  \tl_if_empty:nF {#1}
+  {
+    \htmv_open_tag:nn {span} {class="name"}
+    #1
+    \htmv_close_tag:n {span}
+  }
+  \tl_if_empty:nF {#2}
+  {
+    \tl_if_empty:nF {#1} {\c_space_token}
+    \htmv_open_tag:nn {span} {class="number"}
+    #2
+    \htmv_close_tag:n {span}
+  }
+  \tl_if_empty:nF {#3}
+  {
+    \c_space_token
+    \htmv_open_tag:nn {span} {class="note"}
+    #3
+    \htmv_close_tag:n {span}
+  }
+}
+
+\cs_new_nopar:Npn \htmv_theorem_swaphead:nnn #1#2#3
+{
+  \tl_if_empty:nF {#2}
+  {
+    \htmv_open_tag:nn {span} {class="number"}
+    #2
+    \htmv_close_tag:n {span}
+  }
+  \tl_if_empty:nF {#1}
+  {
+    \tl_if_empty:nF {#2} {\c_space_token}
+    \htmv_open_tag:nn {span} {class="name"}
+    #1
+    \htmv_close_tag:n {span}
+  }
+  \tl_if_empty:nF {#3}
+  {
+    \c_space_token
+    \htmv_open_tag:nn {span} {class="note"}
+    #3
+    \htmv_close_tag:n {span}
+  }
+}
+
+\DeclareDocumentCommand \theoremstyle {m}
+{
+  \tl_set:Nx \l__htmv_theoremstyle_tl {#1}
+}
+
+\DeclareDocumentCommand \newtheoremstyle {mmmmmmmmm}
+{
+  \tl_clear:N \l_tmpa_tl
+  \tl_if_empty:nF {#2}
+  {
+    \tl_put_right:Nn \l_tmpa_tl {margin-top:~ #2;~}
+  }
+  \tl_if_empty:nF {#3}
+  {
+    \tl_put_right:Nn \l_tmpa_tl {margin-bottom:~ #3;~}
+  }
+  \tl_if_empty:nF {#5}
+  {
+    \tl_put_right:Nn \l_tmpa_tl {margin-left:~ #5;~}
+  }
+  \tl_if_empty:NF \l_tmpa_tl
+  {
+    \tl_put_right:Nx \l__htmv_css_tl
+    {
+      div.gentheorem.#1~ \txt_lbrace: \tl_use:N \l_tmpa_tl \txt_rbrace:
+    }
+  }
+  \tl_clear:N \l_tmpa_tl
+  \tl_if_empty:nF {#4}
+  {
+    \tl_set:Nx \l_tmpb_tl {\tl_head:n {#4}}
+    \tl_if_eq:VnT \l_tmpb_tl {\itshape}
+    {
+      \tl_put_right:Nn \l_tmpa_tl {font-style:~ italic;~}
+      \tl_put_right:Nx \l__htmv_css_tl
+      {
+        div.gentheorem.#1~ em \txt_lbrace: font-style:~ normal; \txt_rbrace:
+      }
+    }
+    \tl_if_eq:VnT \l_tmpb_tl {\bfseries}
+    {
+      \tl_put_right:Nn \l_tmpa_tl {font-weight:~ bold;~}
+    }
+  }
+  \tl_if_empty:NF \l_tmpa_tl
+  {
+    \tl_put_right:Nx \l__htmv_css_tl
+    {
+      .gentheorem.#1~ \txt_lbrace: \tl_use:N \l_tmpa_tl \txt_rbrace:
+    }
+  }
+  \tl_clear:N \l_tmpa_tl
+  \tl_if_empty:nF {#6}
+  {
+    \tl_set:Nx \l_tmpb_tl {\tl_head:n {#6}}
+    \tl_if_eq:VnT \l_tmpb_tl {\itshape}
+    {
+      \tl_put_right:Nn \l_tmpa_tl {font-style:~ italic;~}
+    }
+    \tl_if_eq:VnT \l_tmpb_tl {\bfseries}
+    {
+      \tl_put_right:Nn \l_tmpa_tl {font-weight:~ bold;~}
+    }
+  }
+  \tl_if_empty:nF {#8}
+  {
+    \tl_put_right:Nn \l_tmpa_tl {margin-right:~ #8;~}
+  }
+  \tl_if_empty:NF \l_tmpa_tl
+  {
+    \tl_put_right:Nx \l__htmv_css_tl
+    {
+      .gentheorem.#1~ .title~ \txt_lbrace: \tl_use:N \l_tmpa_tl \txt_rbrace:
+    }
+  }
+  \tl_if_empty:nF {#7}
+  {
+    \tl_put_right:Nx \l__htmv_css_tl
+    {
+      .gentheorem.#1~ .title:after~ \txt_lbrace: content:~ #7; \txt_rbrace:
+    }
+  }
+}
+
+\DeclareDocumentCommand \swapnumbers {}
+{
+  \bool_set:Nn  \l__htmv_swaphead_bool { !\l__htmv_swaphead_bool }
+}
+
+\NewDocumentCommand \numberwithin {O{\arabic} m m}
+{
+  \cs_if_exist:cTF {c@#2}
+  {
+    \cs_if_exist:cTF {c@#3}
+    {
+      \@addtoreset{#2}{#3}
+      \cs_set:cpx {the #2} {\exp_not:c {the #3} . \exp_not:N #1 {#2}}
+    }
+    {
+      \@nocountererr{#3}
+    }
+  }
+  {
+    \@nocountererr{#2}
+  }
+}
+
+\tl_new:N \l__htmv_proof_attr_tl
+\NewDocumentEnvironment {proof} {O{Proof}}
+{
+  \htmv_close_par:
+  \htmv_open_tag:nn {div} {class="proof" \tl_use:N \l__htmv_proof_attr_tl}
+  \htmv_open_tag:nn {span} {class="title"}
+  #1
+  \htmv_close_tag:n {span}
+  {
+    \txt_use_hook:nn {html5} {after~ proof~ title}
+  }
+  \htmv_open_tag:nn {div} {class="body"}
+  \htmv_open_par:
+}
+{
+  \htmv_close_par:
+  \htmv_close_tag:n {div}
+  \htmv_close_tag:n {div}
+  \htmv_open_par:
+}
+
+% Maths
+
+\tl_new:N \l__htmv_mathtype_tl
+
+\tl_new:N \l__htmv_beginmaths_tl
+\tl_set:Nn \l__htmv_beginmaths_tl
+{
+  \bool_if:nT
+  {
+    \use:c {l__ \tl_use:N \l__maths_type_tl _display_bool} && \use:c {l__ \tl_use:N \l__maths_type_tl _numbered_bool}
+  }
+  {
+    \tl_set:Nn \l__htmv_anchor_tl {on next}
+  }
+}
+
+\tl_new:N \l__htmv_begindisplay_tl
+\tl_set:Nn \l__htmv_begindisplay_tl
+{
+  \htmv_close_par:
+  \htmv_linebreak:
+  \tl_if_empty:NTF \l__htmv_mathtype_tl
+  {
+    \htmv_open_tag:nn {table} {class="displaymaths\bool_if:cT {l__ \tl_use:N \l__maths_type_tl _numbered_bool} {~numbered}"}
+  }
+  {
+    \htmv_open_tag:nn {table} {class="displaymaths\bool_if:cT {l__ \tl_use:N \l__maths_type_tl _numbered_bool} {~numbered}~ \tl_use:N \l__htmv_mathtype_tl"}
+  }
+  \htmv_open_tag:nn {tr} {}
+  \htmv_open_tag:nn {td} {class="label"}
+  \htmv_close_tag:n {td}
+  \htmv_open_tag:nn {td} {class="maths"}
+  \tl_gclear:N \l__htmv_eqnnums_tl
+  \bool_set_true:N \l__htmv_next_num_bool
+}
+
+\tl_new:N \l__htmv_enddisplay_tl
+\tl_set:Nn \l__htmv_enddisplay_tl
+{
+  \bool_if:cT {l__ \tl_use:N \l__maths_type_tl _numbered_bool}
+  {
+    \tl_gput_right:Nx \l__htmv_eqnnums_tl
+    {
+      \exp_not:N \htmv_open_tag:nn {tr} {class="eqnnumber"}
+      \exp_not:N \htmv_open_tag:nn {td} {}
+      \bool_if:NT \l__htmv_next_num_bool
+      {
+        \exp_not:N \htmv_open_tag:nn {span} {class="eqnnumber"~           id="\tl_use:N \l__htmv_nextid_tl"}
+        \theequation
+        \exp_not:N \htmv_close_tag:n {span}
+      }
+      \exp_not:N \htmv_close_tag:n {td}
+      \exp_not:N \htmv_close_tag:n {tr}
+      \exp_not:N \htmv_linebreak:
+    }
+    \tl_gclear:N \l__htmv_nextid_tl
+  }
+  \htmv_close_par:
+  \htmv_close_tag:n {td}
+  \htmv_open_tag:nn {td} {class="label"}
+  \tl_if_empty:NF \l__htmv_eqnnums_tl
+  {
+    \htmv_open_tag:nn {table} {}
+    \tl_use:N \l__htmv_eqnnums_tl
+    \htmv_close_tag:n {table}
+    \tl_gclear:N \l__htmv_eqnnums_tl
+  }
+  \htmv_close_tag:n {td}
+  \htmv_close_tag:n {tr}
+  \htmv_close_tag:n {table}
+  \htmv_linebreak:
+  \htmv_open_par:
+}
+
+\bool_new:N \l__htmv_next_num_bool
+\tl_new:N \l__htmv_eqnnums_tl
+\tl_new:N \l__htmv_beginalign_tl
+\tl_set:Nn \l__htmv_beginalign_tl
+{
+  \tl_set:Nn \l__htmv_mathtype_tl {align}
+  \bool_if:cT {l__ \tl_use:N \l__maths_type_tl _numbered_bool}
+  {
+    \cs_set_eq:Nc \htmv_maths_nl: {\tl_use:N \l__maths_type_tl nl}
+    \cs_set:Npn \nonumber
+    {
+      \bool_set_false:N \l__htmv_next_num_bool
+    }
+    \txt_set_hook:nnn {cmd} {matrix} {\cs_set_eq:NN \\ \htmv_maths_nl:}
+    \txt_set_hook:nnn {cmd} {pmatrix} {\cs_set_eq:NN \\ \htmv_maths_nl:}
+    \txt_set_hook:nnn {cmd} {bmatrix} {\cs_set_eq:NN \\ \htmv_maths_nl:}
+    \txt_set_hook:nnn {cmd} {vmatrix} {\cs_set_eq:NN \\ \htmv_maths_nl:}
+    \txt_set_hook:nnn {cmd} {Bmatrix} {\cs_set_eq:NN \\ \htmv_maths_nl:}
+    \txt_set_hook:nnn {cmd} {Vmatrix} {\cs_set_eq:NN \\ \htmv_maths_nl:}
+    \txt_set_hook:nnn {cmd} {smallmatrix} {\cs_set_eq:NN \\ \htmv_maths_nl:}
+    \cs_set:cpn {\tl_use:N \l__maths_type_tl nl}
+    {
+      \tl_if_empty:NF \l__htmv_nextid_tl
+      {
+        \tl_gput_right:Nx \l__htmv_eqnnums_tl
+        {
+          \exp_not:N \htmv_open_tag:nn {tr} {class="eqnnumber"}
+          \exp_not:N \htmv_open_tag:nn {td} {}
+          \bool_if:NT \l__htmv_next_num_bool
+          {
+            \exp_not:N \htmv_open_tag:nn {span} {class="eqnnumber"~ id="\tl_use:N \l__htmv_nextid_tl"}
+            \theequation
+            \exp_not:N \htmv_close_tag:n {span}
+          }
+          \exp_not:N \htmv_close_tag:n {td}
+          \exp_not:N \htmv_close_tag:n {tr}
+          \exp_not:N \htmv_linebreak:
+        }
+      }
+      \htmv_maths_nl:
+      \htmv_linebreak:
+      \bool_if:NT \l__htmv_next_num_bool
+      {
+        \tl_set:Nn \l__htmv_anchor_tl {on next}
+        \refstepcounter{equation}
+      }
+      \bool_set_true:N \l__htmv_next_num_bool
+    }
+  }
+}
+
+
+\txt_addto_hook:nnn {itex} {begin maths} {\tl_use:N \l__htmv_beginmaths_tl}
+\txt_addto_hook:nnn {itex} {begin display} {\tl_use:N \l__htmv_begindisplay_tl}
+\txt_addto_hook:nnn {itex} {end display} {\tl_use:N \l__htmv_enddisplay_tl}
+\txt_addto_hook:nnn {itex} {begin align} {\tl_use:N \l__htmv_beginalign_tl}
+\txt_addto_hook:nnn {itex} {begin gather} {\tl_use:N \l__htmv_beginalign_tl}
+
+\txt_addto_hook:nnn {mathml} {begin maths} {\tl_use:N \l__htmv_beginmaths_tl}
+\txt_addto_hook:nnn {mathml} {begin display} {\tl_use:N \l__htmv_begindisplay_tl}
+\txt_addto_hook:nnn {mathml} {end display} {\tl_use:N \l__htmv_enddisplay_tl}
+\txt_addto_hook:nnn {mathml} {begin align} {\tl_use:N \l__htmv_beginalign_tl}
+\txt_addto_hook:nnn {mathml} {begin gather} {\tl_use:N \l__htmv_beginalign_tl}
+
+
+% Bibliography ...
+
+\tl_set:Nn \bibname {Bibliography}
+\int_new:N \l__htmv_bibitem_int
+
+\NewDocumentEnvironment {thebibliography} {m}
+{
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
+  \txt_use_hook:nn {html5} {pre bibliography header}
+  \section*{References}
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
+  \txt_use_hook:nn {html5} {post bibliography header}
+  \seq_get_left:NN \l__txt_args_seq \l_tmpa_tl
+  \int_set:Nn \l__htmv_bibitem_int {2*(2 + \tl_count:V \l_tmpa_tl)/3+1}
+  \htmv_enumerate:n {class="bibliography"~ style="padding-left:~\int_use:N \l__htmv_bibitem_int em"}
+  \cs_set_eq:NN \htmv_list_label:n \htmv_bibitem_label:n
+}
+{
+  \htmv_end_enumerate:
+}
+
+\cs_set_eq:NN \newblock \relax
+
+\cs_new:Npn \htmv_bibitem_label:n #1
+{
+  \htmv_open_par:
+  \htmv_open_tag:nn {span} {class="listlabel"~ style="margin-left:~\int_eval:n {-\l__htmv_bibitem_int - 1} em;~ width:~\int_use:N \l__htmv_bibitem_int em;"}
+  #1
+  \htmv_close_tag:n {span}
+}
+
+% Some general user commands
+
+\NewDocumentCommand \addattribute {m m}
+{
+  \tl_if_exist:cTF {l__htmv_#1_attr_tl}
+  {
+    \tl_put_right:cn {l__htmv_#1_attr_tl} {\c_space_token #2}
+  }
+  {
+    \tl_new:c {l__htmv_#1_attr_tl}
+    \tl_set:cn {l__htmv_#1_attr_tl} {#2}
+  }
+}
+
+\NewDocumentCommand \htmvtag {m m m}
+{
+  \htmv_open_tag:nn {#1}{#2}
+  #3
+  \htmv_close_tag:n {#1}
+}
+
+\cs_new_nopar:Npn \htmv_comment:n #1
+{
+  \htmv_linebreak:
+  <!-{}-~ #1~ -{}->
+  \htmv_linebreak:
+}
+
+\NewDocumentCommand \htmvcomment {m}
+{
+  \htmv_comment:n {#1}
+}
+
+\NewDocumentEnvironment {htmvdiv} {m}
+{
+  \htmv_close_par:
+  \htmv_open_tag:nn {div} {class="#1"}
+  \htmv_open_par:
+}
+{
+  \htmv_close_par:
+  \htmv_close_tag:n {div}
+  \htmv_open_par:
+}
+
+\cs_set:Npn \maketitle {
+  \htmv_close_par:
+  \htmv_open_tag:nn {div} {id="titlepage"}
+  \tl_if_eq:NNF \@title \l__htmv_title_tl
+  {
+    \htmv_linebreak:
+    \htmv_open_tag:nn {div}{id="title"}
+    \htmv_open_par:
+    \@title
+    \htmv_close_par:
+    \htmv_close_tag:n {div}
+  }
+  \tl_if_eq:NNF \@author \l__htmv_author_tl
+  {
+    \htmv_linebreak:
+    \htmv_open_tag:nn {div}{id="author"}
+    \htmv_open_par:
+    \@author
+    \htmv_close_par:
+    \htmv_close_tag:n {div}
+  }
+  \htmv_linebreak:
+  \htmv_open_tag:nn {div}{id="date"}
+  \htmv_open_par:
+  \@date
+  \htmv_close_par:
+  \htmv_close_tag:n {div}
+  \tl_if_empty:NF \l__htmv_licence_tl
+  {
+    \htmv_open_tag:nn {div}{id="licence"}
+    \htmv_open_par:
+    \tl_use:N \l__htmv_licence_tl
+    \htmv_close_par:
+    \htmv_close_tag:n {div}
+  }
+  \htmv_close_tag:n {div}
+  \htmv_open_par:
+}
+
+\tl_new:N \l__htmv_today_tl
+\tl_set:Nx \l__htmv_today_tl {
+  \the\year-
+  \two@digits{\the\month}-
+  \two@digits{\the\day}
+}
+
+\tl_set_eq:NN \today \l__htmv_today_tl
+
+\DeclareDocumentEnvironment {center} {}
+{
+  \htmv_close_par:
+  \htmv_open_tag:nn {div} {class="center"}
+  \htmv_open_par:
+}
+{
+  \htmv_close_par:
+  \htmv_close_tag:n {div}
+  \htmv_open_par:
+}
+
+% How can we handle centering?
+\cs_set_eq:NN \centering \relax
+
+% Footnotes, collect together and then typset at the end.
+
+\tl_new:N \l__htmv_footnote_tl
+\int_new:N \l__htmv_footnote_int
+
+\DeclareDocumentCommand \footnote {m}
+{
+  \htmv_add_footnote:n {#1}
+}
+
+\cs_new:Npn \htmv_add_footnote:n #1
+{
+  \int_gincr:N \l__htmv_footnote_int
+  \htmv_open_tag:nx {a}
+  {
+    class="footnote_src"~
+    id="footnote_src.\int_use:N \l__htmv_footnote_int"~
+    href="\#footnote_tgt.\int_use:N \l__htmv_footnote_int"
+  }
+  \int_use:N \l__htmv_footnote_int
+  \htmv_close_tag:n {a}
+  \tl_if_empty:NF \l__htmv_footnote_tl
+  {
+    \tl_gput_right:Nn \l__htmv_footnote_tl
+    {
+      \htmv_empty_tag:nn {br} {}
+      \htmv_linebreak:
+    }
+  }
+  \tl_gput_right:Nn \l__htmv_footnote_tl
+  {
+    \htmv_open_tag:nn {a}
+  }
+  \tl_gput_right:Nx \l__htmv_footnote_tl
+  {
+    {
+      class="footnote_tgt"~
+      id="footnote_tgt.\int_use:N \l__htmv_footnote_int"~
+      href="\#footnote_src.\int_use:N \l__htmv_footnote_int"
+    }
+    \int_use:N \l__htmv_footnote_int
+  }
+  \tl_gput_right:Nn \l__htmv_footnote_tl
+  {
+    \htmv_close_tag:n {a}
+    #1
+  }
+}
+
+\cs_new:Npn \htmv_set_footnotes:
+{
+  \tl_if_empty:NF \l__htmv_footnote_tl
+  {
+    \htmv_open_tag:nn {div} {class="footnotes"}
+    \htmv_open_par:
+    \tl_use:N \l__htmv_footnote_tl
+    \htmv_close_par:
+    \htmv_close_tag:n {div}
+  }
+  \int_gzero:N \l__htmv_footnote_int
+  \tl_gclear:N \l__htmv_footnote_tl
+}
+
+\htmv_at_enddocument:n
+{
+  \htmv_close_par:
+  \htmv_set_footnotes:
+  \htmv_close_tag:n {div}
+  \htmv_close_tag:n {body}
+  \htmv_close_tag:n {html}
+}
+
+% Margin pars
+
+\int_new:N \l__htmv_marginpar_int
+\box_new:N \l__htmv_marginpar_box
+\box_new:N \l__htmv_this_marginpar_box
+\bool_new:N \l__htmv_marginpar_bool
+\bool_set_false:N \l__htmv_marginpar_bool
+
+\cs_new_nopar:Npn \htmv_insert_marginpars:
+{
+  \bool_if:NF \l__htmv_marginpar_bool
+  {
+    \box_if_empty:NF \l__htmv_marginpar_box
+    {
+      \hbox_unpack_clear:N \l__htmv_marginpar_box
+      \txt_newline:
+    }
+  }
+}
+
+\cs_new_nopar:Npn \htmv_append_marginpar:%n #1
+{
+  \hbox_gset:Nn \l__htmv_marginpar_box
+  {
+    \hbox_unpack_clear:N \l__htmv_marginpar_box
+    \htmv_open_tag:nn {div} {class="marginpar"}
+    \htmv_open_tag:nn {div} {}
+    \htmv_open_par:
+    \htmv_open_tag:nn {a}
+    {
+      class="marginpar_tgt"~
+      id="marginpar_tgt.\int_use:N \l__htmv_marginpar_int"~
+      href="\#marginpar_src.\int_use:N \l__htmv_marginpar_int"
+    }
+    \int_use:N \l__htmv_marginpar_int
+    \htmv_close_tag:n {a}
+    \hbox_unpack_clear:N \l__htmv_this_marginpar_box
+    \htmv_close_par:
+    \htmv_close_tag:n {div}
+    \htmv_close_tag:n {div}
+  }
+  \bool_gset_false:N \l__htmv_marginpar_bool
+}
+
+%\cs_generate_variant:Nn \htmv_append_marginpar:n {V}
+  
+\RenewDocumentCommand \marginpar {O{} }
+{
+  \exp_after:wN \htmv_marginpar_aux: \tex_let:D \l_peek_token =~
+}
+
+\cs_new_nopar:Npn \htmv_marginpar_aux:
+{
+  \int_gincr:N \l__htmv_marginpar_int
+  \htmv_open_tag:nx {a}
+  {
+    class="marginpar_src"~
+    id="marginpar_src.\int_use:N \l__htmv_marginpar_int"~
+    href="\#marginpar_tgt.\int_use:N \l__htmv_marginpar_int"
+  }
+  \int_use:N \l__htmv_marginpar_int
+  \htmv_close_tag:n {a}
+  \bool_set_true:N \l__htmv_marginpar_bool
+  \hbox_set:Nn \l__htmv_this_marginpar_box
+  \c_group_begin_token
+  \group_insert_after:N \htmv_append_marginpar:
+}
+
+\NewDocumentEnvironment {marginnote} {}
+{
+  \htmv_open_tag:nn {div} {class="marginpar"}
+  \htmv_open_tag:nn {div} {}
+  \htmv_open_par:
+}
+{
+  \htmv_close_par:
+  \htmv_close_tag:n {div}
+  \htmv_close_tag:n {div}
+}
+
+% Figures
+\newcounter{figure}
+\tl_set:Nn \ext@figure {lof}
+\cs_new:Npn \fnum@figure {\figurename\nobreakspace\thefigure}
+\tl_set:Nn \figurename {Figure}
+
+\DeclareDocumentEnvironment {figure} {}
+{
+  \htmv_close_par:
+  \htmv_open_tag:nn {div} {class="figure"}
+  \htmv_open_par:
+  \tl_set:Nn \@captype {figure}
+}
+{
+  \htmv_close_par:
+  \htmv_close_tag:n {div}
+  \htmv_open_par:
+}
+
+\newcounter{table}
+\tl_set:Nn \ext@table {lot}
+\cs_new:Npn \fnum@table {\tablename\nobreakspace\thetable}
+\tl_set:Nn \tablename {Table}
+\DeclareDocumentEnvironment {table} {o}
+{
+  \htmv_close_par:
+  \htmv_open_tag:nn {div} {class="table"}
+  \htmv_open_par:
+  \tl_set:Nn \@captype {table}
+}
+{
+  \htmv_close_par:
+  \htmv_close_tag:n {div}
+  \htmv_open_par:
+}
+
+\cs_new:Npn \htmv_makecaption:nn #1#2
+{
+  \htmv_close_par:
+  \htmv_open_tag:nn {p} {class="caption"}
+  #1:~ #2
+  \htmv_close_tag:n {p}
+  \htmv_open_par:
+}
+
+\cs_set_eq:NN \@makecaption \htmv_makecaption:nn
+
+\cs_new:Npn \htmv_caption:n #1 {
+  \htmv_orig_caption:n {\txt_reread:n {#1}}
+}
+
+\AtBeginDocument{
+  \cs_set_eq:NN \htmv_orig_caption:n \caption
+  \cs_set_eq:NN \caption \htmv_caption:n
+}
+
+% Tabular support
+
+\tl_new:N \l__htmv_tablerow_tl
+\tl_new:N \l__htmv_tablecell_tl
+
+
+\DeclareDocumentEnvironment {tabular} {o m}
+{
+  \htmv_close_par:
+  \htmv_open_tag:nn {table} {class="tabular"}
+  \cs_set_eq:NN \\ \htmv_table_rowsep:
+  \char_set_catcode_active:N &
+  \htmv_table_setamp:
+  \cs_set_eq:NN \multicolumn \htmv_table_multicolumn:nn
+  \cs_set_eq:NN \hline \htmv_table_hline:
+  \cs_set_eq:NN \toprule \htmv_table_toprule:
+  \cs_set_eq:NN \midrule \htmv_table_midrule:
+  \cs_set_eq:NN \bottomrule \htmv_table_bottomrule:
+  \cs_set_eq:NN \addlinespace \htmv_table_addlinespace:
+  \htmv_table_startrow:
+}
+{
+  \htmv_close_par:
+  \htmv_close_tag:n {td}
+  \htmv_close_tag:n {tr}
+  \htmv_close_tag:n {table}
+  \htmv_open_par:
+}
+
+\group_begin:
+\char_set_catcode_active:N &
+\cs_new:Npn \htmv_table_setamp:
+{
+  \cs_set_eq:NN & \htmv_table_cellsep:
+}
+\group_end:
+
+\cs_new:Npn \htmv_table_cellsep:
+{
+  \htmv_close_par:
+  \htmv_close_tag:n {td}
+  \htmv_linebreak:
+  \htmv_table_startcell:
+}
+
+\cs_new:Npn \htmv_table_rowsep:
+{
+  \htmv_close_par:
+  \htmv_close_tag:n {td}
+  \htmv_close_tag:n {tr}
+  \htmv_linebreak:
+  \tl_clear:N \l__htmv_tablerow_tl
+  \htmv_table_startrow:
+}
+
+\cs_new:Npn \htmv_table_hline:
+{
+  \tl_if_empty:NF \l__htmv_tablerow_tl
+  {
+    \tl_put_right:Nn \l__htmv_tablerow_tl {~}
+  }
+  \tl_put_right:Nn \l__htmv_tablerow_tl {class="hline"}
+  \htmv_table_startrow:
+}
+
+\cs_new:Npn \htmv_table_toprule:
+{
+  \tl_if_empty:NF \l__htmv_tablerow_tl
+  {
+    \tl_put_right:Nn \l__htmv_tablerow_tl {~}
+  }
+  \tl_put_right:Nn \l__htmv_tablerow_tl {class="toprule"}
+  \htmv_table_startrow:
+}
+
+\cs_new:Npn \htmv_table_midrule:
+{
+  \tl_if_empty:NF \l__htmv_tablerow_tl
+  {
+    \tl_put_right:Nn \l__htmv_tablerow_tl {~}
+  }
+  \tl_put_right:Nn \l__htmv_tablerow_tl {class="midrule"}
+  \htmv_table_startrow:
+}
+
+\cs_new:Npn \htmv_table_bottomrule:
+{
+  \tl_if_empty:NF \l__htmv_tablerow_tl
+  {
+    \tl_put_right:Nn \l__htmv_tablerow_tl {~}
+  }
+  \tl_put_right:Nn \l__htmv_tablerow_tl {class="bottomrule"}
+  \htmv_table_startrow:
+}
+
+\cs_new:Npn \htmv_table_addlinespace:
+{
+  \peek_charcode_ignore_spaces:NTF [%]
+    {
+      \htmv_table_addlinespace_aux:w
+    }
+    {
+      \htmv_table_addlinespace_aux:w []
+    }
+}
+
+\cs_new:Npn \htmv_table_addlinespace_aux:w [#1]
+{
+  \tl_if_empty:nF {#1}
+  {
+    \tl_if_empty:NF \l__htmv_tablerow_tl
+    {
+      \tl_put_right:Nn \l__htmv_tablerow_tl {~}
+    }
+    \tl_put_right:Nn \l__htmv_tablerow_tl {style="padding-bottom:~ #1;"}
+  }
+  \htmv_table_startrow:
+}
+
+\cs_new:Npn \htmv_table_startrow:
+{
+  \peek_after:Nw \htmv_table_testrow:
+}
+
+\cs_new:Npn \htmv_table_testrow:
+{
+  \token_if_eq_meaning:NNTF \l_peek_token \c_space_token
+  {
+    \htmv_table_testrow_aux:
+  }
+  {
+    \token_if_eq_meaning:NNF \l_peek_token \htmv_table_hline:
+    {
+      \token_if_eq_meaning:NNF \l_peek_token \htmv_table_bottomrule:
+      {
+        \token_if_eq_meaning:NNF \l_peek_token \htmv_table_midrule:
+        {
+          \token_if_eq_meaning:NNF \l_peek_token \htmv_table_toprule:
+          {
+            \token_if_eq_meaning:NNF \l_peek_token \htmv_table_addlinespace:
+            {
+              \htmv_table_startrow_aux:
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+\cs_new_protected_nopar:Npn \htmv_table_testrow_aux:
+{
+  \if_meaning:w \l_peek_token \c_space_token
+    \exp_after:wN \peek_after:Nw
+    \exp_after:wN \htmv_table_testrow_aux:
+    \tex_romannumeral:D -`0
+  \else:
+    \exp_after:wN \htmv_table_testrow:
+  \fi:
+}
+
+\cs_new:Npn \htmv_table_startrow_aux:
+{
+  \htmv_open_tag:nV {tr} \l__htmv_tablerow_tl
+  \htmv_table_startcell:
+}
+
+\cs_new:Npn \htmv_table_startcell:
+{
+  \tl_clear:N \l__htmv_tablecell_tl
+  \peek_after:Nw \htmv_table_testcell:
+}
+
+\cs_new:Npn \htmv_table_testcell:
+{
+  \token_if_eq_meaning:NNTF \l_peek_token \c_space_token
+  {
+    \htmv_table_testcell_aux:
+  }
+  {
+    \token_if_eq_meaning:NNF \l_peek_token \htmv_table_multicolumn:nn
+    {
+      \htmv_table_startcell_aux:
+    }
+  }
+}
+
+\cs_new_protected_nopar:Npn \htmv_table_testcell_aux:
+{
+  \if_meaning:w \l_peek_token \c_space_token
+    \exp_after:wN \peek_after:Nw
+    \exp_after:wN \htmv_table_testcell_aux:
+    \tex_romannumeral:D -`0
+  \else:
+    \exp_after:wN \htmv_table_testcell:
+  \fi:
+}
+
+\cs_new:Npn \htmv_table_startcell_aux:
+{
+  \htmv_open_tag:nV {td} \l__htmv_tablecell_tl
+}
+
+\cs_new:Npn \htmv_table_multicolumn:nn #1#2
+{
+  \tl_set:Nn \l__htmv_tablecell_tl {colspan="#1"}
+  \tl_if_in:nnT {c} {#2}
+  {
+    \tl_put_right:Nn \l__htmv_tablecell_tl {~ style="text-align: center;"}
+  }
+  \tl_if_in:nnT {r} {#2}
+  {
+    \tl_put_right:Nn \l__htmv_tablecell_tl {~ style="text-align: right;"}
+  }
+  \htmv_table_startcell_aux:
+}
+
+% Indexing
+
+% \item is level 0
+% \subitem is level 1
+% \subsubitem is level 2
+% \indexspace starts a new list
+
+\cs_new:Npn \htmv_index_item:
+{
+  \prg_replicate:nn {\l__htmv_index_lvl_int} {\use:c {end html5 itemize}}
+  \htmv_orig_item:
+  \int_gset:Nn \l__htmv_index_lvl_int {0}
+}
+
+\cs_new:Npn \htmv_index_subitem:
+{
+  \int_compare:nT {\l__htmv_index_lvl_int > 1}
+  {
+    \prg_replicate:nn {\l__htmv_index_lvl_int - 1} {\use:c {end html5 itemize}}
+  }
+  \int_compare:nT {\l__htmv_index_lvl_int == 0}
+  {
+    \use:c {html5 itemize} {class="index~ subitem"}
+  }
+  \htmv_orig_item:
+  \int_gset:Nn \l__htmv_index_lvl_int {1}
+}
+
+\cs_new:Npn \htmv_index_subsubitem:
+{
+  \int_compare:nT {\l__htmv_index_lvl_int > 2}
+  {
+    \prg_replicate:nn {\l__htmv_index_lvl_int - 2} {\use:c {end html5 itemize}}
+  }
+  \int_compare:nT {\l__htmv_index_lvl_int == 0}
+  {
+    \use:c {html5 itemize} {class="index~ subitem"}
+    \use:c {html5 itemize} {class="index~ subsubitem"}
+  }
+  \int_compare:nT {\l__htmv_index_lvl_int == 1}
+  {
+    \use:c {html5 itemize} {class="index~ subitem"}
+  }
+  \htmv_orig_item:
+  \int_gset:Nn \l__htmv_index_lvl_int {2}
+}
+
+\cs_new:Npn \htmv_index_space:
+{
+  \prg_replicate:nn {\l__htmv_index_lvl_int + 1} {\use:c {end html5 itemize}}
+  \use:c {html5 itemize}{class="index"}
+  \int_gset:Nn \l__htmv_index_lvl_int {0}
+}
+
+
+
+\int_new:N \l__htmv_index_lvl_int
+
+\cs_set_eq:NN \htmv_index_ref:n \ref
+\cs_generate_variant:Nn \htmv_index_ref:n {V}
+
+\AtBeginDocument{
+  \@ifpackageloaded{cleveref}{%
+    \cs_gset_eq:NN \htmv_index_ref:n \cref
+  }{}
+}
+
+\NewDocumentEnvironment{theindex} {}
+{
+  \use:c {html5 itemize}{class="index"}
+  \cs_set_eq:NN \htmv_orig_item: \item
+  \cs_set_eq:NN \item \htmv_index_item:
+  \cs_set_eq:NN \subitem \htmv_index_subitem:
+  \cs_set_eq:NN \subsubitem \htmv_index_subsubitem:
+  \cs_set_eq:NN \indexspace \htmv_index_space:
+  \txt_preaddto_hook:nnn {html5} {link} {
+    \tl_set:Nx \l_tmpa_tl {\seq_item:Nn \l__txt_args_seq {2}}
+    \tl_if_in:NnT \l_tmpa_tl {page.}
+    {
+      \tl_replace_once:Nnn \l_tmpa_tl {page.} {indexanchor.}
+      \htmv_index_ref:V \l_tmpa_tl
+      \seq_clear:N \l__txt_args_seq
+%      \seq_clear:N \l_tmpa_seq
+%      \seq_pop:NN \l__txt_args_seq \l_tmpb_tl 
+%      \seq_push:NV \l_tmpa_seq \l_tmpa_tl
+%      \seq_push:NV \l_tmpa_seq \l_tmpb_tl
+%      \seq_pop:NN \l__txt_args_seq \l_tmpb_tl
+%      \seq_concat:NNN \l__txt_args_seq \l_tmpa_seq \l__txt_args_seq
+    }
+  }
+  \int_gset:Nn \l__htmv_index_lvl_int {0}
+}
+{
+  \prg_replicate:nn {\l__htmv_index_lvl_int + 1}
+  {
+    \use:c {end html5 itemize}
+  }
+}
+
+\int_new:N \l__htmv_index_int
+\cs_new:Npn \theindexanchor {\int_use:N \l__htmv_index_int}
+
+\cs_set:Npn \htmv_index:n #1
+{
+  \group_begin:
+  \int_gincr:N \l__htmv_index_int
+  \hyper@makecurrent{indexanchor}
+  \label{indexanchor. \int_use:N \l__htmv_index_int}
+  \hyper@anchorstart{\@currentHref}\hyper@anchorend
+  \group_end:
+  \htmv_orig_index:n {#1}
+}
+
+\cs_set:Npn \htmv_write_index:n #1
+{
+  \cs_set:Npn \thepage {\int_use:N \l__htmv_index_int}
+  \cs_set_eq:NN \protected@write \htmv_semiprotected_write:nnn
+  \htmv_orig_wrindex:n {#1}
+}
+
+\cs_new:Npn \htmv_semiprotected_write:nnn #1#2#3
+{
+  \group_begin:
+  #2%
+  \cs_set_eq:NN \protect \@unexpandable@protect
+  \tl_set:Nx \reserved@a {\write #1 {#3}}
+  \reserved@a
+  \group_end:
+  \if@nobreak\ifvmode\nobreak\fi\fi
+}
+
+\AtBeginDocument{
+  \cs_gset_eq:NN \htmv_orig_index:n \index
+  \cs_gset_eq:NN \index \htmv_index:n
+  \cs_gset_eq:NN \htmv_orig_wrindex:n \@wrindex
+  \cs_gset_eq:NN \@wrindex \htmv_write_index:n
+}
+
+\endinput
+
+% Local Variables:
+% mode: latex3
+% End:
