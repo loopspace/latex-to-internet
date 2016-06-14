@@ -84,12 +84,12 @@
     }
     \txt_use_hook:nn {itex} {begin display}
     \txt_newline:
-    \$\$
+    \txt_insert_whatsit:n {1} \$\$
     \txt_newline:
   }
   {
     \txt_use_hook:nn {itex} {begin inline}
-    \$%$
+    \txt_insert_whatsit:n {1} \$%$
   }
 }
 
@@ -98,12 +98,12 @@
   \bool_if:NTF \l__itex_display_bool
   {
     \txt_newline:
-    \$\$
+    \$\$ \txt_insert_whatsit:n {0}
     \txt_newline:
     \txt_use_hook:nn {itex} {end display}
   }
   {
-    \$%$
+    \$ \txt_insert_whatsit:n {0} %$
     \txt_use_hook:nn {itex} {end inline}
   }
   \txt_use_hook:nn {itex} {end maths}
