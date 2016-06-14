@@ -24,7 +24,7 @@
     }
 }
 
-\Hy@WrapperDef\hyper@anchorstart#1{%
+  \Hy@WrapperDef\hyper@anchorstart#1{%
   \cs_if_exist:cTF {xhtm_anchorstart_\tl_use:N \l__xhtm_anchor_tl :n}
     {
       \use:c {xhtm_anchorstart_\tl_use:N \l__xhtm_anchor_tl :n}{#1}
@@ -95,7 +95,20 @@
 %\Hy@WrapperDef
 \cs_new_nopar:Npn \hyper@linkurl #1#2
 {
-  \xhtm_open_tag:nn {a}{href="#2"}
+  \cs_if_exist:cTF {xhtm_link_\tl_use:N \l__xhtm_link_tl :nn}
+  {
+    \use:c {xhtm_link_\tl_use:N \l__xhtm_link_tl :nn} {#1}{#2}
+  }
+  {
+    \xhtm_open_tag:nn {a}{href="#2"}
+    #1
+    \xhtm_close_tag:n {a}
+  }
+}
+
+\cs_new_nopar:Npn \xhtm_link_targetblank:nn #1#2
+{
+  \xhtm_open_tag:nn {a}{href="#2"~ target="_blank"}
   #1
   \xhtm_close_tag:n {a}
 }
@@ -129,8 +142,21 @@
       \tl_set:Nn \l_tmpa_tl {\l__xhtm_baseurl_tl\# \l__txt_chars_tl}
     }
   }
-  \xhtm_open_tag:nx {a} {href="\tl_use:N \l_tmpa_tl"}
+  \cs_if_exist:cTF {xhtm_link_\tl_use:N \l__xhtm_link_tl :V}
+    {
+      \use:c {xhtm_link_\tl_use:N \l__xhtm_link_tl :V} \l_tmpa_tl
+    }
+    {
+      \xhtm_open_tag:nx {a} {href="\tl_use:N \l_tmpa_tl"}
+    }
 }
+
+\cs_new_nopar:Npn \xhtm_link_targetblank:n #1
+{
+  \xhtm_open_tag:nx {a} {href="\tl_use:N \l_tmpa_tl"~ target="_blank"}
+}
+\cs_generate_variant:Nn \xhtm_link_targetblank:n {V}
+
 
 \cs_new_nopar:Npn \hyper@linkend {\xhtm_close_tag:n {a}}
 
