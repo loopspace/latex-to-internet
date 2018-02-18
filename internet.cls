@@ -80,7 +80,7 @@
     output mode .tl_set:N = \l__txt_out_tl,
     class .tl_set:N = \l__txt_class_tl,
     use filename .code:n = {
-      \tl_set_eq:NN \l_tmpb_tl \c_job_name_tl
+      \tl_set_eq:NN \l_tmpb_tl \c_sys_jobname_str
       \bool_set_true:N \l_tmpa_bool
       \bool_do_while:Nn \l_tmpa_bool {
         \tl_if_in:NVTF \l_tmpb_tl \l__txt_underscore_tl
