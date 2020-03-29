@@ -12,7 +12,7 @@
 % Anchor syntax might vary considerably
 % It depends on *where* we are in the document
 
-\Hy@WrapperDef\hyper@anchor#1{%
+  \Hy@WrapperDef\hyper@anchor#1{%
   \cs_if_exist:cTF {htmv_anchor_\tl_use:N \l__htmv_anchor_tl :n}
     {
       \use:c {htmv_anchor_\tl_use:N \l__htmv_anchor_tl :n}{#1}
@@ -115,7 +115,7 @@
 
 \group_begin:
 \char_set_lccode:nn {`;}{`:}
-\tl_to_lowercase:n {
+\tex_lowercase:D {
 \group_end:
   \tl_set:Nn \g__htmv_colon_tl {;}
 }
@@ -133,7 +133,7 @@
     \tl_set:Nn \l_tmpa_tl {\seq_item:Nn \l__txt_args_seq {2}}
   }
   {
-    \tl_if_begins:VnTF \l_tmpa_tl {/}
+    \tl_if_in:VnTF \l_tmpa_tl {/}
     {
       \tl_set:Nn \l_tmpa_tl {\seq_item:Nn \l__txt_args_seq {2}}
     }
