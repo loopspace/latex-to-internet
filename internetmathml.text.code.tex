@@ -37,18 +37,15 @@
   \cs_set_eq:cc {mml _ #1} {\tl_use:N \l__mml_container_tl _ #1}
 }
 
-%% \cs_set_eq:Nc \mml_open_tag:nn {\tl_use:N \l__mml_container_tl _open_tag:nn}
-%% \cs_set_eq:Nc \mml_open_tag:nV {\tl_use:N \l__mml_container_tl _open_tag:nV}
-%% \cs_set_eq:Nc \mml_open_tag:xx {\tl_use:N \l__mml_container_tl _open_tag:xx}
-%% \cs_set_eq:Nc \mml_open_tag:n {\tl_use:N \l__mml_container_tl _open_tag:n}
-%% \cs_set_eq:Nc \mml_open_tag:V {\tl_use:N \l__mml_container_tl _open_tag:V}
-%% \cs_set_eq:Nc \mml_open_tag:x {\tl_use:N \l__mml_container_tl _open_tag:x}
-%% \cs_set_eq:Nc \mml_close_tag:n {\tl_use:N \l__mml_container_tl _close_tag:n}
-%% \cs_set_eq:Nc \mml_close_tag:x {\tl_use:N \l__mml_container_tl _close_tag:x}
-%% \cs_set_eq:Nc \mml_empty_tag:nn {\tl_use:N \l__mml_container_tl _empty_tag:nn}
-%% \cs_set_eq:Nc \mml_empty_tag:nx {\tl_use:N \l__mml_container_tl _empty_tag:nx}
-%% \cs_set_eq:Nc \mml_open_tag_no_stack:nn {\tl_use:N \l__mml_container_tl _open_tag_no_stack:nn}
-%% \cs_set_eq:Nc \mml_close_tag_no_stack:n {\tl_use:N \l__mml_container_tl _close_tag_no_stack:n}
+\cs_new:Npn \mml_start_group:
+{
+  \mml_open_tag:nn {mrow} {}
+}
+
+\cs_new:Npn \mml_end_group:
+{
+  \mml_close_tag:n {mrow}
+}
 
 \cs_new:Npn \mml_activate_dollar:
 {
@@ -73,9 +70,9 @@
     #1
   }
   {
-    {
+    \mml_start_group:
       #1
-    } \c_space_token
+    \mml_end_group: \c_space_token
   }
   \int_decr:N \l__mml_scriptlevel_int
   \mml_close_tag:n {msup}
@@ -91,9 +88,9 @@
     #1
   }
   {
-    {
+    \mml_start_group:
       #1
-    } \c_space_token
+    \mml_end_group: \c_space_token
   }
   \int_decr:N \l__mml_scriptlevel_int
   \mml_close_tag:n {msub}
@@ -227,7 +224,7 @@
 \char_set_catcode_active:N \&
 \char_set_catcode_active:N \;
 \char_set_lccode:nn {`;}{`_}
-\tl_to_lowercase:n {
+\tex_lowercase:D {
 \group_end:
   \cs_new_nopar:Npn \mml_set_actives:
   {
@@ -264,17 +261,17 @@
 
 \char_set_catcode_math_subscript:N \;
 \char_set_lccode:nn {`;}{`_}
-\tl_to_lowercase:n
+\tex_lowercase:D
 {
   \tl_set:Nn \l__mml_char_tl {;}
 }
 \cs_gset:Npx \mml_text_underscore: {\l__mml_char_tl}
 \char_set_catcode_active:N \;
-\tl_to_lowercase:n
+\tex_lowercase:D
 {
   \cs_gset:Npx ; {\l__mml_char_tl}
 }
-\tl_to_lowercase:n
+\tex_lowercase:D
 {
   \group_end:
   \cs_new_nopar:Npn \mml_set_text_actives:
@@ -717,6 +714,20 @@
 \tl_new:N \l__mml_close_mstyle_tl
 \tl_set:Nn \l__mml_close_mstyle_tl {\mml_close_tag:n {mstyle}}
 
+\cs_set_nopar:Npn \mml_maybe_mo:nn #1#2
+{
+  \htmv_if_current_tag_is:nTF {mo}
+  {
+    #2
+  }
+  {
+    \mml_open_tag:nn {mo} {#1}
+    #2
+    \mml_close_tag:n {mo}
+  }
+
+}
+
 \cs_set_nopar:Npn \infty {
   \mml_open_tag:nn {mn} {}
   \entity{infin}
@@ -728,26 +739,30 @@
   \mml_close_tag:n {mn}
 }
 \cs_set_nopar:Npn \lbrace {
-  \mml_open_tag:nn {mo} {stretchy="false"}
-  \txt_lbrace:
-  \mml_close_tag:n {mo}
+  \mml_maybe_mo:nn {stretchy="false"}
+  {
+    \txt_lbrace:
+  }
 }
 \cs_set_nopar:Npn \rbrace {
-  \mml_open_tag:nn {mo} {stretchy="false"}
-  \txt_rbrace:
-  \mml_close_tag:n {mo}
+  \mml_maybe_mo:nn {stretchy="false"}
+  {
+    \txt_rbrace:
+  }
 }
 \cs_set_nopar:Npn \vert {
-  \mml_open_tag:nn {mo} {stretchy="false"}
-  \entity{VerticalBar}
-  \mml_close_tag:n {mo}
+  \mml_maybe_mo:nn {stretchy="false"}
+  {
+    \entity{VerticalBar}
+  }
 }
 \cs_set_eq:NN \lvert \vert
 \cs_set_eq:NN \rvert \vert
 \cs_set_nopar:Npn \Vert {
-  \mml_open_tag:nn {mo} {stretchy="false"}
-  \entity{DoubleVerticalBar}
-  \mml_close_tag:n {mo}
+  \mml_maybe_mo:nn {stretchy="false"}
+  {
+    \entity{DoubleVerticalBar}
+  }
 }
 \cs_set_eq:NN \lVert \Vert
 \cs_set_eq:NN \rVert \Vert
@@ -3406,9 +3421,9 @@
     #1
   }
   {
-    {
+    \mml_start_group:
       #1
-    }
+    \mml_end_group:
   }
   \c_space_token
   \tl_if_single:nTF {#2}
@@ -3416,9 +3431,9 @@
     #2
   }
   {
-    {
+    \mml_start_group:
       #2
-    }
+    \mml_end_group:
   }
   \mml_close_tag:n {mfrac}
 }
@@ -3616,7 +3631,7 @@
   \txt_lbrace:
   \mml_close_tag:n {mo}
   \mml_open_tag:nn {mrow} {}
-  \mml_aligned:n {columnalign="left~ left}
+  \mml_aligned:n {columnalign="left~ left"}
 }
 {
   \mml_end_aligned:
@@ -3653,7 +3668,7 @@
 }
 
 \cs_set_eq:NN \! \negspace
-\cs_set_eq:NN \| \vert
+\cs_set_eq:NN \| \Vert
 \cs_set_eq:NN \: \medspace
 \cs_set_eq:NN \; \thickspace
 \cs_set_eq:NN \, \thinspace
@@ -3768,7 +3783,9 @@
   }
   {
     {
+      \txt_insert_whatsit:n {1}
       #1
+      \txt_insert_whatsit:n {2}
     } \c_space_token
   }
 }
@@ -3793,6 +3810,17 @@
   }
 }
 
+\cs_set_nopar:Npn \dot #1
+{
+  \mml_two_args:nnn {over} {
+    \mml_group_if_not_single:n {#1}
+  } {
+    \mml_open_tag:nn {mo} {stretchy="false"}
+    \entity{dot}
+    \mml_close_tag:n {mo}
+  }
+}
+
 \cs_set_nopar:Npn \hat #1
 {
   \mml_two_args:nnn {over} {
@@ -3813,6 +3841,13 @@
     \hexentity{000AF}
     \mml_close_tag:n {mo}
   }
+}
+
+\cs_set_nopar:Npn \phantom #1
+{
+  \mml_open_tag:nn {mphantom} {}
+  #1
+  \mml_close_tag:n {mphantom}
 }
 
 \cs_set_nopar:Npn \text #1
