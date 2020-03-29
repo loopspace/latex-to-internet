@@ -1,7 +1,7 @@
 % Hyperref driver for Markdown-style links
 
 \ProvidesFile{hmkwn.def}
-[2012/11/06 v6.83m %
+[2018/11/30 v6.88e %
   Hyperref driver for Markdown]
 
 \makeatletter
@@ -9,20 +9,19 @@
 
 \Hy@VersionCheck{hmkwn.def}
 
-% Anchor syntax might vary considerably
+% Suppress anchors in basic markdown
 \Hy@WrapperDef\hyper@anchor#1{%
-  \txt_only_chars:nn {name} {#1}
-  \html_open_tag:nx {a} {id="\tl_use:N \l__txt_chars_tl"}
-  \html_close_tag:n {a}
 }
 \Hy@WrapperDef\hyper@anchorstart#1{%
-  \txt_only_chars:nn {name} {#1}
-  \html_open_tag:nx {a} {id="\tl_use:N \l__txt_chars_tl"}
 }
 \def\hyper@anchorend{%
-  \html_close_tag:n {a}
 }
-\Hy@WrapperDef\hyper@linkfile#1#2#3{#1}%
+\Hy@WrapperDef\hyper@linkfile#1#2#3{%
+  [#1](%
+    \tl_item:Nn #2 {1}
+    \tl_item:Nn #2 {2}
+  )
+}
 
 \Hy@WrapperDef\hyper@link#1#2#3{%
 [#3](\##2)}
