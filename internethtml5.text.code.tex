@@ -45,12 +45,38 @@
 \PassOptionsToPackage{raiselinks=false}{hyperref}
 \PassOptionsToPackage{localanchorname=true}{hyperref}
 
+ \txt_set_hook:nnn {htmv} {linkfile} {
+   \tl_set:Nx \l__htmv_tmpa_tl {\seq_item:Nn \l__txt_args_seq {2}}
+   \exp_args:NNo \tl_set:No \l__htmv_tmpa_tl \l__htmv_tmpa_tl
+   
+   \tl_set:Nx \l__htmv_tmpa_tl {\tl_item:Nn \l__htmv_tmpa_tl {4}}
+   \exp_args:NNo \tl_set:No \l__htmv_tmpa_tl \l__htmv_tmpa_tl
+   \tl_set:Nn \l_tmpa_tl {\XR@ext}
+   
+   \tl_if_eq:NNT \l__htmv_tmpa_tl \l_tmpa_tl
+   {
+     \tl_set:Nx \l__htmv_tmpa_tl {\seq_item:Nn \l__txt_args_seq {2}}
+     \exp_args:NNo \tl_set:No \l__htmv_tmpa_tl \l__htmv_tmpa_tl
+   
+     \tl_set:Nx \l__htmv_tmpa_tl {\tl_item:Nn \l__htmv_tmpa_tl {1}\tl_item:Nn \l__htmv_tmpa_tl {2}}
+
+     \tl_set:Nx \l__htmv_tmpa_tl {
+       { \seq_item:Nn \l__txt_args_seq {1} },
+       { \exp_args:NV \exp_not:n \l__htmv_tmpa_tl },
+       { \seq_item:Nn \l__txt_args_seq {3} }
+     }
+     
+     \seq_set_split:NnV \l__txt_args_seq {,} \l__htmv_tmpa_tl
+   }
+ }
+ 
 \tl_new:N \l__htmv_anchor_tl
 \tl_new:N \l__htmv_anchor_tmp_tl
 \tl_new:N \l__htmv_link_tl
 \tl_new:N \l__htmv_idtype_tl
 \tl_new:N \l__htmv_nextid_tl
-\tl_new:N \l__htmv_baseurl_tl
+ \tl_new:N \l__htmv_baseurl_tl
+ \seq_new:N \l__htmv_nextcss_seq
  \tl_set:Nn \l__htmv_anchor_tl {plain}
  \tl_set:Nn \l__htmv_idtype_tl {name}
 
@@ -90,6 +116,48 @@
 \cs_generate_variant:Nn \tl_if_begins:nnF  { V , o , no, VV }
 \cs_generate_variant:Nn \tl_if_begins:nnTF { V , o , no, VV }
 
+  % Set ID and CSS class for next element
+  \DeclareDocumentCommand \setId {m} {
+    \tl_gset:Nn \l__htmv_nextid_tl {#1}
+  }
+
+  \cs_new_nopar:Npn \htmv_use_id:
+  {
+    \tl_if_empty:NF \l__htmv_nextid_tl
+    {
+      ~id="\tl_use:N \l__htmv_nextid_tl"
+      \tl_gclear:N \l__htmv_nextid_tl
+    }
+  }
+  
+  \cs_new_nopar:Npn \htmv_use_class:
+  {
+    \seq_if_empty:NF \l__htmv_nextcss_seq
+    {
+      ~class="\seq_use:Nn \l__htmv_nextcss_seq {~}"
+      \seq_gclear:N \l__htmv_nextcss_seq
+    }
+  }
+  
+  \DeclareDocumentCommand \setClass {m} {
+    \seq_gset_split:Nnn \l__htmv_nextcss_seq {~} {#1}
+    \seq_gremove_duplicates:N \l__htmv_nextcss_seq
+  }
+
+  \DeclareDocumentCommand \addClass {m} {
+    \seq_gput_right:Nn \l__htmv_nextcss_seq {#1}
+    \seq_gremove_duplicates:N \l__htmv_nextcss_seq
+  }
+
+  \DeclareDocumentCommand \removeClass {m} {
+    \seq_gremove_all:Nn \l__htmv_nextcss_seq {#1}
+  }
+
+  \keys_define:nn {html5 attribute options}
+  {
+    id .tl_gset:N = \l__htmv_nextid_tl,
+    class .code:n = \seq_gput_right:Nn \l__htmv_nextcss_seq {#1}
+  }
 
 % Tags
 \seq_new:N \l__htmv_tag_seq
@@ -241,16 +309,23 @@
   \htmv_close_tag:n {em}
 }
 
+\RenewDocumentCommand \texttt {m}
+{
+  \htmv_open_tag:nn {span} {style="font-family:~ monospace"}
+  #1
+  \htmv_close_tag:n {span}
+}
+
 \RenewDocumentCommand \textsc {m}
 {
-  \htmv_open_tag:nn {span} {style="font-variant: small-caps;"}
+  \htmv_open_tag:nn {span} {style="font-variant:~ small-caps;"}
   #1
   \htmv_close_tag:n {span}
 }
 
 \RenewDocumentCommand \textup {m}
 {
-  \htmv_open_tag:nn {span} {style="font-style: normal;"}
+  \htmv_open_tag:nn {span} {style="font-style:~ normal;"}
   #1
   \htmv_close_tag:n {span}
 }
@@ -530,6 +605,18 @@
   }
 }
 
+\NewDocumentEnvironment {verse} {}
+{
+  \htmv_close_par:
+  \htmv_open_tag:nn {div} {class="verse"}
+  \htmv_open_par:
+}
+{
+  \htmv_close_par:
+  \htmv_close_tag:n {div}
+  \htmv_open_par:
+}
+
 \NewDocumentEnvironment {quote} {}
 {
   \htmv_open_par:
@@ -796,7 +883,7 @@
   \htmv_close_tag:n {code}
 }
 
-\cs_generate_variant:Nn \htmv_verb:n {V,N}
+\cs_generate_variant:Nn \htmv_verb:n {V}
 
 \DeclareDocumentCommand \DisplayAsVerb {m}
 {
@@ -1005,6 +1092,32 @@
 \cs_new_nopar:Npn \htmv_pre_graphics:n #1 {}
 \cs_new_nopar:Npn \htmv_post_graphics:n #1 {}
 
+\DeclareDocumentCommand \includevideo {o m}
+{
+  \tl_set:Nn \l_tmpa_tl {#2}
+  \file_if_exist:nF {#2}
+  {
+    \clist_map_inline:Nn \l__htmv_grext_clist
+    {
+      \file_if_exist:nT {#2.##1}
+      {
+        \tl_set:Nn \l_tmpa_tl {#2.##1}
+        \clist_map_break:
+      }
+    }
+  }
+  \tl_set:Nx \l_tmpb_tl
+  {
+    \exp_not:N \htmv_pre_video:n {\l_tmpa_tl}
+    \exp_not:N \htmv_empty_tag:nn {video} {controls~ src="\l_tmpa_tl"~ class="includegraphics"}
+    \exp_not:N \htmv_post_video:n {\l_tmpa_tl}
+  }
+  \tl_use:N \l_tmpb_tl
+}
+
+\cs_new_nopar:Npn \htmv_pre_video:n #1 {}
+\cs_new_nopar:Npn \htmv_post_video:n #1 {}
+
 
 
 \AtBeginDocument{
@@ -1110,7 +1223,7 @@
 \cs_set:Npn \hfill {}
 
 \RenewDocumentCommand \hspace {m} {}
-\RenewDocumentCommand \\ {o} {}
+\RenewDocumentCommand \\ {o} {\htmv_empty_tag:nn {br} {} }
 
 \tl_new:N \l__htmv_headtags_tl
 \tl_new:N \l__htmv_css_tl
@@ -1136,10 +1249,41 @@
 
 \cs_new:Npn \htmv_add_js:n #1
 {
-  \tl_gput_right:Nn \l__htmv_js_tl {#1}
+  \tl_gput_right:Nn \l__htmv_jsfiles_tl
+  {
+    \htmv_linebreak:
+    \htmv_open_tag:nn {script} {type="text/javascript"}
+    \htmv_linebreak:
+    //<![CDATA[
+        \htmv_linebreak:
+        #1
+        \htmv_linebreak:
+        //]]>
+    \htmv_linebreak:
+    \htmv_close_tag:n {script}
+  }
+}
+
+\cs_new:Npn \htmv_add_js_now:n #1
+{
+  \htmv_linebreak:
+  \htmv_open_tag:nn {script} {type="text/javascript"}
+  \htmv_linebreak:
+  //<![CDATA[
+      \htmv_linebreak:
+      #1
+      \htmv_linebreak:
+      //]]>
+  \htmv_linebreak:
+  \htmv_close_tag:n {script}
 }
 
 \cs_generate_variant:Nn \htmv_add_js:n {V,x}
+\cs_generate_variant:Nn \htmv_add_js_now:n {V,x}
+
+\AtBeginDocument{
+  \cs_set_eq:NN \htmv_add_js:n \htmv_add_js_now:n
+}
 
 \cs_generate_variant:Nn \tl_replace_all:Nnn {NVn}
 
@@ -1187,6 +1331,19 @@
   }
 }
 
+\NewDocumentCommand \loadjsnow {m}
+{
+  \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
+  \txt_use_hook:nn {html5} {load js}
+  \htmv_linebreak:
+  \htmv_open_tag:nn {script} {src="#1.js"~ type="text/javascript"}
+  \htmv_close_tag:n {script}
+}
+
+\AtBeginDocument{
+  \cs_set_eq:NN \loadjs \loadjsnow
+}
+
 \NewDocumentCommand \loadfulljs {v}
 {
   \seq_set_split:Nnn \l__txt_args_seq {,} {{#1}}
@@ -1213,7 +1370,6 @@
   <!DOCTYPE~ html>
   \htmv_linebreak:
   \htmv_open_tag:nn {html} {lang="en"}
-  \htmv_empty_tag:nn {meta} {charset="utf-8"}
   \htmv_linebreak:
 }
 
@@ -1242,7 +1398,7 @@
 
 \NewDocumentCommand \cclicence { m }
 {
-  \tl_to_lowercase:n {\tl_set:Nn \l_tmpa_tl {#1}}
+  \tl_set:Nx \l_tmpa_tl {\tl_lower_case:n {#1}}
   \seq_set_split:NnV \l_tmpa_seq {-} \l_tmpa_tl
   \seq_clear:N \l_tmpb_seq
   \seq_map_inline:Nn \l_tmpa_seq
@@ -1254,8 +1410,8 @@
   }
   \tl_set:Nx \l__htmv_licence_tl
   {
-  <a~ rel="license"~ href="http://creativecommons.org/licenses/\tl_use:N \l_tmpa_tl/4.0/"><img~ alt="Creative~ Commons~ License"~ style="border-width:0"~ src="http://i.creativecommons.org/l/\tl_use:N \l_tmpa_tl/4.0/88x31.png"~ /></a>
-%This~ work~ is~ licensed~ under~ a~ <a~ rel="license"~ href="http://creativecommons.org/licenses/\tl_use:N \l_tmpa_tl/4.0/">Creative~ Commons~ \seq_use:Nn \l_tmpb_seq {-}~ 4.0~ International~ License</a>.
+  <a~ rel="license"~ href="https://creativecommons.org/licenses/\tl_use:N \l_tmpa_tl/4.0/"><img~ alt="Creative~ Commons~ License"~ style="border-width:0"~ src="https://i.creativecommons.org/l/\tl_use:N \l_tmpa_tl/4.0/88x31.png"~ /></a>
+%This~ work~ is~ licensed~ under~ a~ <a~ rel="license"~ href="https://creativecommons.org/licenses/\tl_use:N \l_tmpa_tl/4.0/">Creative~ Commons~ \seq_use:Nn \l_tmpb_seq {-}~ 4.0~ International~ License</a>.
   }
 }
 
@@ -1263,6 +1419,7 @@
 {
   \tl_use:N \l__htmv_declaration_tl
   \htmv_open_tag:nn {head}{}
+  \htmv_empty_tag:nn {meta} {charset="utf-8"}
   \tl_if_eq:NNF \@title \l__htmv_title_tl
   {
     \htmv_linebreak:
@@ -1833,8 +1990,9 @@
 
 \NewDocumentEnvironment {htmvdiv} {m}
 {
+  \keys_set:nn {html5 attribute options}{ #1 }
   \htmv_close_par:
-  \htmv_open_tag:nn {div} {class="#1"}
+  \htmv_open_tag:nn {div} {\htmv_use_id: \htmv_use_class:}
   \htmv_open_par:
 }
 {
@@ -1982,7 +2140,8 @@
 
 \int_new:N \l__htmv_marginpar_int
 \box_new:N \l__htmv_marginpar_box
-\box_new:N \l__htmv_this_marginpar_box
+%\box_new:N \l__htmv_this_marginpar_box
+\newbox \l__htmv_this_marginpar_box
 \bool_new:N \l__htmv_marginpar_bool
 \bool_set_false:N \l__htmv_marginpar_bool
 
@@ -2026,7 +2185,8 @@
   
 \RenewDocumentCommand \marginpar {O{} }
 {
-  \exp_after:wN \htmv_marginpar_aux: \tex_let:D \l_peek_token =~
+  %\exp_after:wN
+  \afterassignment \htmv_marginpar_aux: \tex_let:D \l_peek_token =~
 }
 
 \cs_new_nopar:Npn \htmv_marginpar_aux:
@@ -2041,7 +2201,8 @@
   \int_use:N \l__htmv_marginpar_int
   \htmv_close_tag:n {a}
   \bool_set_true:N \l__htmv_marginpar_bool
-  \hbox_set:Nn \l__htmv_this_marginpar_box
+  %  \hbox_set:Nn \l__htmv_this_marginpar_box
+  \setbox \l__htmv_this_marginpar_box = \hbox
   \c_group_begin_token
   \group_insert_after:N \htmv_append_marginpar:
 }
@@ -2123,7 +2284,17 @@
 \DeclareDocumentEnvironment {tabular} {o m}
 {
   \htmv_close_par:
-  \htmv_open_tag:nn {table} {class="tabular"}
+  \seq_put_left:Nn \l__htmv_nextcss_seq {tabular}
+  \seq_remove_duplicates:N \l__htmv_nextcss_seq
+  \tl_if_empty:NTF \l__htmv_nextid_tl
+  {  
+    \htmv_open_tag:nn {table} {class="\seq_use:Nn \l__htmv_nextcss_seq {~}"}
+  }
+  {
+    \htmv_open_tag:nn {table} {id="\tl_use:N \l__htmv_nextid_tl"~ class="\seq_use:Nn \l__htmv_nextcss_seq {~}"}
+    \tl_gclear:N \l__htmv_nextid_tl
+  }
+  \seq_gclear:N \l__htmv_nextcss_seq
   \cs_set_eq:NN \\ \htmv_table_rowsep:
   \char_set_catcode_active:N &
   \htmv_table_setamp:
@@ -2330,6 +2501,33 @@
   }
   \htmv_table_startcell_aux:
 }
+
+% multicols support
+
+\DeclareDocumentEnvironment {multicols} {m}
+{
+  \htmv_close_par:
+  \htmv_open_tag:nn {table} {class="multicols"}
+  \htmv_open_tag:nn {tr} {}
+  \htmv_open_tag:nn {td} {}
+  \cs_set_eq:NN \columnbreak \htmv_multicols_break:
+  \htmv_open_par:
+}
+{
+  \htmv_close_par:
+  \htmv_close_tag:n {td}
+  \htmv_close_tag:n {tr}
+  \htmv_close_tag:n {table}
+  \htmv_open_par:
+}
+
+\cs_new_nopar:Npn \htmv_multicols_break: {
+  \htmv_close_par:
+  \htmv_close_tag:n {td}
+  \htmv_open_tag:n {td}
+  \htmv_open_par:
+}
+
 
 % Indexing
 
