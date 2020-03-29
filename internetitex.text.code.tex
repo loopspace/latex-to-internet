@@ -182,7 +182,7 @@
 \char_set_catcode_active:N \&
 \char_set_catcode_active:N \;
 \char_set_lccode:nn {`;}{`_}
-\tl_to_lowercase:n {
+\tex_lowercase:D {
 \group_end:
   \cs_new_nopar:Npn \itex_set_actives:
   {
@@ -219,17 +219,17 @@
 
 \char_set_catcode_math_subscript:N \;
 \char_set_lccode:nn {`;}{`_}
-\tl_to_lowercase:n
+\tex_lowercase:D
 {
   \tl_set:Nn \l__itex_char_tl {;}
 }
 \cs_gset:Npx \itex_text_underscore: {\l__itex_char_tl}
 \char_set_catcode_active:N \;
-\tl_to_lowercase:n
+\tex_lowercase:D
 {
   \cs_gset:Npx ; {\l__itex_char_tl}
 }
-\tl_to_lowercase:n
+\tex_lowercase:D
 {
   \group_end:
   \cs_new_nopar:Npn \itex_set_text_actives:
