@@ -20,21 +20,21 @@
 
 \group_begin:
 \char_set_lccode:nn {`;}{`_}
-\tl_to_lowercase:n {
+\tex_lowercase:D {
 \group_end:
 \tl_set:Nn \l__txt_underscore_tl {;}
 }
 
 \group_begin:
 \char_set_lccode:nn {`;}{`^}
-\tl_to_lowercase:n {
+\tex_lowercase:D {
 \group_end:
 \tl_set:Nn \l__txt_caret_tl {;}
 }
 
 \group_begin:
 \char_set_lccode:nn {`;}{`&}
-\tl_to_lowercase:n {
+\tex_lowercase:D {
 \group_end:
 \tl_set:Nn \l__txt_amp_tl {;}
 }
