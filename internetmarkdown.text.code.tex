@@ -22,6 +22,9 @@
 \int_set:Nn \l__mkdn_paragraph_int {4}
 \int_set:Nn \l__mkdn_subparagraph_int {5}
 
+% Set the default output extension to md
+\tl_set:Nn \l__txt_file_ext_tl {md}
+
 % Define the options for the markdown module
 \keys_define:nn {markdown options}
 {
@@ -140,8 +143,8 @@
 % the right indentation
 \tl_new:N \l__mkdn_indentpre_tl
 \tl_new:N \l__mkdn_indentsep_tl
-\tl_set:Nn \l__mkdn_indentpre_tl {X}
-\tl_set:Nn \l__mkdn_indentsep_tl {Y}
+\tl_set:Nn \l__mkdn_indentpre_tl {~}
+\tl_set:Nn \l__mkdn_indentsep_tl {}
 
 \tl_new:N \l__mkdn_indent_tl
 
@@ -176,6 +179,7 @@
 {
   \everypar{
     \tl_use:N \l__mkdn_indent_tl\tl_use:N \l__mkdn_indentsep_tl
+    \txt_newline:
   }
 }
 
