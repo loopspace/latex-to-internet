@@ -3,10 +3,11 @@
 
 % Set our page to be quite large so that we don't get any line breaks
 %\pdfpageheight 500cm
-\pdfpagewidth 200cm
+% Latest LuaTeX uses \pagewidth instead of \pdfpagewidth
+\pagewidth 200cm
 \setlength{\textwidth}{190cm}
 \setlength{\paperwidth}{200cm}
-\pdfpageheight 297mm
+\pageheight 297mm
 \setlength{\paperheight}{297mm}
 \setlength{\textheight}{250mm}
 %\setlength{\textheight}{490cm}
@@ -14,15 +15,24 @@
 % Basic set-up commands expected from a class
 
 % Make font size commands irrelevant (later packages are allowed to
-% modify these if they know what to do with them
-\pdfmapline{=textfont~ cmtt10}
-\pdfmapline{=mathfont~ cmtt10}
-\font\tfont=textfont
-\font\mathfont=mathfont
-\renewcommand\normalsize{%
-  \fontsize{10pt}{12pt}\fontfamily\ttdefault\selectfont
-\tfont
+% modify these if they know what to do with them)
+%
+% Shouldn't be used with LuaTeX
+\@ifundefined{directlua}{
+  \pdfmapline{=textfont~ cmtt10}
+  \pdfmapline{=mathfont~ cmtt10}
+  \font\tfont=textfont
+  \font\mathfont=mathfont
+  \renewcommand\normalsize{%
+    \fontsize{10pt}{12pt}\fontfamily\ttdefault\selectfont
+    \tfont
+  }
+}{
+  \let\normalsize=\relax
+  \let\mathfont=\relax
+  \let\tfont=\relax
 }
+
 \let\footnotesize=\relax
 \let\tiny=\relax
 \let\small=\relax
@@ -58,7 +68,7 @@
   \cs_new_nopar:Npn \txt_reread:n #1 {#1}
 }{%
   \usepackage[no-math]{fontspec}
-  \setmainfont{TeX Gyre Cursor}
+  \setmainfont[Ligatures={NoCommon}]{TeX Gyre Cursor}
   \attributedef\txt_group_attr=0\relax
   \directlua{require("textoutput")}
   \newtoks\txt_oldoutput
@@ -76,12 +86,12 @@
 
   \cs_new_nopar:Npn \txt_start_group_logging:
   {
-    \directlua{textoutput.startgroups()}
+%    \directlua{textoutput.startgroups()}
   }
   
   \cs_new_nopar:Npn \txt_stop_group_logging:
   {
-    \directlua{textoutput.stopgroups()}
+%    \directlua{textoutput.stopgroups()}
   }
   
   \cs_new_nopar:Npn \txt_set_ext:n #1
@@ -343,6 +353,7 @@
 \cs_set:Nn \txt_newline:
 {
   \group_begin:
+  \everypar{}
   \tl_set_eq:NN \@nolnerr \c_empty_tl
   \txt_onewline:
   \txt_mbox:n {}
