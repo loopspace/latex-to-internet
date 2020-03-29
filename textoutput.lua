@@ -8,7 +8,13 @@ Whatsits follow catcodes:
 3: Maths shift
 7: Superscript
 8: Subscript
---]]
+   --]]
+
+local types = {}
+for k,v in pairs(node.types()) do
+   types[v] = k
+end
+types.ligature = 7
 
 local factor = 65782  -- PDF points vs. TeX points
 local txtfile
@@ -17,7 +23,6 @@ local txtfile
 local maths = {}
 local domaths
 local dolog
-local grplvl = 0
 
 local function log(m,b)
    local dl
@@ -27,12 +32,18 @@ local function log(m,b)
       dl = b
    end
    if dl then
-      io.stderr:write(m)
-      io.stderr:write(' ')
+      texio.write_nl("term and log", m)
    end
 end
 
 local function utf8dec(a)
+   if a == 8221 then
+      a = 34
+   elseif a == 8220 then
+      a = 34
+   elseif a == 8217 then
+      a = 39
+   end
     local t = {}
     if a < 128 then
         table.insert(t,a)
@@ -106,7 +117,7 @@ local function addtags(s)
 	    if tag == "mi" or tag == "mo" or tag == "mn" or tag == "mtext" then
 	       local etag = "</" .. tag .. ">"
 	       txt = ""
-	       while s[i] ~= etag do
+	       while s[i] and s[i] ~= etag do
 		  txt = txt .. s[i]
 		  i = i + 1
 	       end
@@ -129,7 +140,7 @@ local function addtags(s)
 		  table.insert(p,s[i])
 		  i = i + 1
 	       end
-	       if s[1] == "." then
+	       if s[i] == "." then
 		  table.insert(p,s[i])
 		  i = i + 1
 		  while type(s[i]) == "string" and s[i]:match("%d") do
@@ -312,6 +323,10 @@ local function parsemaths(s)
 	       -- Just need to put the previous tag inside the next one
 	       table.insert(p,pi,table.remove(s,1))
 	    end
+	 elseif a == 1 then
+	    table.insert(p,'<mrow>')
+	 elseif a == 2 then
+	    table.insert(p,'</mrow>')
 	 end
       else
 	 table.insert(p,a)
@@ -326,105 +341,74 @@ local function list_elements(box)
    local parent = box
    local head = box --   = box.list or box
    while head do
-      local glvl = node.has_attribute(head,1)
-      if head.id == 0 or head.id == 1 then
+      if head.id == types.hlist or head.id == types.vlist then
 	 -- it's a box, so we recurse into it
 	 list_elements(head.list)
 	 if head.id == 0 and parent.id == 1 then
 	    -- We're an hbox inside a vbox, so must be finishing a line
 	    if domaths then
 	       table.insert(maths," ")
-	       grplvl = glvl
 	    else
 	       dooutput("\n")
 	    end
 	 end
 
-      elseif head.id == 10 then
+      elseif head.id == types.glue then
 	 -- some sort of space
 --	 if parent.id == 0 then
-	    -- only do something if in horizontal mode
-	    if head.subtype == 0 then
+	 -- only do something if in horizontal mode
+	    if head.subtype == 13 then
 	       -- glue, translate to space
 	       if domaths then
-		  if glvl > grplvl then
-		     for i=grplvl,glvl-1 do
-			local str = "<mrow>"
-			str:gsub(".",function(c) table.insert(maths,c) end)
-		     end
-		  elseif glvl < grplvl then
-		     for i=glvl,grplvl-1 do
-			local str = "</mrow>"
-			str:gsub(".",function(c) table.insert(maths,c) end)
-		     end
-		  end
-		  table.insert(maths,string.rep(" ",math.floor(head.spec.width/factor/5)))
-		  grplvl = glvl
+		  table.insert(maths,string.rep(" ",math.floor(head.width/factor/5)))
 	       else
-		  dooutput(string.rep(" ",math.floor(head.spec.width/factor/5)))
+		  dooutput(string.rep(" ",math.floor(head.width/factor/5)))
 	       end
 	    elseif head.subtype == 15 then
 	       -- parfillskip, indicates new paragraph
 	       -- dooutput("\n")
 	    end
 --	 end
-      elseif head.id == 37 then
+      elseif head.id == types.glyph then
 	 -- glyph, print its value
---	 log(m .. ' ' .. utf8dec(head.char),true)
 	 if head.subtype%2 == 0 then
 	    if domaths then
-	       if glvl > grplvl then
-		  for i=grplvl,glvl-1 do
-		     local str = "<mrow>"
-		     str:gsub(".",function(c) table.insert(maths,c) end)
-		  end
-	       elseif glvl < grplvl then
-		  for i=glvl,grplvl-1 do
-		     local str = "</mrow>"
-		     str:gsub(".",function(c) table.insert(maths,c) end)
-		  end
-	       end
 	       table.insert(maths,utf8dec(head.char))
-	       grplvl = glvl
 	    else
 	       dooutput(utf8dec(head.char))
 	    end
 	 end
-      elseif head.id == 8 then
+      elseif head.id == types.ligature then
+	 -- ligature, seems that subtype 2
+	 if head.subtype == 2 then
+	    if domaths then
+	       table.insert(maths,"-")
+	    else
+	       dooutput("-")
+	    end
+	 end
+      elseif head.id == types.whatsit then
 	 -- whatsit, check if user defined
-	 if head.subtype == 44 then
+	 if head.subtype == 8 then
 	    if head.value == 3 then
 	       -- maths shift
 	       if domaths then
 		  -- ending maths
 		  domaths = false
---		  log(table.concat(maths),true)
 		  dooutput(parsemaths(maths))
 	       else
 		  -- starting maths
 		  domaths = true
 		  maths = {}
-		  grplvl = glvl
 	       end
-	    elseif head.value == 7 or head.value == 8 then
+	    elseif head.value == 7 or head.value == 8 or head.value == 1 or head.value == 2 then
 	       if domaths then
-		  if glvl > grplvl and #maths > 0 then
-		     for i=grplvl,glvl-1 do
-			local str = "<mrow>"
-			str:gsub(".",function(c) table.insert(maths,c) end)
-		     end
-		  elseif glvl < grplvl then
-		     for i=glvl,grplvl-1 do
-			local str = "</mrow>"
-			str:gsub(".",function(c) table.insert(maths,c) end)
-		     end
-		  end
 		  table.insert(maths,head.value)
-		  grplvl = glvl
 	       end
 	    end
 	 end
       else
+	 log(head.id)
       end
       if not head.next then
 	 -- last in list
@@ -460,22 +444,19 @@ function insert_whatsit(v)
    node.write(w)
 end
 
+function do_nothing(h,t)
+end
+
 function initialise(s)
    s = s or "txt"
    local filename = tex.jobname .. '.' .. s
    txtfile = assert(io.open(filename,'w'))
-   io.stderr:write("\nText output recorded in: " .. filename .. "\n")
+   log("\nText output recorded in: " .. filename .. "\n",true)
    luatexbase.add_to_callback('pre_linebreak_filter', list_elements, 'Convert nodes to text')
+--   luatexbase.add_to_callback('ligaturing', false, 'Disable ligatures')
+--   luatexbase.add_to_callback('hyphenate', false, 'Disable hyphenation')
+--   luatexbase.add_to_callback('kerning', false, 'Disable kerning')
    tex.attribute[1] = 0
-end
-
-function startgroups()
-   grplvl = tex.currentgrouplevel
-   luatexbase.add_to_callback('token_filter', setlevel, 'Add levels to attributes')
-end
-
-function stopgroups()
-   luatexbase.remove_from_callback('token_filter', 'Add levels to attributes')
 end
 
 function setlogging(b)
@@ -487,6 +468,7 @@ function setlogging(b)
 end
 
 function dooutput(m)
+   --log(m,true)
    txtfile:write(m)
    txtfile:flush()
 end
