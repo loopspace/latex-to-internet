@@ -105,7 +105,7 @@
   {
     \tl_clear:N \l__txt_lua_tl
     \tl_set:Nx \l__txt_lua_tl {\tl_to_str:n {#1}}
-    \tl_set:Nx \l__txt_lua_tl {\lua_escape_x:n {\l__txt_lua_tl}}
+    \tl_set:Nx \l__txt_lua_tl {\lua_escape:e {\l__txt_lua_tl}}
     \directlua{
       tex.print("\l__txt_lua_tl")
     }
