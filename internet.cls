@@ -66,6 +66,7 @@
 
 \cs_generate_variant:Nn \tl_split_at:NnNN {NVNN}
 \cs_generate_variant:Nn \tl_if_in:NnTF {NV}
+\cs_generate_variant:Nn \tl_if_in:NnT {NV}
 \cs_generate_variant:Nn \keys_if_exist:nnT {nV}
 
   \keys_define:nn {internet options} {
@@ -81,19 +82,29 @@
     class .tl_set:N = \l__txt_class_tl,
     use filename .code:n = {
       \tl_set_eq:NN \l_tmpb_tl \c_sys_jobname_str
-      \bool_set_true:N \l_tmpa_bool
-      \bool_do_while:Nn \l_tmpa_bool {
-        \tl_if_in:NVTF \l_tmpb_tl \l__txt_underscore_tl
-        {
-          \tl_split_at:NVNN \l_tmpb_tl \l__txt_underscore_tl \l_tmpa_tl \l_tmpb_tl
-        }
-        {
-          \bool_set_false:N \l_tmpa_bool
-        }
-      }
-      \keys_if_exist:nVT {internet options} \l_tmpb_tl
+      \tl_if_in:NVT \l_tmpb_tl \l__txt_underscore_tl
       {
-        \keys_set:nV {internet options} \l_tmpb_tl
+        \tl_split_at:NVNN \l_tmpb_tl \l__txt_underscore_tl \l_tmpa_tl \l_tmpb_tl
+        
+        \bool_set_true:N \l_tmpa_bool
+        \bool_do_while:Nn \l_tmpa_bool {
+          \tl_if_in:NVTF \l_tmpb_tl \l__txt_underscore_tl
+          {
+            \tl_split_at:NVNN \l_tmpb_tl \l__txt_underscore_tl \l_tmpa_tl \l_tmpb_tl
+          }
+          {
+            \bool_set_false:N \l_tmpa_bool
+          }
+
+          \keys_if_exist:nVT {internet options} \l_tmpa_tl
+          {
+            \keys_set:nV {internet options} \l_tmpa_tl
+          }
+        }
+        \keys_if_exist:nVT {internet options} \l_tmpb_tl
+        {
+          \keys_set:nV {internet options} \l_tmpb_tl
+        }
       }
     },
     epub .meta:n = {
@@ -129,6 +140,10 @@
     mathml .meta:n ={
       maths to load = mathml,
       options = {mathml}{#1},
+    },
+    mathjax .meta:n ={
+      maths to load = mathjax,
+      options = {mathjax}{#1},
     },
     instiki .meta:n = {
       output mode = instiki,
