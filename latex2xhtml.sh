@@ -26,7 +26,7 @@ if [ $? -ne 0 ]; then
     exit $?
 fi
 
-pdftotext -enc ASCII7 -nopgbrk -layout $base.pdf
+pdftotext -enc ASCII7 -nopgbrk $base.pdf
 
 if [ $? -ne 0 ]; then
     echo "Error: pdftotext failed to run cleanly"
