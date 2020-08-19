@@ -178,8 +178,8 @@
 \cs_new:Npn \mkdn_set_everypar:
 {
   \everypar{
-    \tl_use:N \l__mkdn_indent_tl\tl_use:N \l__mkdn_indentsep_tl
     \txt_newline:
+    \tl_use:N \l__mkdn_indent_tl\tl_use:N \l__mkdn_indentsep_tl
   }
 }
 
@@ -197,7 +197,7 @@
 \NewDocumentEnvironment{quote}{}
 {
   \par
-  \mkdn_add_indent:n{>X}
+  \mkdn_add_indent:n{>}
 }
 {
   \par
@@ -206,7 +206,7 @@
 \NewDocumentEnvironment{quotation}{}
 {
   \par
-  \mkdn_add_indent:n{>X}
+  \mkdn_add_indent:n{>}
 }
 {
   \par
@@ -421,6 +421,8 @@
 {
   \par
 }
+
+\RenewDocumentCommand \centerline { m } { #1 }
 
 \cs_set_eq:NN \centering \relax
 
