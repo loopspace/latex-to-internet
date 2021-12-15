@@ -8,8 +8,8 @@
   {1}
   {}
 
+\file_input:n {internetmodes.code.tex}
 
-\bool_new:N \l__txt_text_bool
 \seq_new:N \l__txt_files_seq
 \seq_new:N \l__txt_mfiles_seq
 \seq_new:N \l__txt_lfiles_seq
@@ -171,6 +171,9 @@
       files to load = markdownextra,
       options = {markdownextra}{#1},
     },
+    emoji .meta:n = {
+      files to load = emoji
+    },
     options .code:n = {
       \txt_add_option:nn #1
     },
@@ -186,6 +189,7 @@
     
   }
 
+
 \ProcessKeysOptions{internet options}
 
 \tl_set_eq:NN \@classoptionslist \l__txt_copts_clist
@@ -197,8 +201,6 @@
 {
   \LoadClass[\l__txt_copts_clist]{\l__txt_class_tl}
 }
-
-\file_input:n {internetmodes.code.tex}
 
 \cs_new:Npn \txt_try_options:nnn #1#2#3
 {
