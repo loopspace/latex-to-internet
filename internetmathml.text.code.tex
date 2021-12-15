@@ -812,6 +812,13 @@
 \cs_set_eq:NN \Biggr \Bigg
 \cs_set_eq:NN \Biggl \Bigg
 
+\NewDocumentCommand \mmlwrap { O{mo} m}
+{
+  \mml_open_tag:nn {#1} {}
+  #2
+  \mml_close_tag:n {#1}
+}
+
 \cs_set_nopar:Npn \setminus {
   \mml_open_tag:nn {mo} {}
   \entity{setminus}
@@ -1414,6 +1421,90 @@
   \entity{rightarrow}
   \mml_close_tag:n {mo}
 }
+\cs_set_nopar:Npn \mml_xrightarrow:nn #1#2 {
+  \bool_if:nTF
+  {
+    ! \tl_if_empty_p:n {#1}
+    &&
+    ! \tl_if_empty_p:n {#2}
+  }
+  {
+    \mml_open_tag:nn {munderover} {}
+  }
+  {
+    \tl_if_empty:nF {#1}
+    {
+      \mml_open_tag:nn {munder} {}
+    }
+    \tl_if_empty:nF {#2}
+    {
+      \mml_open_tag:nn {mover} {}
+    }
+  }
+  \mml_open_tag:nn {mo} {}
+  \entity{rightarrow}
+  \mml_close_tag:n {mo}
+  \bool_if:nTF
+  {
+    ! \tl_if_empty_p:n {#1}
+    &&
+    ! \tl_if_empty_p:n {#2}
+  }
+  {
+    \tl_if_single:nTF {#1}
+    {
+      #1
+    }
+    {
+      \mml_start_group:
+      #1
+      \mml_end_group:
+    }
+    \tl_if_single:nTF {#2}
+    {
+      #2
+    }
+    {
+      \mml_start_group:
+      #2
+      \mml_end_group:
+    }
+    \mml_close_tag:n {munderover}
+  }
+  {
+    \tl_if_empty:nF {#1}
+    {
+      \tl_if_single:nTF {#1}
+      {
+        #1
+      }
+      {
+        \mml_start_group:
+        #1
+        \mml_end_group:
+      }
+      \mml_close_tag:n {munder}
+    }
+    \tl_if_empty:nF {#2}
+    {
+      \tl_if_single:nTF {#2}
+      {
+        #2
+      }
+      {
+        \mml_start_group:
+        #2
+        \mml_end_group:
+      }
+      \mml_close_tag:n {mover}
+    }
+  }
+}
+\NewDocumentCommand \xrightarrow { O{} m }
+{
+  \mml_xrightarrow:nn {#1}{#2}
+}
+
 \cs_set_nopar:Npn \leftrightarrow {
   \mml_open_tag:nn {mo} {}
   \entity{leftrightarrow}
@@ -3881,6 +3972,19 @@
         #2
       }
     }
+  }
+}
+
+\cs_set_nopar:Npn \emoji_text_char:n #1
+{
+  \bool_if:NTF \l__mml_maths_bool
+  {
+    \mml_open_tag:nn {mo} {}
+    \use:c {math #1}
+    \mml_close_tag:n {mo}
+  }
+  {
+    \use:c {text #1}
   }
 }
 
