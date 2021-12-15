@@ -1000,6 +1000,7 @@
 
 \cs_set:Npn \htmv_make_verbatim:n #1
 {
+  \tl_clear:N \l_tmpa_tl
   \tl_put_right:Nn \l_tmpa_tl {\cs_new:cpn {htm5 verbatim #1} ##1}
   \tl_set:Nx \l_tmpb_tl {\token_to_str:N \\}
   \tl_set:Nx \l_tmpb_tl {\tl_head:N \l_tmpb_tl}
@@ -1806,6 +1807,7 @@
 {
   \htmv_close_par:
   \htmv_linebreak:
+  \htmv_open_tag:nn {div} {class="displaymaths"}
   \tl_if_empty:NTF \l__htmv_mathtype_tl
   {
     \htmv_open_tag:nn {table} {class="displaymaths\bool_if:cT {l__ \tl_use:N \l__maths_type_tl _numbered_bool} {~numbered}"}
@@ -1855,6 +1857,7 @@
   \htmv_close_tag:n {td}
   \htmv_close_tag:n {tr}
   \htmv_close_tag:n {table}
+  \htmv_close_tag:n {div}
   \htmv_linebreak:
   \htmv_open_par:
 }
@@ -2151,7 +2154,7 @@
   {
     \box_if_empty:NF \l__htmv_marginpar_box
     {
-      \hbox_unpack_clear:N \l__htmv_marginpar_box
+      \hbox_unpack_drop:N \l__htmv_marginpar_box
       \txt_newline:
     }
   }
@@ -2161,7 +2164,7 @@
 {
   \hbox_gset:Nn \l__htmv_marginpar_box
   {
-    \hbox_unpack_clear:N \l__htmv_marginpar_box
+    \hbox_unpack_drop:N \l__htmv_marginpar_box
     \htmv_open_tag:nn {div} {class="marginpar"}
     \htmv_open_tag:nn {div} {}
     \htmv_open_par:
@@ -2173,7 +2176,7 @@
     }
     \int_use:N \l__htmv_marginpar_int
     \htmv_close_tag:n {a}
-    \hbox_unpack_clear:N \l__htmv_this_marginpar_box
+    \hbox_unpack_drop:N \l__htmv_this_marginpar_box
     \htmv_close_par:
     \htmv_close_tag:n {div}
     \htmv_close_tag:n {div}
