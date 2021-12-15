@@ -99,6 +99,15 @@
     \directlua{textoutput.initialise("#1")}
   }
 
+  \cs_new_nopar:Npn \txt_start_log:
+  {
+    \directlua{textoutput.setlogging(1)}
+  }
+  \cs_new_nopar:Npn \txt_stop_log:
+  {
+    \directlua{textoutput.setlogging(0)}
+  }
+  
   \tl_new:N \l__txt_lua_tl
 
   \cs_new_protected_nopar:Npn \txt_reread:n #1
