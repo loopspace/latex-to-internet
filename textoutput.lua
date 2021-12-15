@@ -37,6 +37,10 @@ local function log(m,b)
 end
 
 local function utf8dec(a)
+   log(a)
+   if a == 983040 then
+--      return ""
+   end
    if a == 8221 then
       a = 34
    elseif a == 8220 then
@@ -72,6 +76,11 @@ local function utf8dec(a)
         table.insert(t,c)
         table.insert(t,b)
     end
+    local s = ""
+    for k, v in ipairs(t) do
+       s = s .. string.format("%x,", v)
+    end
+    log( string.char(table.unpack(t)) .. ":" ..  s )
     return string.char(table.unpack(t))
 end
 
@@ -371,6 +380,7 @@ local function list_elements(box)
 --	 end
       elseif head.id == types.glyph then
 	 -- glyph, print its value
+	 log(head.char)
 	 if head.subtype%2 == 0 then
 	    if domaths then
 	       table.insert(maths,utf8dec(head.char))
@@ -469,6 +479,8 @@ end
 
 function dooutput(m)
    --log(m,true)
-   txtfile:write(m)
-   txtfile:flush()
+   if m ~= "" then
+      txtfile:write(m)
+      txtfile:flush()
+   end
 end
