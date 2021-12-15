@@ -1,0 +1,60 @@
+\seq_new:N \l__emoji_char_seq
+\tl_new:N \l__emoji_math_char_tl
+\tl_new:N \l__emoji_text_char_tl
+
+\cs_if_free:NT \emoji_math_char:n
+{
+  \cs_new_nopar:Npn \emoji_math_char:n #1
+  {
+    \use:c { math #1 }
+  }
+}
+
+\cs_if_free:NT \emoji_text_char:n
+{
+  \cs_new_nopar:Npn \emoji_text_char:n #1
+  {
+    \use:c { text #1 }
+  }
+}
+
+\cs_new_nopar:Npn \emoji_declare_symbol:nn #1#2
+{
+  \seq_set_split:Nnn \l__emoji_char_seq {~} {#2}
+  \tl_clear:N \l__emoji_math_char_tl
+  \tl_clear:N \l__emoji_text_char_tl
+  
+  \seq_map_inline:Nn \l__emoji_char_seq
+  {
+    \tl_put_right:Nn \l__emoji_math_char_tl {\hexentity{##1}}
+    \tl_put_right:Nn \l__emoji_text_char_tl {\hexentity{##1}}
+  }
+  \tl_put_right:Nn \l__emoji_text_char_tl {\relax}
+  
+  \exp_args:NnV\cs_new_nopar:cpn {math #1} \l__emoji_math_char_tl
+  \exp_args:NnV\cs_new_nopar:cpn {text #1} \l__emoji_text_char_tl
+}
+
+\cs_new_nopar:Npn \emoji_define_char:nn #1#2
+{
+  \cs_if_exist:cF {#1}
+  {
+    \emoji_declare_symbol:nn {#1}{#2}
+    \cs_new_nopar:cpn {#1}
+    {
+      \mode_if_math:TF
+      {
+        \emoji_math_char:n { #1 }
+      }
+      {
+        \emoji_text_char:n { #1 }
+      }
+    }
+  }
+}
+
+\file_get:nnN {emoji-table.tex} {} \g__emoji_table_tl
+
+\cs_set_eq:NN \emoji_do:nn \emoji_define_char:nn
+\tl_use:N \g__emoji_table_tl
+
