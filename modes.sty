@@ -2,4 +2,15 @@
 
 \input{internetmodes.code.tex}
 
+\keys_define:nn {mode options} {
+  mode .tl_set:N = \l__txt_out_tl
+}
+
+\ProcessKeysOptions{mode options}
+
+\NewDocumentCommand\SetIMode {m}
+{
+  \tl_set:Nn \l__txt_out_tl {#1}
+}
+
 \endinput
