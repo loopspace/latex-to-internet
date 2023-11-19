@@ -13,6 +13,7 @@ Whatsits follow catcodes:
 local types = {}
 for k,v in pairs(node.types()) do
    types[v] = k
+--   texio.write_nl(k .. ": " .. v)
 end
 types.ligature = 7
 
@@ -37,7 +38,7 @@ local function log(m,b)
 end
 
 local function utf8dec(a)
-   log(a)
+   log("Parsing utf8: " .. a)
    if a == 983040 then
 --      return ""
    end
@@ -236,7 +237,7 @@ end
 
 local function parsemaths(s)
    -- sort out the tags
-   log(table.concat(s))
+   log("Maths: " .. table.concat(s))
    s = findtags(s)
    s = addtags(s)
    s = fixtags(s)
@@ -350,6 +351,7 @@ local function list_elements(box)
    local parent = box
    local head = box --   = box.list or box
    while head do
+      log("Element id: " .. head.id)
       if head.id == types.hlist or head.id == types.vlist then
 	 -- it's a box, so we recurse into it
 	 list_elements(head.list)
@@ -380,7 +382,7 @@ local function list_elements(box)
 --	 end
       elseif head.id == types.glyph then
 	 -- glyph, print its value
-	 log(head.char)
+	 log("Char: " .. head.char)
 	 if head.subtype%2 == 0 then
 	    if domaths then
 	       table.insert(maths,utf8dec(head.char))
@@ -399,7 +401,8 @@ local function list_elements(box)
 	 end
       elseif head.id == types.whatsit then
 	 -- whatsit, check if user defined
-	 if head.subtype == 8 then
+	 log("Subtype: " .. head.subtype)
+	 if head.subtype == 9 then
 	    if head.value == 3 then
 	       -- maths shift
 	       if domaths then
@@ -418,7 +421,7 @@ local function list_elements(box)
 	    end
 	 end
       else
-	 log(head.id)
+	 log("Id: " .. head.id)
       end
       if not head.next then
 	 -- last in list
