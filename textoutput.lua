@@ -17,6 +17,12 @@ for k,v in pairs(node.types()) do
 end
 types.ligature = 7
 
+local whatsits = {}
+for k,v in pairs(node.whatsits()) do
+   whatsits[v] = k
+--   texio.write_nl(k .. ": " .. v)
+end
+
 local factor = 65782  -- PDF points vs. TeX points
 local txtfile
 --local itex = require('itextomml')
@@ -402,7 +408,7 @@ local function list_elements(box)
       elseif head.id == types.whatsit then
 	 -- whatsit, check if user defined
 	 log("Subtype: " .. head.subtype)
-	 if head.subtype == 9 then
+	 if head.subtype == whatsits.user_defined then
 	    if head.value == 3 then
 	       -- maths shift
 	       if domaths then
