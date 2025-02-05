@@ -20,12 +20,14 @@
 
 \cs_new_protected_nopar:Npx \txt_imode_check_active:
 {
-  \peek_catcode_ignore_spaces:NTF \c_catcode_active_tl
-  {
-    \exp_not:N \txt_imode_active:w
-  }
-  {
-    \exp_not:N \txt_imode_inactive:w
+  \exp_not:N \peek_remove_spaces:n {
+    \exp_not:N \peek_catcode:NTF \exp_not:V \c_catcode_active_space_tl
+    {
+      \exp_not:N \txt_imode_active:w
+    }
+    {
+      \exp_not:N \txt_imode_inactive:w
+    }
   }
 }
 
@@ -45,12 +47,14 @@
 
 \cs_new:Npn \txt_imode_cases:n #1
 {
-  \peek_catcode_ignore_spaces:NTF \c_group_begin_token
-  {
-    \txt_mode_inline:nn {#1}
-  }
-  {
-    \txt_mode_switch:n {#1}
+  \peek_remove_spaces:n {
+    \peek_catcode:NTF \c_group_begin_token
+    {
+      \txt_mode_inline:nn {#1}
+    }
+    {
+      \txt_mode_switch:n {#1}
+    }
   }
 }
 
